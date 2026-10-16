@@ -5,6 +5,7 @@
  *   [jev:unknown=a,b]  solo las preguntas a y b responden "Not specified"
  *   [jev:unsure]   confianza baja (0,40)
  *   [jev:down]     error 500 en todas las llamadas
+ *   [jev:implausible]  las preguntas noul responden 0,1 (inferencia absurda)
  */
 import { createServer, type ServerResponse } from "node:http";
 import type { JevQuestion } from "../src/lib/jev.ts";
@@ -31,7 +32,7 @@ function answerFor(key: string, question: JevQuestion, text: string) {
       return { type: "score", score: levels - 1, probabilities, confidence: 0.95 };
     }
     case "noul":
-      return { type: "noul", noul: 0.8 };
+      return { type: "noul", noul: text.includes("[jev:implausible]") ? 0.1 : 0.8 };
   }
 }
 

@@ -1,5 +1,15 @@
 import { test, expect } from "@playwright/test";
-import { BASE_URL, createUser, deleteTestUsers, login, resetRateLimits, uniqueEmail } from "./helpers";
+import {
+  BASE_URL,
+  createUser,
+  deleteTestUsers,
+  getReport,
+  login,
+  reportIdFrom,
+  resetRateLimits,
+  uniqueEmail,
+} from "./helpers";
+
 
 test.beforeEach(async () => {
   await resetRateLimits();
@@ -148,5 +158,66 @@ test.describe("clasificación y preguntas", () => {
 
     await page.getByRole("button", { name: "Reintentar" }).click();
     await expect(page.getByText("Seguimos sin poder analizar tu idea.")).toBeVisible();
+  });
+});
+
+
+test.describe("análisis: GPT infiere y Jev valida", () => {
+  test.beforeEach(async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+  });
+
+  test("si Jev lo sabe todo, no hace falta GPT", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.status).toBe("review");
+    expect(report.facts.some((f) => f.source.origin === "gpt")).toBe(false);
+  });
+
+  test("lo que Jev no sabe lo infiere GPT y Jev puntúa su plausibilidad", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition,regulatory_load]");
+    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    // La inferencia no se muestra antes del informe.
+    await expect(page.getByText("Niche with no clear competitors")).toHaveCount(0);
+
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.status).toBe("review");
+    const competition = report.facts.find((f) => f.key === "competition");
+    expect(competition?.value).toBe("Niche with no clear competitors");
+    expect(competition?.source.origin).toBe("gpt");
+    expect(competition?.source.plausibility).toEqual({ noul: 0.8, model: "jev-1.13.0" });
+  });
+
+  test("una inferencia absurda queda guardada con plausibilidad baja", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition] [jev:implausible]");
+    const report = await getReport(reportIdFrom(page.url()));
+    const competition = report.facts.find((f) => f.key === "competition");
+    expect(competition?.source.plausibility).toEqual({ noul: 0.1, model: "jev-1.13.0" });
+  });
+
+  test('si GPT responde "Cannot infer", el dato sigue sin saberse', async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition] [gpt:cannot]");
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.status).toBe("review");
+    const competition = report.facts.find((f) => f.key === "competition");
+    expect(competition?.source.origin).toBe("jev");
+    expect(competition?.value).toBe("Not specified");
+  });
+
+  test("si GPT falla, el informe espera en análisis y se puede reintentar", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition] [gpt:down]");
+    await expect(page.getByText("No hemos podido completar el análisis de tu idea.")).toBeVisible();
+    expect((await getReport(reportIdFrom(page.url()))).status).toBe("analysis");
+
+    await page.getByRole("button", { name: "Reintentar" }).click();
+    await expect(page.getByText("Seguimos sin poder completar el análisis.")).toBeVisible();
+  });
+
+  test("si GPT se niega, también espera en análisis", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition] [gpt:refuse]");
+    await expect(page.getByText("No hemos podido completar el análisis de tu idea.")).toBeVisible();
   });
 });

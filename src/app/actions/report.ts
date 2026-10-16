@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
-import { getOwnReport, insertReport, updateOwnReport } from "@/lib/report/repository";
+import { analyse } from "@/lib/report/analyse";
+import type { Fact } from "@/lib/report/facts";
+import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
 import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
 
 export type FormState = { error: string | null };
@@ -25,7 +27,7 @@ export async function createReport(_prev: FormState, formData: FormData): Promis
     return { error: "No se ha podido guardar tu idea. Inténtalo de nuevo." };
   }
 
-  // Si Jev falla, el informe queda en "new" y la página ofrece reintentar: la idea no se pierde.
+  // Si algo falla, el informe queda en su estado y la página ofrece reintentar: la idea no se pierde.
   await classifyReport(user.id, id, parsed.idea);
   redirect(`/informe/${id}`);
 }
@@ -37,6 +39,17 @@ export async function retryClassification(id: string): Promise<FormState> {
 
   if (report.status === "new" && !(await classifyReport(user.id, report.id, report.idea))) {
     return { error: "Seguimos sin poder analizar tu idea. Inténtalo en unos minutos." };
+  }
+  redirect(`/informe/${report.id}`);
+}
+
+export async function retryAnalysis(id: string): Promise<FormState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report) return { error: "No se ha encontrado el informe." };
+
+  if (report.status === "analysis" && !(await analyseReport(user.id, report.id, report.idea, report.facts))) {
+    return { error: "Seguimos sin poder completar el análisis. Inténtalo en unos minutos." };
   }
   redirect(`/informe/${report.id}`);
 }
@@ -53,9 +66,8 @@ export async function answerQuestions(id: string, _prev: FormState, formData: Fo
   const parsed = parseAnswers(step.keys, (name) => formData.get(name));
   if (!parsed.ok) return { error: parsed.error };
 
-  const facts = mergeFacts(report.facts, parsed.facts);
   try {
-    await updateOwnReport(user.id, report.id, "questions", { facts, status: nextStatus(facts) });
+    await saveFacts(user.id, report.id, report.idea, "questions", mergeFacts(report.facts, parsed.facts));
   } catch (err) {
     logError("guardar las respuestas", err);
     return { error: "No se han podido guardar tus respuestas. Inténtalo de nuevo." };
@@ -65,11 +77,28 @@ export async function answerQuestions(id: string, _prev: FormState, formData: Fo
 
 async function classifyReport(userId: string, id: string, idea: string) {
   try {
-    const facts = await classifyIdea(idea);
-    await updateOwnReport(userId, id, "new", { facts, status: nextStatus(facts) });
+    await saveFacts(userId, id, idea, "new", await classifyIdea(idea));
     return true;
   } catch (err) {
     logError("clasificar", err);
+    return false;
+  }
+}
+
+/** Guarda los datos y, si ya no quedan preguntas, completa el análisis. */
+async function saveFacts(userId: string, id: string, idea: string, expected: ReportStatus, facts: Fact[]) {
+  const status = nextStatus(facts);
+  await updateOwnReport(userId, id, expected, { facts, status });
+  // Si el análisis falla, el informe queda en "analysis" y la página ofrece reintentar.
+  if (status === "analysis") await analyseReport(userId, id, idea, facts);
+}
+
+async function analyseReport(userId: string, id: string, idea: string, facts: Fact[]) {
+  try {
+    await updateOwnReport(userId, id, "analysis", { facts: await analyse(idea, facts), status: "review" });
+    return true;
+  } catch (err) {
+    logError("completar el análisis", err);
     return false;
   }
 }

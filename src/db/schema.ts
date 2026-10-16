@@ -90,8 +90,8 @@ export const rateLimit = pgTable("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
-/** Estados del informe: new → questions → review → approved. */
-export const REPORT_STATUSES = ["new", "questions", "review", "approved"] as const;
+/** Estados del informe: new → questions → analysis → review → approved. */
+export const REPORT_STATUSES = ["new", "questions", "analysis", "review", "approved"] as const;
 
 export const report = pgTable(
   "report",

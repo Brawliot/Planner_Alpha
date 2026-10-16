@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { getOwnReport } from "@/lib/report/repository";
 import { answerOptions, currentStep, promptFor } from "@/lib/report/questions";
-import { answerQuestions, retryClassification } from "@/app/actions/report";
+import { answerQuestions, retryAnalysis, retryClassification } from "@/app/actions/report";
 import { PageContainer } from "@/components/ui/page-container";
 import { QuestionsForm } from "@/components/report/questions-form";
 import { RetryForm } from "@/components/report/retry-form";
@@ -66,6 +66,13 @@ function ReportStep({ report }: { report: Report }) {
         />
       );
     }
+    case "analysis":
+      return (
+        <>
+          <p className="text-sm">No hemos podido completar el análisis de tu idea.</p>
+          <RetryForm action={retryAnalysis.bind(null, report.id)} />
+        </>
+      );
     case "review":
     case "approved":
       return <p className="text-sm text-muted-foreground">Estamos preparando tu informe.</p>;

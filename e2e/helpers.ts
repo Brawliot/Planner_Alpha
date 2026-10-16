@@ -41,3 +41,14 @@ export async function login(page: Page, email: string, password = PASSWORD) {
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL(`${BASE_URL}/`);
 }
+
+
+/** Lee el estado y los datos de un informe (solo tests: el usuario no ve los datos hasta el informe). */
+export async function getReport(id: string) {
+  const rows = await sql`select status, facts from report where id = ${id}`;
+  return rows[0] as { status: string; facts: Array<{ key: string; value: unknown; source: Record<string, unknown> }> };
+}
+
+export function reportIdFrom(url: string) {
+  return url.split("/").pop() ?? "";
+}

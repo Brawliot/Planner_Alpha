@@ -25,6 +25,12 @@ export default defineConfig({
       timeout: 10_000,
     },
     {
+      command: "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON e2e/fake-openai.ts",
+      url: "http://127.0.0.1:3103/health",
+      reuseExistingServer: false,
+      timeout: 10_000,
+    },
+    {
       command: "npm run build && npm run start -- --port 3100",
       url: "http://localhost:3100/api/health",
       env: testEnv,

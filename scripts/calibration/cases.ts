@@ -3,7 +3,6 @@
  * nunca un modelo: si no, mediríamos a Jev contra otra IA.
  * Cada caso va en inglés y en español para medir si el idioma cambia el acierto.
  */
-import type { JevQuestion } from "../../src/lib/jev.ts";
 import { CATALOG_JEV_QUESTIONS } from "../../src/lib/report/questions.ts";
 
 export type Lang = "en" | "es";
@@ -390,14 +389,5 @@ export const NOUL_CASES: NoulCase[] = [
   ...noulPair("bakery-revenue", "borderline", "monthly_revenue_eur", { min: 15000, max: 25000 }, BAKERY_EN, BAKERY_ES),
 ];
 
-/** Plantilla fija de la pregunta de plausibilidad: la misma que usará la app. */
-export const PLAUSIBILITY_QUESTION = {
-  type: "noul",
-  instructions:
-    "Is the assumption in inferred_not_confirmed plausible for the business described in user_text? " +
-    "Judge only whether it makes sense for this specific business; the user did not say it.",
-  criteria: {
-    true: "The assumption is realistic for this business",
-    false: "The assumption is unrealistic or contradicts the business described",
-  },
-} satisfies JevQuestion;
+// La misma pregunta de plausibilidad que usa la app.
+export { PLAUSIBILITY_QUESTION } from "../../src/lib/report/plausibility.ts";

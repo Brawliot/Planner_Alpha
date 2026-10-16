@@ -105,8 +105,8 @@ describe("parseAnswers", () => {
 });
 
 describe("nextStatus", () => {
-  it("pasa a review cuando no quedan preguntas 'ask', aunque falten 'infer'", () => {
-    assert.equal(nextStatus(classified(["competition", "regulatory_load"])), "review");
+  it("pasa a analysis cuando no quedan preguntas 'ask', aunque falten 'infer'", () => {
+    assert.equal(nextStatus(classified(["competition", "regulatory_load"])), "analysis");
     assert.equal(nextStatus(classified(["budget_band"])), "questions");
   });
 });

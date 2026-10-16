@@ -4,7 +4,7 @@ import type { Fact } from "./facts.ts";
 
 type ChoiceQuestion = Extract<JevQuestion, { type: "choice" }>;
 
-const ONLY_IF_SUPPORTED =
+export const ONLY_IF_SUPPORTED =
   'Choose an option only if user_text supports it; otherwise choose "Not specified".';
 const NOT_SPECIFIED_OPTION = { "Not specified": "user_text does not say" };
 
@@ -461,8 +461,9 @@ export function currentStep(facts: readonly Fact[]): QuestionStep | null {
   };
 }
 
+/** Con preguntas pendientes se pregunta; si no, toca completar el análisis (GPT + Jev). */
 export function nextStatus(facts: readonly Fact[]) {
-  return pendingQuestions(facts).length > 0 ? "questions" : "review";
+  return pendingQuestions(facts).length > 0 ? "questions" : "analysis";
 }
 
 export type AnswersResult = { ok: true; facts: Fact[] } | { ok: false; error: string };
