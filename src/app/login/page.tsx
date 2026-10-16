@@ -25,7 +25,9 @@ export default function LoginPage() {
       setError(
         error.status === 429
           ? "Demasiados intentos. Espera un minuto y vuelve a probar."
-          : "Email o contraseña incorrectos",
+          : !error.status || error.status >= 500
+            ? "No hemos podido conectar. Inténtalo de nuevo en unos segundos."
+            : "Email o contraseña incorrectos",
       );
       return;
     }

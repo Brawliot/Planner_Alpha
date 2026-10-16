@@ -23,7 +23,11 @@ export default function RegistroPage() {
 
     setLoading(false);
     if (error) {
-      setError(error.message ?? "No se pudo crear la cuenta");
+      setError(
+        !error.status || error.status >= 500
+          ? "No hemos podido conectar. Inténtalo de nuevo en unos segundos."
+          : (error.message ?? "No se pudo crear la cuenta"),
+      );
       return;
     }
     router.push("/");

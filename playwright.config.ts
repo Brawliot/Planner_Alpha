@@ -17,11 +17,24 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: "npm run build && npm run start -- --port 3100",
-    url: "http://localhost:3100/login",
-    env: testEnv,
-    reuseExistingServer: false,
-    timeout: 180_000,
-  },
+  webServer: [
+    {
+      command: "npm run build && npm run start -- --port 3100",
+      url: "http://localhost:3100/api/health",
+      env: testEnv,
+      reuseExistingServer: false,
+      timeout: 180_000,
+    },
+    {
+      command: "npm run start -- --port 3101",
+      url: "http://localhost:3101/api/health",
+      env: {
+        ...testEnv,
+        DATABASE_URL: "postgresql://nadie:nada@127.0.0.1:5999/no-existe",
+        BETTER_AUTH_URL: "http://localhost:3101",
+      },
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+  ],
 });
