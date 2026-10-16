@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("sin sesión, la página principal muestra la portada", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Planner" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mando" })).toBeVisible();
 });
 
 test("desde la portada, el login se abre en un popup y se cierra con Escape", async ({ page }) => {
@@ -35,7 +35,7 @@ test("la tarjeta gira entre login y registro y actualiza la URL", async ({ page 
   await page.goto("/login");
   await page.getByRole("button", { name: "Regístrate" }).click();
 
-  await expect(page.getByRole("heading", { name: "Crear cuenta" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Crear Cuenta" })).toBeVisible();
   await expect(page).toHaveURL(/\/registro$/);
   await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toHaveCount(0);
 

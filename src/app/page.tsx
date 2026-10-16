@@ -20,9 +20,9 @@ async function HomeContent() {
   if (!user) {
     return (
       <>
-        <h1 className="text-2xl font-semibold">Planner</h1>
+        <h1 className="text-2xl font-semibold">Mando</h1>
         <Link href="/login" className={buttonStyles("primary")}>Iniciar sesión</Link>
-        <Link href="/registro" className={buttonStyles("secondary")}>Crear cuenta</Link>
+        <Link href="/registro" className={buttonStyles("secondary")}>Crear Cuenta</Link>
       </>
     );
   }

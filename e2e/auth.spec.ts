@@ -22,7 +22,7 @@ test.describe("registro", () => {
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
     await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
-    await page.getByRole("button", { name: "Crear cuenta" }).click();
+    await page.getByRole("button", { name: "Crear Cuenta" }).click();
 
     await expect(page).toHaveURL(`${BASE_URL}/`);
     await expect(page.getByRole("heading", { name: "Hola, Ana Prueba" })).toBeVisible();
@@ -36,7 +36,7 @@ test.describe("registro", () => {
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Otra Persona");
     await page.locator("section:not([inert])").getByLabel("Email").fill(email);
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
-    await page.getByRole("button", { name: "Crear cuenta" }).click();
+    await page.getByRole("button", { name: "Crear Cuenta" }).click();
 
     await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
     await expect(page).toHaveURL(/\/registro$/);
@@ -47,7 +47,7 @@ test.describe("registro", () => {
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
     await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill("password1234");
-    await page.getByRole("button", { name: "Crear cuenta" }).click();
+    await page.getByRole("button", { name: "Crear Cuenta" }).click();
 
     await expect(page.getByRole("main").getByRole("alert")).toContainText("filtraciones");
   });
@@ -70,7 +70,7 @@ test.describe("login y logout", () => {
     await expect(page.getByRole("heading", { name: "Hola, Luis Prueba" })).toBeVisible();
 
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
-    await expect(page.getByRole("heading", { name: "Planner" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Mando" })).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();

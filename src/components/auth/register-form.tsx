@@ -46,7 +46,7 @@ export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
         <Button type="submit" disabled={loading}>
-          {loading ? "Creando cuenta..." : "Crear cuenta"}
+          {loading ? "Creando cuenta..." : "Crear Cuenta"}
         </Button>
       </form>
 

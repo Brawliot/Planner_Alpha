@@ -1,4 +1,7 @@
 import { AuthCard } from "@/components/auth/auth-card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Crear Cuenta" };
 
 export default function RegistroPage() {
   return (

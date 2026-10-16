@@ -42,7 +42,7 @@ export function AuthCard({ initialSide }: { initialSide: Side }) {
           inert={side !== "registro"}
           className={`${face} [transform:rotateY(180deg)] ${side !== "registro" && !flipping ? "invisible" : ""}`}
         >
-          <h2 className="text-2xl font-semibold">Crear cuenta</h2>
+          <h2 className="text-2xl font-semibold">Crear Cuenta</h2>
           <RegisterForm onSwitch={() => flipTo("login")} />
         </section>
       </div>
