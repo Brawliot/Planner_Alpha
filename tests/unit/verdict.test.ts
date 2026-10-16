@@ -128,11 +128,41 @@ describe("áreas que aparecen según los datos", () => {
   });
 });
 
-describe("áreas de Jev (paso 9b)", () => {
-  it("quedan pendientes, sin veredicto inventado", () => {
+describe("áreas de Jev", () => {
+  const jevVerdict = (area: string, value: string, confidence: number, from: "user" | "inferred" = "user"): Fact => ({
+    key: `verdict.${area}`,
+    value,
+    source: { origin: "jev", model: M, confidence, from },
+  });
+
+  it("sin datos imprescindibles: needs_info con lo que falta, sin preguntar a Jev", () => {
     const concept = verdictOf("concept", []);
     assert.equal(concept.verdict, "needs_info");
     assert.equal(concept.decidedBy, "jev");
-    assert.equal(concept.reason, "pending_jev");
+    assert.deepEqual(concept.missing, ["offering_type"]);
+  });
+
+  it("usa el veredicto de Jev si es seguro", () => {
+    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Watch", 0.95)]);
+    assert.equal(v.verdict, "watch");
+    assert.equal(v.reason, "concept.watch");
+    assert.equal(v.estimated, false);
+  });
+
+  it("con confianza baja: needs_info, nunca un veredicto dudoso", () => {
+    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Strong", 0.6)]);
+    assert.equal(v.verdict, "needs_info");
+    assert.equal(v.reason, "jev.unsure");
+  });
+
+  it("si se apoyó en datos estimados, el veredicto es estimado", () => {
+    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Strong", 0.95, "inferred")]);
+    assert.equal(v.verdict, "strong");
+    assert.equal(v.estimated, true);
+  });
+
+  it('"Not enough information" de Jev es needs_info', () => {
+    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Not enough information", 0.95)]);
+    assert.equal(v.verdict, "needs_info");
   });
 });

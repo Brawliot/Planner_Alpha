@@ -2,6 +2,17 @@ import "server-only";
 import { callGpt } from "@/lib/gpt";
 import { callJev } from "@/lib/jev";
 import { buildJevState, type Fact } from "./facts";
+import { buildAreas } from "./areas";
+import { certaintyOf } from "./certainty";
+import {
+  areaFacts,
+  isJevVerdictArea,
+  missingCore,
+  NOT_ENOUGH_INFORMATION,
+  VERDICT_QUESTIONS,
+  verdictKey,
+  type JevVerdictArea,
+} from "./verdict-questions";
 import { mergeFacts } from "./questions";
 import { PLAUSIBILITY_QUESTION } from "./plausibility";
 import {
@@ -35,8 +46,35 @@ export async function analyse(idea: string, facts: Fact[]): Promise<Fact[]> {
   const fromGpt = [...inferred, ...figures].filter((fact) => fact.source.origin === "gpt");
   const fromUser = figures.filter((fact) => fact.source.origin === "user");
   const checked = await Promise.all(fromGpt.map((fact) => withPlausibility(idea, fact)));
+  const complete = mergeFacts(facts, [...checked, ...fromUser]);
+  // Los veredictos de Jev se piden al final: necesitan los datos ya inferidos y validados.
+  return mergeFacts(complete, await jevVerdicts(idea, complete));
+}
 
-  return mergeFacts(facts, [...checked, ...fromUser]);
+/** Una llamada por área, en paralelo, con solo los datos de esa área (como en la calibración). */
+async function jevVerdicts(idea: string, facts: Fact[]): Promise<Fact[]> {
+  const areas = buildAreas(facts)
+    .map((view) => view.area)
+    .filter(isJevVerdictArea)
+    .filter((area) => missingCore(facts, area).length === 0);
+  return Promise.all(areas.map((area) => jevVerdict(idea, facts, area)));
+}
+
+async function jevVerdict(idea: string, facts: Fact[], area: JevVerdictArea): Promise<Fact> {
+  const inputs = areaFacts(facts, area);
+  const result = await callJev(buildJevState(idea, inputs), { q: VERDICT_QUESTIONS[area] });
+  const answer = result.answers.q;
+  return {
+    key: verdictKey(area),
+    value: answer?.choice ?? NOT_ENOUGH_INFORMATION,
+    source: {
+      origin: "jev",
+      model: result.model,
+      confidence: answer?.confidence ?? null,
+      // Si algún dato del área era estimado, el veredicto también lo es (nunca "sabido").
+      from: inputs.every((fact) => certaintyOf(fact) === "known") ? "user" : "inferred",
+    },
+  };
 }
 
 async function inferDimensions(idea: string, facts: Fact[]): Promise<Fact[]> {

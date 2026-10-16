@@ -6,18 +6,19 @@
  * Imprime los umbrales propuestos y guarda el detalle en docs/calibration/ (ignorada por git).
  */
 import { mkdir, writeFile } from "node:fs/promises";
-import { callJev, type JevQuestion } from "../src/lib/jev.ts";
+import { callJev, type JevQuestion, type JevState } from "../src/lib/jev.ts";
 import { buildJevState } from "../src/lib/report/facts.ts";
+import { VERDICT_QUESTIONS } from "../src/lib/report/verdict-questions.ts";
 import {
   CHOICE_CASES,
   CHOICE_QUESTIONS,
   NOUL_CASES,
   PLAUSIBILITY_QUESTION,
-  type ChoiceCase,
+  VERDICT_CASES,
+  caseFacts,
   type NoulCase,
 } from "./calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize, type Scored } from "./calibration/metrics.ts";
-
 /**
  * Acierto exigido a lo que se muestre como sabido o estimado: ningún error observado.
  * Con un 95 %, el umbral propuesto podía dejar pasar fallos y los umbrales de noul parecían solaparse.
@@ -67,12 +68,42 @@ function reversedQuestion(question: Extract<JevQuestion, { type: "choice" }>) {
   return { ...question, criteria: Object.fromEntries(Object.entries(question.criteria).reverse()) };
 }
 
-async function runChoice(item: ChoiceCase, run: number, reversed: boolean): Promise<ChoiceRun> {
-  const base = CHOICE_QUESTIONS[item.question];
-  const question = reversed ? reversedQuestion(base) : base;
+/** Una pregunta choice a medir: clasificación (paso 5d) o veredicto (paso 9b). Mismo umbral para ambas. */
+interface ChoiceTask {
+  id: string;
+  lang: string;
+  question: string;
+  expected: string;
+  state: JevState;
+  jev: Extract<JevQuestion, { type: "choice" }>;
+}
+
+function choiceTasks(): ChoiceTask[] {
+  return [
+    ...CHOICE_CASES.map((c) => ({
+      id: c.id,
+      lang: c.lang,
+      question: c.question,
+      expected: c.expected,
+      state: buildJevState(c.text, []),
+      jev: CHOICE_QUESTIONS[c.question],
+    })),
+    ...VERDICT_CASES.map((v) => ({
+      id: v.id,
+      lang: v.lang,
+      question: `verdict.${v.area}`,
+      expected: v.expected,
+      state: buildJevState(v.idea, caseFacts(v)),
+      jev: VERDICT_QUESTIONS[v.area],
+    })),
+  ];
+}
+
+async function runChoice(item: ChoiceTask, run: number, reversed: boolean): Promise<ChoiceRun> {
+  const question = reversed ? reversedQuestion(item.jev) : item.jev;
   const row = { id: item.id, lang: item.lang, question: item.question, expected: item.expected, run, reversed };
   try {
-    const result = await callJev(buildJevState(item.text, []), { q: question });
+    const result = await callJev(item.state, { q: question });
     models.add(result.model);
     return { ...row, choice: result.answers.q?.choice ?? null, confidence: result.answers.q?.confidence ?? null };
   } catch {
@@ -106,7 +137,7 @@ function choiceScored(rows: ChoiceRun[]): Scored[] {
 }
 
 async function main() {
-  const choiceTasks = CHOICE_CASES.flatMap((item) => [
+  const choiceTasksToRun = choiceTasks().flatMap((item) => [
     ...Array.from({ length: RUNS }, (_, run) => () => runChoice(item, run, false)),
     () => runChoice(item, 0, true),
   ]);
@@ -114,8 +145,8 @@ async function main() {
     Array.from({ length: RUNS }, (_, run) => () => runNoul(item, run)),
   );
 
-  console.log(`Ejecutando ${choiceTasks.length + noulTasks.length} llamadas a Jev...`);
-  const choiceRuns = await pool(choiceTasks, CONCURRENCY);
+  console.log(`Ejecutando ${choiceTasksToRun.length + noulTasks.length} llamadas a Jev...`);
+  const choiceRuns = await pool(choiceTasksToRun, CONCURRENCY);
   const noulRuns = await pool(noulTasks, CONCURRENCY);
 
   // Los umbrales se calculan con la primera ejecución en orden normal; las demás miden estabilidad.

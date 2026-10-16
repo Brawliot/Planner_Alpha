@@ -2,6 +2,8 @@ import { buildAreas, FIGURE_KEYS, usable, type AreaKey } from "./areas.ts";
 import type { Fact } from "./facts.ts";
 import { moneyCheck } from "./money.ts";
 import { CATALOG, type QuestionKey } from "./questions.ts";
+import { certaintyOf } from "./certainty.ts";
+import { isJevVerdictArea, missingCore, NOT_ENOUGH_INFORMATION, verdictKey } from "./verdict-questions.ts";
 
 /**
  * Veredicto por área. Donde el veredicto sale directamente de los datos, lo decide el código
@@ -15,7 +17,7 @@ export interface AreaVerdict {
   verdict: Verdict;
   /** Motivo con código estable; el paso 11 lo convierte en frase. */
   reason: string;
-  /** code: reglas de este archivo. jev: pendiente del paso 9b. */
+  /** code: reglas de este archivo. jev: veredicto de Jev guardado como dato verdict.<área>. */
   decidedBy: "code" | "jev";
   /** Datos imprescindibles que faltan (solo con needs_info). */
   missing: string[];
@@ -121,12 +123,42 @@ const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
   },
 };
 
+const JEV_VERDICTS: Record<string, Verdict> = {
+  Strong: "strong",
+  Watch: "watch",
+  Risk: "risk",
+  [NOT_ENOUGH_INFORMATION]: "needs_info",
+};
+
+/** Veredicto de un área juzgada por Jev: solo cuenta si es sabido o estimado (confianza >= umbral). */
+function jevDecision(facts: readonly Fact[], area: AreaKey): Decision & { estimated: boolean } {
+  if (!isJevVerdictArea(area)) return { ...needsInfo([]), estimated: false };
+  const missing = missingCore(facts, area);
+  if (missing.length > 0) return { ...needsInfo(missing), estimated: false };
+
+  const fact = facts.find((f) => f.key === verdictKey(area));
+  const certainty = fact ? certaintyOf(fact) : "unknown";
+  const verdict = fact ? JEV_VERDICTS[String(fact.value)] : undefined;
+  if (!verdict || (certainty !== "known" && certainty !== "estimated")) {
+    return { verdict: "needs_info", reason: "jev.unsure", estimated: false };
+  }
+  return { verdict, reason: `${area}.${verdict}`, estimated: certainty === "estimated" };
+}
+
 /** Veredicto de cada área del informe, en el mismo orden que buildAreas. */
 export function areaVerdicts(facts: readonly Fact[]): AreaVerdict[] {
   return buildAreas(facts).map((view) => {
     const rule = RULES[view.area];
     if (!rule) {
-      return { area: view.area, verdict: "needs_info", reason: "pending_jev", decidedBy: "jev", missing: [], estimated: view.estimated };
+      const decision = jevDecision(facts, view.area);
+      return {
+        area: view.area,
+        verdict: decision.verdict,
+        reason: decision.reason,
+        decidedBy: "jev",
+        missing: decision.missing ?? [],
+        estimated: view.estimated || decision.estimated,
+      };
     }
     const decision = rule(facts);
     const estimated = view.estimated || (view.area === "money" && moneyCheck(facts).estimated);

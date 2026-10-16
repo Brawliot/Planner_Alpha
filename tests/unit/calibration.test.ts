@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CHOICE_CASES, CHOICE_QUESTIONS, NOUL_CASES } from "../../scripts/calibration/cases.ts";
+import { CHOICE_CASES, CHOICE_QUESTIONS, NOUL_CASES, VERDICT_CASES } from "../../scripts/calibration/cases.ts";
+import { JEV_VERDICT_AREAS, VERDICT_QUESTIONS } from "../../src/lib/report/verdict-questions.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize } from "../../scripts/calibration/metrics.ts";
 
 describe("casos de calibración", () => {
@@ -25,6 +26,16 @@ describe("casos de calibración", () => {
     for (const key of Object.keys(CHOICE_QUESTIONS)) {
       const count = CHOICE_CASES.filter((c) => c.question === key && c.lang === "en").length;
       assert.ok(count >= 3, `${key}: solo ${count} casos`);
+    }
+  });
+
+    it("cada veredicto esperado es una opción real y cada área tiene sus 4 casos", () => {
+    for (const item of VERDICT_CASES) {
+      assert.ok(Object.hasOwn(VERDICT_QUESTIONS[item.area].criteria, item.expected), `${item.id}: ${item.expected}`);
+    }
+    for (const area of JEV_VERDICT_AREAS) {
+      const expected = VERDICT_CASES.filter((c) => c.area === area && c.lang === "en").map((c) => c.expected).sort();
+      assert.deepEqual(expected, ["Not enough information", "Risk", "Strong", "Watch"], area);
     }
   });
 

@@ -231,4 +231,16 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     await submitIdea(page, "Un bar [jev:unknown=competition] [gpt:refuse]");
     await expect(page.getByText("No hemos podido completar el análisis de tu idea.")).toBeVisible();
   });
+
+  
+  test("las áreas que juzga Jev guardan su veredicto con confianza", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    const report = await getReport(reportIdFrom(page.url()));
+    const concept = report.facts.find((f) => f.key === "verdict.concept");
+    // El Jev falso elige la primera opción (Strong) con confianza 0,95.
+    expect(concept?.value).toBe("Strong");
+    expect(concept?.source.confidence).toBe(0.95);
+    // Location solo aparece en locales físicos: no hay veredicto.
+    expect(report.facts.some((f) => f.key === "verdict.location")).toBe(false);
+  });
 });
