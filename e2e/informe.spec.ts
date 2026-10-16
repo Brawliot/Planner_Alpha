@@ -67,8 +67,8 @@ test.describe("crear informe", () => {
     await page.goto("/informe/no-existe");
     await expect(page.getByRole("heading", { name: "Página no encontrada" })).toBeVisible();
   });
+});
 
-  
 async function submitIdea(page: import("@playwright/test").Page, idea: string) {
   await page.getByLabel("Mensaje").fill(idea);
   await page.getByRole("button", { name: "Enviar" }).click();

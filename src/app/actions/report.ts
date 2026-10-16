@@ -30,7 +30,7 @@ export async function createReport(_prev: FormState, formData: FormData): Promis
   redirect(`/informe/${id}`);
 }
 
-export async function retryClassification(id: string, _prev: FormState, _formData: FormData): Promise<FormState> {
+export async function retryClassification(id: string): Promise<FormState> {
   const user = await requireUser();
   const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
   if (!report) return { error: "No se ha encontrado el informe." };
