@@ -53,6 +53,9 @@ export default function RegistroPage() {
           {loading ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>
+      <p className="text-sm">
+        ¿Ya tienes cuenta? <a href="/login" className="underline">Inicia sesión</a>
+      </p>
     </main>
   );
 }

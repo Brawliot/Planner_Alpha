@@ -22,7 +22,11 @@ export default function LoginPage() {
 
     setLoading(false);
     if (error) {
-      setError("Email o contraseña incorrectos");
+      setError(
+        error.status === 429
+          ? "Demasiados intentos. Espera un minuto y vuelve a probar."
+          : "Email o contraseña incorrectos",
+      );
       return;
     }
     router.push("/");
@@ -47,6 +51,9 @@ export default function LoginPage() {
         <button type="submit" disabled={loading} className="rounded bg-black p-2 text-white disabled:opacity-50">
           {loading ? "Entrando..." : "Entrar"}
         </button>
+        <p className="text-sm"> 
+            ¿No tienes cuenta? <a href="/registro" className="underline">Regístrate</a>
+        </p>
       </form>
     </main>
   );
