@@ -6,7 +6,8 @@ import type { Fact } from "./facts.ts";
  * - Clasificación: sin errores con confianza >= 0,80 en ninguna pregunta; el fallo más alto fue 0,77.
  *   Los fallos fueron "Not specified" en datos implícitos: Jev duda antes que inventar.
  * - Sin sesgo de orden (0 de 188) y mismo acierto en español e inglés.
- * - Plausibilidad: plausibles >= 0,70, absurdas <= 0,47, dudosas entre 0,60 y 0,68.
+ * - Plausibilidad (cifras en euros y opciones del catálogo): plausibles >= 0,60, absurdas <= 0,48,
+ *   dudosas entre 0,57 y 0,68. Con 0,70 / 0,50, lo plausible entre 0,60 y 0,70 queda como no sabido.
  * Solo valen para CALIBRATED_JEV_MODEL. Si cambian el modelo o las preguntas, hay que recalibrar.
  */
 export const CALIBRATED_JEV_MODEL = "jev-1.13.0";

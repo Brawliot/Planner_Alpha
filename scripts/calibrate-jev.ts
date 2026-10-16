@@ -18,8 +18,11 @@ import {
 } from "./calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize, type Scored } from "./calibration/metrics.ts";
 
-/** Acierto exigido a lo que se muestre como sabido o estimado. */
-const TARGET_PRECISION = 0.95;
+/**
+ * Acierto exigido a lo que se muestre como sabido o estimado: ningún error observado.
+ * Con un 95 %, el umbral propuesto podía dejar pasar fallos y los umbrales de noul parecían solaparse.
+ */
+const TARGET_PRECISION = 1;
 const RUNS = 3;
 const CONCURRENCY = 4;
 
