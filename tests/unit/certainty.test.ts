@@ -75,8 +75,8 @@ describe("certaintyOf: inferencias de GPT", () => {
 
   it("sin validar por Jev son unknown", () => {
     assert.equal(certaintyOf(gpt(null)), "unknown");
-    const { plausibility: _omit, ...withoutCheck } = gpt(0.9).source as Extract<Fact["source"], { origin: "gpt" }>;
-    assert.equal(certaintyOf({ key: "x", value: 1, source: withoutCheck }), "unknown");
+        const withoutCheck: Fact = { key: "x", value: 1, source: { origin: "gpt", model: "gpt", assumptions: [] } };
+    assert.equal(certaintyOf(withoutCheck), "unknown");
   });
 
   it("validadas con un modelo no calibrado son unknown", () => {
