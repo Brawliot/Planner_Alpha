@@ -1,6 +1,6 @@
 import "server-only";
-import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
+import { apiUrl, issueCodes, postJson, type RetryOptions } from "./http.ts";
 
 /**
  * Cliente de Jev (Typesafe, POST /v1/systemone). Docs: https://docs.typesafe.ai/api.md
@@ -11,17 +11,11 @@ import { z } from "zod";
  * nunca se rellena con un valor por defecto.
  */
 
-const DEFAULT_JEV_URL = "https://api.typesafe.ai/v1/systemone";
-// JEV_API_URL solo existe para el Jev falso de los tests. Únicamente se acepta en local,
-// para que una variable mal puesta nunca envíe la clave a otro servidor.
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const OFFICIAL_URL = "https://api.typesafe.ai/v1/systemone";
 // Solo versiones fijas: los alias (jev-latest, jev-preview) cambian solos con cada versión.
 const PINNED_MODEL = /^jev-\d+\.\d+\.\d+$/;
 const ATTEMPT_TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
-const MAX_RETRY_DELAY_MS = 5_000;
-// 429 límite de peticiones, 529 sobrecarga, resto errores temporales del servidor.
-const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504, 529]);
 // Jev redondea cada probabilidad a 2 decimales: la suma puede desviarse hasta 0,005 por opción.
 const PROBABILITY_ROUNDING = 0.005;
 
@@ -83,14 +77,7 @@ export class JevError extends Error {
   }
 }
 
-export interface JevCallOptions {
-  /** Cancela la llamada (y los reintentos) cuando quien llama ya no necesita la respuesta. */
-  signal?: AbortSignal;
-  /** Solo para tests. */
-  fetch?: typeof fetch;
-  /** Solo para tests. */
-  sleep?: (ms: number, signal?: AbortSignal) => Promise<unknown>;
-}
+export type JevCallOptions = RetryOptions;
 
 export async function callJev<const Q extends JevQuestions>(
   state: JevState,
@@ -99,12 +86,18 @@ export async function callJev<const Q extends JevQuestions>(
 ): Promise<JevResult<Q>> {
   const { apiKey, model, url } = readConfig();
 
-  const response = await postWithRetries(
-    JSON.stringify({ state, model, questions }),
-    apiKey,
-    url,
+  const response = await postJson(
+    {
+      label: "Jev",
+      url,
+      apiKey,
+      body: JSON.stringify({ state, model, questions }),
+      timeoutMs: ATTEMPT_TIMEOUT_MS,
+      maxRetries: MAX_RETRIES,
+    },
     options,
   );
+  if (!response) throw new JevError("request_failed");
 
   let body: unknown;
   try {
@@ -116,9 +109,7 @@ export async function callJev<const Q extends JevQuestions>(
 
   const parsed = ResponseSchema.safeParse(body);
   if (!parsed.success) {
-    // Solo rutas y códigos del fallo, nunca valores: el cuerpo puede contener datos del usuario.
-    const issues = parsed.error.issues.map((issue) => `${issue.path.join(".")}:${issue.code}`);
-    console.error(`Jev: respuesta con formato inesperado (${issues.join(", ")})`);
+    console.error(`Jev: respuesta con formato inesperado (${issueCodes(parsed.error.issues)})`);
     throw new JevError("invalid_response");
   }
 
@@ -148,74 +139,12 @@ function readConfig() {
     console.error("Jev: falta TYPESAFE_API_KEY o JEV_MODEL no es una versión fija (jev-X.Y.Z)");
     throw new JevError("config");
   }
-  const url = jevUrl();
+  const url = apiUrl(process.env.JEV_API_URL, OFFICIAL_URL);
   if (!url) {
     console.error("Jev: JEV_API_URL solo puede apuntar a localhost");
     throw new JevError("config");
   }
   return { apiKey, model, url };
-}
-
-function jevUrl() {
-  const custom = process.env.JEV_API_URL;
-  if (!custom) return DEFAULT_JEV_URL;
-  try {
-    const url = new URL(custom);
-    return LOCAL_HOSTS.has(url.hostname) ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
-async function postWithRetries(body: string, apiKey: string, url: string, options: JevCallOptions) {
-  const doFetch = options.fetch ?? fetch;
-  const sleep = options.sleep ?? ((ms: number, signal?: AbortSignal) => delay(ms, undefined, { signal }));
-  const { signal } = options;
-
-  for (let attempt = 0; ; attempt++) {
-    let response: Response;
-    try {
-      response = await doFetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body,
-        signal: AbortSignal.any([AbortSignal.timeout(ATTEMPT_TIMEOUT_MS), ...(signal ? [signal] : [])]),
-      });
-    } catch (err) {
-      // Cancelado por quien llama: se propaga tal cual, sin reintentar.
-      if (signal?.aborted) throw err;
-      if (attempt < MAX_RETRIES) {
-        await sleep(backoff(attempt), signal);
-        continue;
-      }
-      console.error("Jev: sin conexión o tiempo agotado tras los reintentos");
-      throw new JevError("request_failed");
-    }
-
-    if (response.ok) return response;
-
-    // El cuerpo de error no se registra: podría repetir el texto del usuario.
-    await response.body?.cancel();
-    if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_RETRIES) {
-      await sleep(retryAfter(response) ?? backoff(attempt), signal);
-      continue;
-    }
-    console.error(`Jev: HTTP ${response.status}`);
-    throw new JevError("request_failed");
-  }
-}
-
-/** 0,5 s, 1 s, 2 s... con un 25 % de variación aleatoria para no reintentar todos a la vez. */
-function backoff(attempt: number) {
-  const base = Math.min(500 * 2 ** attempt, MAX_RETRY_DELAY_MS);
-  return Math.round(base * (1 + Math.random() * 0.25));
-}
-
-/** Respeta Retry-After en segundos, con un máximo para no bloquear la petición del usuario. */
-function retryAfter(response: Response) {
-  const seconds = Number(response.headers.get("retry-after"));
-  if (!Number.isFinite(seconds) || seconds <= 0) return null;
-  return Math.min(seconds * 1000, MAX_RETRY_DELAY_MS);
 }
 
 /** Devuelve la respuesta si encaja con la pregunta, o el motivo por el que se descarta. */
