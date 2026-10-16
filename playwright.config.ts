@@ -19,6 +19,12 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
+      command: "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON e2e/fake-jev.ts",
+      url: "http://127.0.0.1:3102/health",
+      reuseExistingServer: false,
+      timeout: 10_000,
+    },
+    {
       command: "npm run build && npm run start -- --port 3100",
       url: "http://localhost:3100/api/health",
       env: testEnv,

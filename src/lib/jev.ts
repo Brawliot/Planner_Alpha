@@ -11,7 +11,10 @@ import { z } from "zod";
  * nunca se rellena con un valor por defecto.
  */
 
-const JEV_URL = "https://api.typesafe.ai/v1/systemone";
+const DEFAULT_JEV_URL = "https://api.typesafe.ai/v1/systemone";
+// JEV_API_URL solo existe para el Jev falso de los tests. Únicamente se acepta en local,
+// para que una variable mal puesta nunca envíe la clave a otro servidor.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 // Solo versiones fijas: los alias (jev-latest, jev-preview) cambian solos con cada versión.
 const PINNED_MODEL = /^jev-\d+\.\d+\.\d+$/;
 const ATTEMPT_TIMEOUT_MS = 10_000;
@@ -94,11 +97,12 @@ export async function callJev<const Q extends JevQuestions>(
   questions: Q,
   options: JevCallOptions = {},
 ): Promise<JevResult<Q>> {
-  const { apiKey, model } = readConfig();
+  const { apiKey, model, url } = readConfig();
 
   const response = await postWithRetries(
     JSON.stringify({ state, model, questions }),
     apiKey,
+    url,
     options,
   );
 
@@ -144,10 +148,26 @@ function readConfig() {
     console.error("Jev: falta TYPESAFE_API_KEY o JEV_MODEL no es una versión fija (jev-X.Y.Z)");
     throw new JevError("config");
   }
-  return { apiKey, model };
+  const url = jevUrl();
+  if (!url) {
+    console.error("Jev: JEV_API_URL solo puede apuntar a localhost");
+    throw new JevError("config");
+  }
+  return { apiKey, model, url };
 }
 
-async function postWithRetries(body: string, apiKey: string, options: JevCallOptions) {
+function jevUrl() {
+  const custom = process.env.JEV_API_URL;
+  if (!custom) return DEFAULT_JEV_URL;
+  try {
+    const url = new URL(custom);
+    return LOCAL_HOSTS.has(url.hostname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function postWithRetries(body: string, apiKey: string, url: string, options: JevCallOptions) {
   const doFetch = options.fetch ?? fetch;
   const sleep = options.sleep ?? ((ms: number, signal?: AbortSignal) => delay(ms, undefined, { signal }));
   const { signal } = options;
@@ -155,7 +175,7 @@ async function postWithRetries(body: string, apiKey: string, options: JevCallOpt
   for (let attempt = 0; ; attempt++) {
     let response: Response;
     try {
-      response = await doFetch(JEV_URL, {
+      response = await doFetch(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body,

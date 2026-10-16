@@ -47,13 +47,15 @@ function okBody(answers: Record<string, unknown> = VALID_ANSWERS) {
 /** fetch falso que devuelve las respuestas en orden y guarda las llamadas. */
 function fakeFetch(...responses: Array<() => Response>) {
   const calls: RequestInit[] = [];
-  const impl = (async (_url: string | URL | Request, init?: RequestInit) => {
+  const urls: string[] = [];
+  const impl = (async (url: string | URL | Request, init?: RequestInit) => {
+    urls.push(String(url));
     calls.push(init ?? {});
     const next = responses[calls.length - 1];
     if (!next) throw new Error("llamada de más");
     return next();
   }) as typeof fetch;
-  return { impl, calls };
+  return { impl, calls, urls };
 }
 
 const sleeps: number[] = [];
@@ -64,6 +66,7 @@ const noSleep = async (ms: number) => {
 beforeEach(() => {
   process.env.TYPESAFE_API_KEY = "test-key";
   process.env.JEV_MODEL = "jev-1.13.0";
+  delete process.env.JEV_API_URL;
   sleeps.length = 0;
   mock.method(console, "warn", () => {});
   mock.method(console, "error", () => {});
@@ -113,7 +116,7 @@ describe("callJev: respuestas que no encajan pasan a null (NO SABIDO)", () => {
       assert.equal(result.answers[key], null);
     });
   }
-  
+
   it("acepta probabilidades redondeadas a 2 decimales que no suman exactamente 1", async () => {
     const answers = {
       ...VALID_ANSWERS,
