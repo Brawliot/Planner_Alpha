@@ -36,15 +36,15 @@ export default function RegistroPage() {
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           Nombre
-          <input name="name" required maxLength={100} required autoComplete="name" className="rounded border p-2" />
+          <input name="name" required maxLength={100} autoComplete="name" className="rounded border p-2" />
         </label>
         <label className="flex flex-col gap-1">
           Email
-          <input name="email" type="email" required maxLength={254} required autoComplete="email" className="rounded border p-2" />
+          <input name="email" type="email" required maxLength={254} autoComplete="email" className="rounded border p-2" />
         </label>
         <label className="flex flex-col gap-1">
           Contraseña
-          <input name="password" type="password" required minLength={10} required maxLength={128} autoComplete="new-password" className="rounded border p-2" />
+          <input name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" className="rounded border p-2" />
         </label>
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
