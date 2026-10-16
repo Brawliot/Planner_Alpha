@@ -141,6 +141,25 @@ async function main() {
     console.table(failed.map((r) => ({ id: r.id, lang: r.lang, expected: r.expected, got: r.choice, confidence: r.confidence })));
   }
 
+    // Acierto por pregunta: el umbral global no protege una pregunta que falla con confianza alta.
+  console.log("\nPor pregunta:");
+  const questionKeys = [...new Set(firstChoice.map((r) => r.question))];
+  console.table(
+    questionKeys.map((question) => {
+      const rows = firstChoice.filter((r) => r.question === question);
+      const right = rows.filter((r) => r.choice === r.expected);
+      const wrong = rows.filter((r) => r.choice !== r.expected);
+      return {
+        question,
+        n: rows.length,
+        accuracy: pct(right.length / rows.length),
+        "min conf. acierto": right.length ? Math.min(...right.map((r) => r.confidence ?? 0)).toFixed(2) : "—",
+        "max conf. fallo": wrong.length ? Math.max(...wrong.map((r) => r.confidence ?? 0)).toFixed(2) : "—",
+      };
+    }),
+  );
+  console.log('Si "max conf. fallo" es >= 0,85 en alguna pregunta, el umbral global no la protege: hay que revisarla.');
+
   const groups = new Map<string, ChoiceRun[]>();
   for (const r of choiceRuns) {
     const key = `${r.id}:${r.lang}`;

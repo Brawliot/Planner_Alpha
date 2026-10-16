@@ -21,6 +21,14 @@ describe("casos de calibración", () => {
     }
   });
 
+    it("cada pregunta del catálogo tiene al menos 3 casos", () => {
+    for (const key of Object.keys(CHOICE_QUESTIONS)) {
+      const count = CHOICE_CASES.filter((c) => c.question === key && c.lang === "en").length;
+      assert.ok(count >= 3, `${key}: solo ${count} casos`);
+    }
+  });
+
+
   it("hay casos suficientes de cada etiqueta de plausibilidad", () => {
     const count = (label: string) => NOUL_CASES.filter((c) => c.label === label).length;
     assert.ok(count("plausible") >= 10);
