@@ -7,7 +7,9 @@ import {
   boolean,
   integer,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
+import type { Fact } from "../lib/report/facts";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -88,10 +90,31 @@ export const rateLimit = pgTable("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
-export const userRelations = relations(user, ({ many }) => ({
-  sessions: many(session),
-  accounts: many(account),
-}));
+/** Estados del informe: new → questions → review → approved. */
+export const REPORT_STATUSES = ["new", "questions", "review", "approved"] as const;
+
+export const report = pgTable(
+  "report",
+  {
+    // UUID aleatorio: no se puede adivinar ni recorrer. La autorización real es userId.
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    idea: text("idea").notNull(),
+    status: text("status", { enum: REPORT_STATUSES }).notNull().default("new"),
+    facts: jsonb("facts").$type<Fact[]>().notNull().default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("report_userId_idx").on(table.userId)],
+);
+
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {

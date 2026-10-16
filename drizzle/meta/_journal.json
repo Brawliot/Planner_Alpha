@@ -15,6 +15,13 @@
       "when": 1792148224962,
       "tag": "0001_naive_the_anarchist",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792168391919,
+      "tag": "0002_report",
+      "breakpoints": true
     }
   ]
 }

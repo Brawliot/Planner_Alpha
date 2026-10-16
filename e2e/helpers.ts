@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
-import type { APIRequestContext } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 
 const env = config({ path: ".env.test", quiet: true }).parsed ?? {};
 if (!env.DATABASE_URL) {
@@ -31,4 +31,13 @@ export async function createUser(request: APIRequestContext, email: string, name
   if (!res.ok()) {
     throw new Error(`No se pudo crear el usuario de prueba: ${res.status()}`);
   }
+}
+
+
+export async function login(page: Page, email: string, password = PASSWORD) {
+  await page.goto("/login");
+  await page.locator("section:not([inert])").getByLabel("Email").fill(email);
+  await page.locator("section:not([inert])").getByLabel("Contraseña").fill(password);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.waitForURL(`${BASE_URL}/`);
 }

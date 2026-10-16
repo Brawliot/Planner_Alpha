@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { haveIBeenPwned } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -49,5 +50,7 @@ export const auth = betterAuth({
       customPasswordCompromisedMessage:
         "Esta contraseña ha aparecido en filtraciones de datos. Elige otra.",
     }),
+    // Para que las Server Actions puedan escribir las cookies de sesión. Debe ir el último.
+    nextCookies(),
   ],
 });

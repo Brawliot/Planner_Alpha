@@ -214,4 +214,30 @@ describe("callJev: configuración", () => {
     await assert.rejects(callJev("idea", QUESTIONS, { fetch: impl, sleep: noSleep }), { code: "config" });
     assert.equal(calls.length, 0);
   });
+
+  
+  describe("callJev: JEV_API_URL", () => {
+    it("sin JEV_API_URL usa la API oficial", async () => {
+      const { impl, urls } = fakeFetch(() => jsonResponse(okBody()));
+      await callJev("idea", QUESTIONS, { fetch: impl, sleep: noSleep });
+      assert.equal(urls[0], "https://api.typesafe.ai/v1/systemone");
+    });
+
+    it("acepta un Jev falso en localhost", async () => {
+      process.env.JEV_API_URL = "http://127.0.0.1:3102/v1/systemone";
+      const { impl, urls } = fakeFetch(() => jsonResponse(okBody()));
+      await callJev("idea", QUESTIONS, { fetch: impl, sleep: noSleep });
+      assert.equal(urls[0], "http://127.0.0.1:3102/v1/systemone");
+    });
+
+    for (const bad of ["https://otro-servidor.example.com/v1/systemone", "http://192.168.1.10/v1/systemone", "no es una url"]) {
+      it(`rechaza JEV_API_URL="${bad}" sin enviar la clave`, async () => {
+        process.env.JEV_API_URL = bad;
+        const { impl, calls } = fakeFetch(() => jsonResponse(okBody()));
+        await assert.rejects(callJev("idea", QUESTIONS, { fetch: impl, sleep: noSleep }), { code: "config" });
+        assert.equal(calls.length, 0);
+      });
+    }
+  });
+
 });

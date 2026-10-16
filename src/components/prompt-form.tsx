@@ -1,42 +1,34 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useActionState, useState } from "react";
+import { createReport, type CreateReportState } from "@/app/actions/report";
+import { IDEA_MAX_LENGTH } from "@/lib/report/idea";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
+const initialState: CreateReportState = { error: null };
+
 export function PromptForm() {
   const [text, setText] = useState("");
-  const [sent, setSent] = useState<string | null>(null);
-
-  const trimmed = text.trim();
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const value = text.trim();
-    if (!value) return;
-
-    // TODO: conectar con Server Action (validar en servidor, requireUser)
-    setSent(value);
-    setText("");
-  }
+  const [state, formAction, pending] = useActionState(createReport, initialState);
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+    <form action={formAction} className="flex w-full flex-col gap-3">
       <Field
         label="Mensaje"
-        name="mensaje"
+        name="idea"
         value={text}
         onChange={(e) => setText(e.target.value)}
         required
-        maxLength={2000}
+        maxLength={IDEA_MAX_LENGTH}
         autoComplete="off"
         className="w-full"
       />
-      <Button type="submit" variant="primary" disabled={!trimmed} className="self-end">
-        Enviar
+      <Button type="submit" variant="primary" disabled={!text.trim() || pending} className="self-end">
+        {pending ? "Enviando…" : "Enviar"}
       </Button>
-      <p aria-live="polite" className="break-words text-sm">
-        {sent !== null && <>Último envío: {sent}</>}
+      <p aria-live="polite" className="text-sm text-danger">
+        {state.error}
       </p>
     </form>
   );
