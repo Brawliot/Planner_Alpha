@@ -11,8 +11,16 @@ export type Source =
   | { origin: "user"; quote: string }
   /** Jev lo interpretó. from indica si interpretó texto del usuario o datos inferidos. */
   | { origin: "jev"; model: string; confidence: number | null; from: "user" | "inferred" }
-  /** GPT lo infirió; assumptions son los supuestos de los que depende. */
-  | { origin: "gpt"; model: string; assumptions: string[] };
+  /**
+   * GPT lo infirió; assumptions son los supuestos de los que depende.
+   * plausibility es la validación de Jev (noul); sin ella el dato no se da por estimado.
+   */
+  | {
+      origin: "gpt";
+      model: string;
+      assumptions: string[];
+      plausibility?: { noul: number; model: string } | null;
+    };
 
 export interface Fact<T = unknown> {
   key: string;
