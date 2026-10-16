@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
-export function RegisterForm({ onSwitch }: { onSwitch?: () => void }) {
+export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,20 +50,16 @@ export function RegisterForm({ onSwitch }: { onSwitch?: () => void }) {
           <input name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" className="rounded border p-2" />
         </label>
 
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <button type="submit" disabled={loading} className="rounded bg-foreground p-2 text-background disabled:opacity-50">
+        <button type="submit" disabled={loading} className="rounded bg-primary p-2 text-primary-foreground disabled:opacity-50">
           {loading ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>
 
       <p className="text-sm">
         ¿Ya tienes cuenta?{" "}
-        {onSwitch ? (
-          <button type="button" onClick={onSwitch} className="underline">Inicia sesión</button>
-        ) : (
-          <a href="/login" className="underline">Inicia sesión</a>
-        )}
+        <button type="button" onClick={onSwitch} className="underline">Inicia sesión</button>
       </p>
     </div>
   );

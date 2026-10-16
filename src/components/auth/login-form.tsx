@@ -47,20 +47,16 @@ export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
           <input name="password" type="password" required maxLength={128} autoComplete="current-password" className="rounded border p-2" />
         </label>
 
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <button type="submit" disabled={loading} className="rounded bg-foreground p-2 text-background disabled:opacity-50">
+        <button type="submit" disabled={loading} className="rounded bg-primary p-2 text-primary-foreground disabled:opacity-50">
           {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
 
       <p className="text-sm">
         ¿No tienes cuenta?{" "}
-        {onSwitch ? (
-          <button type="button" onClick={onSwitch} className="underline">Regístrate</button>
-        ) : (
-          <a href="/registro" className="underline">Regístrate</a>
-        )}
+        <button type="button" onClick={onSwitch} className="underline">Regístrate</button>
       </p>
     </div>
   );
