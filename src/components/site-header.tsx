@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { getUser } from "@/lib/session";
+import { buttonStyles } from "@/components/ui/button";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 export function SiteHeader() {
@@ -25,17 +26,30 @@ async function HeaderUser() {
     user = await getUser();
   } catch (err) {
     unstable_rethrow(err);
-    // La cabecera no es crítica: si la BD falla, la página sigue funcionando.
+    // La cabecera no es crítica: si la BD falla, la página sigue siendo usable.
     console.error(err);
-    return null;
+    return <AuthLinks />;
   }
 
-  if (!user) return null;
+  if (!user) return <AuthLinks />;
 
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-muted-foreground">{user.name}</span>
       <LogoutButton />
+    </div>
+  );
+}
+
+function AuthLinks() {
+  return (
+    <div className="flex items-center gap-2">
+      <Link href="/login" className={buttonStyles("secondary")}>
+        Iniciar sesión
+      </Link>
+      <Link href="/registro" className={buttonStyles("primary")}>
+        Crear cuenta
+      </Link>
     </div>
   );
 }
