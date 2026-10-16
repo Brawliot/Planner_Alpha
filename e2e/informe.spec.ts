@@ -169,12 +169,23 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     await login(page, email);
   });
 
-  test("si Jev lo sabe todo, no hace falta GPT", async ({ page }) => {
+  test("si Jev sabe todas las dimensiones, GPT solo estima las cifras", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
     const report = await getReport(reportIdFrom(page.url()));
     expect(report.status).toBe("review");
-    expect(report.facts.some((f) => f.source.origin === "gpt")).toBe(false);
+    const fromGpt = report.facts.filter((f) => f.source.origin === "gpt").map((f) => f.key).sort();
+    expect(fromGpt).toEqual(["monthly_fixed_costs_eur", "startup_cost_eur"]);
+  });
+
+  test("las cifras se guardan como rango validado y sin presupuesto inventado", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    const report = await getReport(reportIdFrom(page.url()));
+    const startup = report.facts.find((f) => f.key === "startup_cost_eur");
+    expect(startup?.value).toEqual({ min: 1, max: 1 });
+    expect(startup?.source.plausibility).toEqual({ noul: 0.8, model: "jev-1.13.0" });
+    // El GPT falso cita un texto que no está en la idea: el presupuesto no se acepta.
+    expect(report.facts.some((f) => f.key === "budget_eur")).toBe(false);
   });
 
   test("lo que Jev no sabe lo infiere GPT y Jev puntúa su plausibilidad", async ({ page }) => {

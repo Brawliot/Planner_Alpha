@@ -113,7 +113,7 @@ export interface AreaView {
 }
 
 /** Solo cuentan los datos sabidos o estimados; lo no sabido o descartado no se usa. */
-function usable(facts: readonly Fact[], key: string): AreaInput | null {
+export function usable(facts: readonly Fact[], key: string): AreaInput | null {
   const fact = facts.find((f) => f.key === key);
   if (!fact) return null;
   const certainty = certaintyOf(fact);

@@ -387,6 +387,16 @@ export const NOUL_CASES: NoulCase[] = [
   ...noulPair("saas-customers", "borderline", "paying_customers_year_1", { min: 500, max: 1000 }, SAAS_EN, SAAS_ES),
   ...noulPair("dental-breakeven", "borderline", "months_to_break_even", { min: 12, max: 18 }, DENTAL_EN, DENTAL_ES),
   ...noulPair("bakery-revenue", "borderline", "monthly_revenue_eur", { min: 15000, max: 25000 }, BAKERY_EN, BAKERY_ES),
+
+  // Cifras del paso 8b y opciones del catálogo inferidas por GPT (paso 7).
+  ...noulPair("bar-startup", "plausible", "startup_cost_eur", { min: 60000, max: 150000 }, BAR_EN, BAR_ES),
+  ...noulPair("bar-startup-absurd", "implausible", "startup_cost_eur", { min: 100, max: 500 }, BAR_EN, BAR_ES),
+  ...noulPair("saas-fixed", "plausible", "monthly_fixed_costs_eur", { min: 200, max: 2000 }, SAAS_EN, SAAS_ES),
+  ...noulPair("saas-fixed-absurd", "implausible", "monthly_fixed_costs_eur", { min: 500000, max: 900000 }, SAAS_EN, SAAS_ES),
+  ...noulPair("bar-competition", "plausible", "competition", "Crowded market", BAR_EN, BAR_ES),
+  ...noulPair("bar-regulation-absurd", "implausible", "regulatory_load", "None", BAR_EN, BAR_ES),
+  ...noulPair("dental-team", "plausible", "team_requirement", "Specialized profiles required", DENTAL_EN, DENTAL_ES),
+  ...noulPair("saas-channel-absurd", "implausible", "acquisition_channel", "Foot traffic or location", SAAS_EN, SAAS_ES),
 ];
 
 // La misma pregunta de plausibilidad que usa la app.
