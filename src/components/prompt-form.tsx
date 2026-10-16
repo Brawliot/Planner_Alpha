@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createReport, type CreateReportState } from "@/app/actions/report";
+import { createReport, type FormState } from "@/app/actions/report";
 import { IDEA_MAX_LENGTH } from "@/lib/report/idea";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
-const initialState: CreateReportState = { error: null };
+const initialState: FormState = { error: null };
 
 export function PromptForm() {
   const [text, setText] = useState("");

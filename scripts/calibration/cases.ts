@@ -4,64 +4,12 @@
  * Cada caso va en inglés y en español para medir si el idioma cambia el acierto.
  */
 import type { JevQuestion } from "../../src/lib/jev.ts";
+import { BASE_QUESTIONS } from "../../src/lib/report/questions.ts";
 
 export type Lang = "en" | "es";
 
-type ChoiceQuestion = Extract<JevQuestion, { type: "choice" }>;
-
-const ONLY_IF_SUPPORTED =
-  'Choose an option only if user_text supports it; otherwise choose "Not specified".';
-
-export const CHOICE_QUESTIONS = {
-  sector: {
-    type: "choice",
-    instructions: "What is the business sector?",
-    criteria: {
-      "Technology/SaaS": "Software, apps, digital platforms or technology products",
-      "Hospitality/Food service": "Restaurants, bars, cafes, hotels or catering",
-      "Retail/Commerce": "Physical or online stores selling products to consumers",
-      Manufacturing: "Industrial manufacturing or production of goods",
-      "Professional Services": "Specialized services such as lawyers, architects or accounting firms",
-      "Finance/Banking/Insurance": "Financial services, banking, investment or insurance",
-      "Health/Medicine": "Clinics, healthcare services, pharmacy or medical wellness",
-      "Education/Training": "Academies, courses, schools or training",
-      "Logistics/Transport": "Transport of goods or people, warehousing or delivery",
-      "Construction/Real Estate": "Building work, renovations, development, or buying, selling and renting property",
-      "Marketing/Advertising/Agencies": "Marketing, advertising, communication or design agencies",
-      "Media/Content/Entertainment": "Media outlets, content creation, leisure or events",
-      "Agriculture/Livestock": "Crop growing, livestock or primary agri-food production",
-      "Energy/Utilities": "Generation or supply of energy, water or other utilities",
-      "Consulting/Advisory": "Strategic, business or technical advice to other companies",
-      Other: "Does not fit any of the categories above",
-    },
-  },
-  geographic_scope: {
-    type: "choice",
-    instructions: `What is the geographic scope of the business? ${ONLY_IF_SUPPORTED}`,
-    criteria: {
-      "Hyper-local": "A very specific neighborhood or area within a city",
-      Local: "A city or municipality",
-      Regional: "A province or autonomous community",
-      National: "A whole country",
-      International: "Several countries",
-      Online: "Purely digital business with no physical geographic scope",
-      "Not specified": "user_text does not say",
-    },
-  },
-  validation_stage: {
-    type: "choice",
-    instructions: `How validated is the business? ${ONLY_IF_SUPPORTED}`,
-    criteria: {
-      "Idea only": "Concept without external validation",
-      "Problem validated": "Confirmed that the problem exists",
-      Prototype: "Working prototype or MVP developed",
-      "MVP with customers": "Minimum viable product with early customers",
-      "Generating revenue": "Currently making money from customers",
-      Growing: "Revenue and user base are growing",
-      "Not specified": "user_text does not say",
-    },
-  },
-} satisfies Record<string, ChoiceQuestion>;
+// Las mismas preguntas que usa la app: los umbrales solo valen para este texto exacto.
+export const CHOICE_QUESTIONS = BASE_QUESTIONS;
 
 export type ChoiceQuestionKey = keyof typeof CHOICE_QUESTIONS;
 

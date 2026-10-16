@@ -67,4 +67,56 @@ test.describe("crear informe", () => {
     await page.goto("/informe/no-existe");
     await expect(page.getByRole("heading", { name: "Página no encontrada" })).toBeVisible();
   });
+
+  
+async function submitIdea(page: import("@playwright/test").Page, idea: string) {
+  await page.getByLabel("Mensaje").fill(idea);
+  await page.getByRole("button", { name: "Enviar" }).click();
+  await page.waitForURL(/\/informe\//);
+}
+
+test.describe("clasificación y preguntas", () => {
+  test.beforeEach(async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+  });
+
+  test("si Jev lo sabe todo, no hay preguntas ni se muestra la clasificación", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    await expect(page.getByRole("group")).toHaveCount(0);
+    // El Jev falso responde la primera opción del sector: no debe aparecer en pantalla.
+    await expect(page.getByText("Technology/SaaS")).toHaveCount(0);
+  });
+
+  test("lo no especificado se pregunta, y al responder pasa a preparar el informe", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:unknown]");
+
+    await expect(page.getByText("2 quick questions")).toBeVisible();
+    await expect(page.getByRole("group", { name: "What sector is your business in?" })).toHaveCount(0);
+
+    await page.getByRole("group", { name: "Where will your business operate?" }).getByLabel("Local", { exact: true }).check();
+    await page.getByRole("group", { name: "How far along is your idea?" }).getByLabel("Idea only").check();
+    await page.getByRole("button", { name: "Continue" }).click();
+
+    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+  });
+
+  test("con confianza baja se pregunta todo", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:unsure]");
+    await expect(page.getByText("3 quick questions")).toBeVisible();
+    await expect(page.getByRole("group")).toHaveCount(3);
+    await expect(page.getByLabel("Not specified")).toHaveCount(0);
+  });
+
+  test("si Jev falla, la idea se guarda y se puede reintentar", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:down]");
+    await expect(page.getByText("No hemos podido analizar tu idea.")).toBeVisible();
+    await expect(page.getByText("Algo [jev:down]")).toBeVisible();
+
+    await page.getByRole("button", { name: "Reintentar" }).click();
+    await expect(page.getByText("Seguimos sin poder analizar tu idea.")).toBeVisible();
+  });
+});
 });

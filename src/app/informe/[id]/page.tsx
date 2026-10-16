@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { getOwnReport } from "@/lib/report/repository";
+import { answerOptions, pendingQuestions, USER_PROMPTS } from "@/lib/report/questions";
+import { answerQuestions, retryClassification } from "@/app/actions/report";
 import { PageContainer } from "@/components/ui/page-container";
+import { QuestionsForm } from "@/components/report/questions-form";
+import { RetryForm } from "@/components/report/retry-form";
 
 export const metadata: Metadata = { title: "Tu informe" };
 
@@ -30,7 +34,34 @@ async function ReportContent({ id }: { id: string }) {
     <>
       <h1 className="text-2xl font-semibold">Tu idea</h1>
       <p className="whitespace-pre-wrap break-words">{report.idea}</p>
-      <p className="text-sm text-muted-foreground">Estamos preparando unas preguntas para entenderla mejor.</p>
+      <ReportStep report={report} />
     </>
   );
+}
+
+type Report = NonNullable<Awaited<ReturnType<typeof getOwnReport>>>;
+
+// Hasta que el informe esté listo, el usuario solo ve preguntas: nunca la clasificación.
+function ReportStep({ report }: { report: Report }) {
+  switch (report.status) {
+    case "new":
+      return (
+        <>
+          <p className="text-sm">No hemos podido analizar tu idea.</p>
+          <RetryForm action={retryClassification.bind(null, report.id)} />
+        </>
+      );
+    case "questions": {
+      // Al navegador solo llegan las preguntas pendientes, no lo que ya se sabe.
+      const questions = pendingQuestions(report.facts).map((key) => ({
+        key,
+        prompt: USER_PROMPTS[key],
+        options: answerOptions(key),
+      }));
+      return <QuestionsForm action={answerQuestions.bind(null, report.id)} questions={questions} />;
+    }
+    case "review":
+    case "approved":
+      return <p className="text-sm text-muted-foreground">Estamos preparando tu informe.</p>;
+  }
 }
