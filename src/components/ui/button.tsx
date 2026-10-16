@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { cn } from "@/lib/cn";
 
 const variants = {
   primary:
@@ -12,13 +13,11 @@ export type ButtonVariant = keyof typeof variants;
 
 /** Clases de botón, también para <Link> o <a> con aspecto de botón. */
 export function buttonStyles(variant: ButtonVariant = "primary", className?: string) {
-  return [
+  return cn(
     "inline-flex items-center justify-center transition-opacity disabled:pointer-events-none disabled:opacity-50",
     variants[variant],
     className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
 }
 
 type ButtonProps = ComponentProps<"button"> & { variant?: ButtonVariant };

@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { cn } from "@/lib/cn";
 
 type FieldProps = ComponentProps<"input"> & { label: string };
 
@@ -7,12 +8,10 @@ export function Field({ label, className, ...props }: FieldProps) {
     <label className="flex flex-col gap-1 text-sm font-medium">
       {label}
       <input
-        className={[
+        className={cn(
           "rounded-md border border-input bg-background px-3 py-2 text-base font-normal",
           className,
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        )}
         {...props}
       />
     </label>

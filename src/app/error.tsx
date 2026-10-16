@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/ui/page-container";
 
 export default function Error({ error, retry }: { error: unknown; retry: () => void }) {
   useEffect(() => {
@@ -9,12 +10,12 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
   }, [error]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
+    <PageContainer size="sm" centered>
       <h1 className="text-2xl font-semibold">Algo ha fallado</h1>
       <p className="text-sm text-muted-foreground">
         No hemos podido cargar esta página. Puede ser un problema momentáneo.
       </p>
       <Button onClick={() => retry()}>Reintentar</Button>
-    </main>
+    </PageContainer>
   );
 }

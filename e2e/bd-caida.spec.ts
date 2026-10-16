@@ -10,6 +10,7 @@ test.afterAll(async () => {
 test("con la base de datos caída, /login se sigue abriendo", async ({ page }) => {
   await page.goto(`${DOWN_URL}/login`);
   await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Mando" })).toBeVisible();
 });
 
 test("con la base de datos caída, el login muestra un error de conexión", async ({ page }) => {
