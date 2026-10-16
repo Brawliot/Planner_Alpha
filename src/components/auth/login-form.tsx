@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 
 export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
   const router = useRouter();
@@ -38,26 +40,21 @@ export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          Email
-          <input name="email" type="email" required maxLength={254} autoComplete="email" className="rounded border p-2" />
-        </label>
-        <label className="flex flex-col gap-1">
-          Contraseña
-          <input name="password" type="password" required maxLength={128} autoComplete="current-password" className="rounded border p-2" />
-        </label>
+        <Field label="Email" name="email" type="email" required maxLength={254} autoComplete="email" />
+        <Field label="Contraseña" name="password" type="password" required maxLength={128} autoComplete="current-password" />
 
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <button type="submit" disabled={loading} className="rounded bg-primary p-2 text-primary-foreground disabled:opacity-50">
+        <Button type="submit" disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
-        </button>
+        </Button>
       </form>
 
       <p className="text-sm">
         ¿No tienes cuenta?{" "}
-        <button type="button" onClick={onSwitch} className="underline">Regístrate</button>
+        <Button variant="link" onClick={onSwitch}>Regístrate</Button>
       </p>
     </div>
   );
+
 }

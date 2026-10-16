@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -13,8 +14,8 @@ export function LogoutButton() {
   }
 
   return (
-    <button onClick={onClick} className="rounded border p-2">
+    <Button variant="secondary" onClick={onClick}>
       Cerrar sesión
-    </button>
+    </Button>
   );
 }
