@@ -9,17 +9,25 @@ type Question = { key: string; prompt: string; options: string[] };
 
 type QuestionsFormProps = {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
+  topic: string;
+  title: string;
+  index: number;
+  total: number;
   questions: Question[];
 };
 
-export function QuestionsForm({ action, questions }: QuestionsFormProps) {
+export function QuestionsForm({ action, topic, title, index, total, questions }: QuestionsFormProps) {
   const [state, formAction, pending] = useActionState(action, { error: null });
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
-      <p className="text-sm text-muted-foreground">
-        {questions.length === 1 ? "1 quick question" : `${questions.length} quick questions`}
-      </p>
+      <input type="hidden" name="topic" value={topic} />
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">
+          Step {index} of {total}
+        </p>
+      </div>
       {questions.map((q) => (
         <ChoiceGroup key={q.key} name={q.key} legend={q.prompt} options={q.options} required />
       ))}

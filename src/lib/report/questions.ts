@@ -401,35 +401,64 @@ export const CATALOG_JEV_QUESTIONS = Object.fromEntries(
   QUESTION_KEYS.map((key) => [key, CATALOG[key].jev]),
 ) as { [K in QuestionKey]: (typeof CATALOG)[K]["jev"] };
 
-// ---- Lo que usa la app hoy: solo las 3 preguntas calibradas. Las demás se activan en el paso 5e.
+// ---- Preguntas al usuario: un tema por pantalla, solo las que Jev no sabe.
 
-export const BASE_QUESTIONS = {
-  sector: CATALOG.sector.jev,
-  geographic_scope: CATALOG.geographic_scope.jev,
-  validation_stage: CATALOG.validation_stage.jev,
-};
+/** Temas que se le preguntan al usuario, en orden. Cada uno tiene 3 preguntas "ask". */
+export const ASK_TOPICS = ["business", "market", "founder", "resources"] as const satisfies readonly Topic[];
+export type AskTopic = (typeof ASK_TOPICS)[number];
 
-export type BaseQuestionKey = keyof typeof BASE_QUESTIONS;
-export const BASE_QUESTION_KEYS = Object.keys(BASE_QUESTIONS) as BaseQuestionKey[];
+const ASK_KEYS = QUESTION_KEYS.filter((key) => CATALOG[key].mode === "ask");
 
-/** Cómo se le pregunta al usuario lo que Jev no ha podido saber con seguridad. */
-export const USER_PROMPTS: Record<BaseQuestionKey, string> = {
-  sector: CATALOG.sector.prompt,
-  geographic_scope: CATALOG.geographic_scope.prompt,
-  validation_stage: CATALOG.validation_stage.prompt,
-};
-
-/** Opciones para el usuario: todas menos "Not specified" (si responde, ya se sabe). */
-export function answerOptions(key: BaseQuestionKey) {
-  return Object.keys(BASE_QUESTIONS[key].criteria).filter((option) => option !== NOT_SPECIFIED);
+function askKeysOf(topic: Topic) {
+  return ASK_KEYS.filter((key) => CATALOG[key].topic === topic);
 }
 
-/** Preguntas base cuyo dato no es SABIDO: se le preguntan al usuario. */
-export function pendingQuestions(facts: readonly Fact[]): BaseQuestionKey[] {
-  return BASE_QUESTION_KEYS.filter((key) => {
+/** Opciones para el usuario: todas menos "Not specified" (si responde, ya se sabe). */
+export function answerOptions(key: QuestionKey) {
+  return Object.keys(CATALOG[key].jev.criteria).filter((option) => option !== NOT_SPECIFIED);
+}
+
+export function promptFor(key: QuestionKey) {
+  return CATALOG[key].prompt ?? key;
+}
+
+/** Preguntas "ask" cuyo dato no es SABIDO. Las "infer" que no se sepan quedan para GPT. */
+export function pendingQuestions(facts: readonly Fact[]): QuestionKey[] {
+  return ASK_KEYS.filter((key) => {
     const fact = facts.find((f) => f.key === key);
     return !fact || certaintyOf(fact) !== "known";
   });
+}
+
+export interface QuestionStep {
+  topic: AskTopic;
+  title: string;
+  /** Solo las preguntas pendientes de ese tema. */
+  keys: QuestionKey[];
+  /** Posición estable: cuenta los temas ya respondidos por el usuario y los pendientes. */
+  index: number;
+  total: number;
+}
+
+/** Tema que toca responder ahora, o null si no queda nada por preguntar. */
+export function currentStep(facts: readonly Fact[]): QuestionStep | null {
+  const pending = pendingQuestions(facts);
+  const answeredByUser = (key: QuestionKey) => facts.some((f) => f.key === key && f.source.origin === "user");
+
+  // Temas que el usuario ha tenido o tiene que responder; los que Jev sabía enteros no cuentan.
+  const involved = ASK_TOPICS.filter((topic) =>
+    askKeysOf(topic).some((key) => pending.includes(key) || answeredByUser(key)),
+  );
+  const topic = involved.find((t) => askKeysOf(t).some((key) => pending.includes(key)));
+  if (!topic) return null;
+
+  return {
+    topic,
+    title: TOPIC_TITLES[topic],
+    keys: pending.filter((key) => CATALOG[key].topic === topic),
+    index: involved.indexOf(topic) + 1,
+    total: involved.length,
+  };
 }
 
 export function nextStatus(facts: readonly Fact[]) {
@@ -438,13 +467,10 @@ export function nextStatus(facts: readonly Fact[]) {
 
 export type AnswersResult = { ok: true; facts: Fact[] } | { ok: false; error: string };
 
-/** Valida en servidor las respuestas a las preguntas pendientes y las convierte en datos del usuario. */
-export function parseAnswers(
-  pending: readonly BaseQuestionKey[],
-  get: (name: string) => unknown,
-): AnswersResult {
+/** Valida en servidor las respuestas a las preguntas del paso y las convierte en datos del usuario. */
+export function parseAnswers(keys: readonly QuestionKey[], get: (name: string) => unknown): AnswersResult {
   const facts: Fact[] = [];
-  for (const key of pending) {
+  for (const key of keys) {
     const value = get(key);
     if (typeof value !== "string" || !answerOptions(key).includes(value)) {
       return { ok: false, error: "Answer all the questions." };

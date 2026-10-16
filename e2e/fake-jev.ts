@@ -2,6 +2,7 @@
  * Jev falso para los tests E2E: imita POST /v1/systemone con respuestas deterministas.
  * Escenarios por marcas en el texto del usuario (van dentro del state):
  *   [jev:unknown]  las preguntas choice responden "Not specified" si es una opción
+ *   [jev:unknown=a,b]  solo las preguntas a y b responden "Not specified"
  *   [jev:unsure]   confianza baja (0,40)
  *   [jev:down]     error 500 en todas las llamadas
  */
@@ -11,12 +12,13 @@ import type { JevQuestion } from "../src/lib/jev.ts";
 const PORT = 3102;
 const API_KEY = "e2e-fake-key";
 
-function answerFor(question: JevQuestion, text: string) {
+function answerFor(key: string, question: JevQuestion, text: string) {
   switch (question.type) {
     case "choice": {
       const options = Object.keys(question.criteria);
-      const choice =
-        text.includes("[jev:unknown]") && options.includes("Not specified") ? "Not specified" : options[0];
+      const forced = /\[jev:unknown=([\w,]+)\]/.exec(text)?.[1].split(",") ?? [];
+      const unknown = text.includes("[jev:unknown]") || forced.includes(key);
+      const choice = unknown && options.includes("Not specified") ? "Not specified" : options[0];
       const confidence = text.includes("[jev:unsure]") ? 0.4 : 0.95;
       const top = text.includes("[jev:unsure]") ? 0.5 : 0.95;
       const rest = options.length > 1 ? (1 - top) / (options.length - 1) : 0;
@@ -58,7 +60,7 @@ createServer(async (req, res) => {
   if (text.includes("[jev:down]")) return send(res, 500);
 
   const answers = Object.fromEntries(
-    Object.entries(body.questions).map(([key, question]) => [key, answerFor(question, text)]),
+    Object.entries(body.questions).map(([key, question]) => [key, answerFor(key, question, text)]),
   );
   send(res, 200, { model: body.model, answers, usage: { input_tokens: raw.length, output_tokens: 0 } });
 }).listen(PORT, "127.0.0.1", () => {

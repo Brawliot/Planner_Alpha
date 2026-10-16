@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { getOwnReport } from "@/lib/report/repository";
-import { answerOptions, pendingQuestions, USER_PROMPTS } from "@/lib/report/questions";
+import { answerOptions, currentStep, promptFor } from "@/lib/report/questions";
 import { answerQuestions, retryClassification } from "@/app/actions/report";
 import { PageContainer } from "@/components/ui/page-container";
 import { QuestionsForm } from "@/components/report/questions-form";
@@ -52,13 +52,19 @@ function ReportStep({ report }: { report: Report }) {
         </>
       );
     case "questions": {
-      // Al navegador solo llegan las preguntas pendientes, no lo que ya se sabe.
-      const questions = pendingQuestions(report.facts).map((key) => ({
-        key,
-        prompt: USER_PROMPTS[key],
-        options: answerOptions(key),
-      }));
-      return <QuestionsForm action={answerQuestions.bind(null, report.id)} questions={questions} />;
+      const step = currentStep(report.facts);
+      if (!step) return <p className="text-sm text-muted-foreground">Estamos preparando tu informe.</p>;
+      // Al navegador solo llegan las preguntas pendientes de este tema, no lo que ya se sabe.
+      return (
+        <QuestionsForm
+          action={answerQuestions.bind(null, report.id)}
+          topic={step.topic}
+          title={step.title}
+          index={step.index}
+          total={step.total}
+          questions={step.keys.map((key) => ({ key, prompt: promptFor(key), options: answerOptions(key) }))}
+        />
+      );
     }
     case "review":
     case "approved":

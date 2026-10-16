@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
 import { getOwnReport, insertReport, updateOwnReport } from "@/lib/report/repository";
-import { mergeFacts, nextStatus, parseAnswers, pendingQuestions } from "@/lib/report/questions";
+import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
 
 export type FormState = { error: string | null };
 
@@ -44,11 +44,13 @@ export async function retryClassification(id: string, _prev: FormState, _formDat
 export async function answerQuestions(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser();
   const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
-  if (!report || report.status !== "questions") {
+  // El servidor decide qué tema toca: una pestaña antigua o un formulario manipulado no cuela otro.
+  const step = report?.status === "questions" ? currentStep(report.facts) : null;
+  if (!report || !step || formData.get("topic") !== step.topic) {
     return { error: "Estas preguntas ya no están pendientes. Recarga la página." };
   }
 
-  const parsed = parseAnswers(pendingQuestions(report.facts), (name) => formData.get(name));
+  const parsed = parseAnswers(step.keys, (name) => formData.get(name));
   if (!parsed.ok) return { error: parsed.error };
 
   const facts = mergeFacts(report.facts, parsed.facts);

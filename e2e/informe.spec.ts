@@ -90,24 +90,55 @@ test.describe("clasificación y preguntas", () => {
     await expect(page.getByText("Technology/SaaS")).toHaveCount(0);
   });
 
-  test("lo no especificado se pregunta, y al responder pasa a preparar el informe", async ({ page }) => {
-    await submitIdea(page, "Algo [jev:unknown]");
+  test("solo pregunta lo que no sabe, un tema por pantalla, y salta los temas conocidos", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
 
-    await expect(page.getByText("2 quick questions")).toBeVisible();
-    await expect(page.getByRole("group", { name: "What sector is your business in?" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "You" })).toBeVisible();
+    await expect(page.getByText("Step 1 of 2")).toBeVisible();
+    await expect(page.getByRole("group")).toHaveCount(1);
+    await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
+    await page.getByRole("button", { name: "Continue" }).click();
 
-    await page.getByRole("group", { name: "Where will your business operate?" }).getByLabel("Local", { exact: true }).check();
-    await page.getByRole("group", { name: "How far along is your idea?" }).getByLabel("Idea only").check();
+    await expect(page.getByRole("heading", { name: "Resources and timing" })).toBeVisible();
+    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+    await expect(page.getByRole("group")).toHaveCount(1);
+    await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("€20k-€50k").check();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
   });
 
-  test("con confianza baja se pregunta todo", async ({ page }) => {
+  test("con confianza baja pregunta los 4 temas, de 3 en 3, sin 'Not specified'", async ({ page }) => {
     await submitIdea(page, "Algo [jev:unsure]");
-    await expect(page.getByText("3 quick questions")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your business" })).toBeVisible();
+    await expect(page.getByText("Step 1 of 4")).toBeVisible();
     await expect(page.getByRole("group")).toHaveCount(3);
     await expect(page.getByLabel("Not specified")).toHaveCount(0);
+  });
+
+  test("el progreso se guarda: al recargar sigue en el tema siguiente", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
+    await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Resources and timing" })).toBeVisible();
+    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+  });
+
+  test("una pestaña antigua no puede responder un tema que ya pasó", async ({ page, context }) => {
+    await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
+    const oldTab = await context.newPage();
+    await oldTab.goto(page.url());
+
+    await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+
+    await oldTab.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Under 10 h/week").check();
+    await oldTab.getByRole("button", { name: "Continue" }).click();
+    await expect(oldTab.getByText("Estas preguntas ya no están pendientes. Recarga la página.")).toBeVisible();
   });
 
   test("si Jev falla, la idea se guarda y se puede reintentar", async ({ page }) => {
@@ -118,5 +149,4 @@ test.describe("clasificación y preguntas", () => {
     await page.getByRole("button", { name: "Reintentar" }).click();
     await expect(page.getByText("Seguimos sin poder analizar tu idea.")).toBeVisible();
   });
-});
 });
