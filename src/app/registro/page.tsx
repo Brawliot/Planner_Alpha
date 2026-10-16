@@ -1,10 +1,9 @@
-import { RegisterForm } from "@/components/auth/register-form";
+import { AuthCard } from "@/components/auth/auth-card";
 
 export default function RegistroPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Crear cuenta</h1>
-      <RegisterForm />
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <AuthCard initialSide="registro" />
     </main>
   );
 }

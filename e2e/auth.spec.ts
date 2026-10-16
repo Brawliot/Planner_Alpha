@@ -11,17 +11,17 @@ test.afterAll(async () => {
 
 async function login(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Contraseña").fill(password);
+  await page.locator("section:not([inert])").getByLabel("Email").fill(email);
+  await page.locator("section:not([inert])").getByLabel("Contraseña").fill(password);
   await page.getByRole("button", { name: "Entrar" }).click();
 }
 
 test.describe("registro", () => {
   test("crea la cuenta y entra en la app", async ({ page }) => {
     await page.goto("/registro");
-    await page.getByLabel("Nombre").fill("Ana Prueba");
-    await page.getByLabel("Email").fill(uniqueEmail());
-    await page.getByLabel("Contraseña").fill(PASSWORD);
+    await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
+    await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
+    await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
     await page.getByRole("button", { name: "Crear cuenta" }).click();
 
     await expect(page).toHaveURL(`${BASE_URL}/`);
@@ -33,9 +33,9 @@ test.describe("registro", () => {
     await createUser(request, email);
 
     await page.goto("/registro");
-    await page.getByLabel("Nombre").fill("Otra Persona");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Contraseña").fill(PASSWORD);
+    await page.locator("section:not([inert])").getByLabel("Nombre").fill("Otra Persona");
+    await page.locator("section:not([inert])").getByLabel("Email").fill(email);
+    await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
     await page.getByRole("button", { name: "Crear cuenta" }).click();
 
     await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
@@ -44,9 +44,9 @@ test.describe("registro", () => {
 
   test("rechaza contraseñas filtradas", async ({ page }) => {
     await page.goto("/registro");
-    await page.getByLabel("Nombre").fill("Ana Prueba");
-    await page.getByLabel("Email").fill(uniqueEmail());
-    await page.getByLabel("Contraseña").fill("password1234");
+    await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
+    await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
+    await page.locator("section:not([inert])").getByLabel("Contraseña").fill("password1234");
     await page.getByRole("button", { name: "Crear cuenta" }).click();
 
     await expect(page.getByRole("main").getByRole("alert")).toContainText("filtraciones");

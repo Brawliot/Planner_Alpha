@@ -1,10 +1,9 @@
-import { LoginForm } from "@/components/auth/login-form";
+import { AuthCard } from "@/components/auth/auth-card";
 
 export default function LoginPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
-      <LoginForm />
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <AuthCard initialSide="login" />
     </main>
   );
 }
