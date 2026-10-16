@@ -13,7 +13,7 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
       <p className="text-sm text-gray-500">
         No hemos podido cargar esta página. Puede ser un problema momentáneo.
       </p>
-      <button onClick={() => retry()} className="rounded bg-black p-2 text-white">
+      <button onClick={() => retry()} className="rounded bg-foreground p-2 text-background">
         Reintentar
       </button>
     </main>

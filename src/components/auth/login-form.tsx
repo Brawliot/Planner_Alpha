@@ -49,7 +49,7 @@ export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-        <button type="submit" disabled={loading} className="rounded bg-black p-2 text-white disabled:opacity-50">
+        <button type="submit" disabled={loading} className="rounded bg-foreground p-2 text-background disabled:opacity-50">
           {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>

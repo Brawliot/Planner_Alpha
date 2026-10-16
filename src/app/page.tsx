@@ -1,19 +1,30 @@
 import { Suspense } from "react";
-import { requireUser } from "@/lib/session";
+import Link from "next/link";
+import { getUser } from "@/lib/session";
 import { LogoutButton } from "./logout-button";
 
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
       <Suspense fallback={<p className="text-sm text-gray-500">Cargando...</p>}>
-        <UserPanel />
+        <HomeContent />
       </Suspense>
     </main>
   );
 }
 
-async function UserPanel() {
-  const user = await requireUser();
+async function HomeContent() {
+  const user = await getUser();
+
+  if (!user) {
+    return (
+      <>
+        <h1 className="text-2xl font-semibold">Planner</h1>
+        <Link href="/login" className="rounded bg-black p-2 text-center text-white">Iniciar sesión</Link>
+        <Link href="/registro" className="rounded border p-2 text-center">Crear cuenta</Link>
+      </>
+    );
+  }
 
   return (
     <>

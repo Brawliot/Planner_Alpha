@@ -70,10 +70,25 @@ test.describe("login y logout", () => {
     await expect(page.getByRole("heading", { name: "Hola, Luis Prueba" })).toBeVisible();
 
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("heading", { name: "Planner" })).toBeVisible();
 
     await page.goto("/");
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
+  });
+
+    test("inicia sesión desde el popup y lo cierra", async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email, "Pia Prueba");
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "Iniciar sesión" }).click();
+    const card = page.getByRole("dialog").locator("section:not([inert])");
+    await card.getByLabel("Email").fill(email);
+    await card.getByLabel("Contraseña").fill(PASSWORD);
+    await card.getByRole("button", { name: "Entrar" }).click();
+
+    await expect(page.getByRole("heading", { name: "Hola, Pia Prueba" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   test("con contraseña incorrecta muestra un error genérico", async ({ page, request }) => {
