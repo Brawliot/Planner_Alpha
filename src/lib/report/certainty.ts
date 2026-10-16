@@ -1,10 +1,12 @@
 import type { Fact } from "./facts.ts";
 
 /**
- * Umbrales medidos con scripts/calibrate-jev.ts el 2026-10-16 contra jev-1.13.0:
- * 60 casos de clasificación y 40 de plausibilidad (ES/EN), 3 ejecuciones cada uno.
- * - Clasificación: sin errores con confianza >= 0,80; el fallo más alto fue 0,76.
- * - Plausibilidad: plausibles >= 0,70, absurdas <= 0,46, dudosas entre 0,59 y 0,68.
+ * Umbrales medidos con scripts/calibrate-jev.ts el 2026-10-16 contra jev-1.13.0, con las 20
+ * preguntas del catálogo: 188 casos de clasificación y 40 de plausibilidad (ES/EN), 3 ejecuciones.
+ * - Clasificación: sin errores con confianza >= 0,80 en ninguna pregunta; el fallo más alto fue 0,77.
+ *   Los fallos fueron "Not specified" en datos implícitos: Jev duda antes que inventar.
+ * - Sin sesgo de orden (0 de 188) y mismo acierto en español e inglés.
+ * - Plausibilidad: plausibles >= 0,70, absurdas <= 0,47, dudosas entre 0,60 y 0,68.
  * Solo valen para CALIBRATED_JEV_MODEL. Si cambian el modelo o las preguntas, hay que recalibrar.
  */
 export const CALIBRATED_JEV_MODEL = "jev-1.13.0";
