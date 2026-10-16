@@ -113,6 +113,16 @@ describe("callJev: respuestas que no encajan pasan a null (NO SABIDO)", () => {
       assert.equal(result.answers[key], null);
     });
   }
+  
+  it("acepta probabilidades redondeadas a 2 decimales que no suman exactamente 1", async () => {
+    const answers = {
+      ...VALID_ANSWERS,
+      clarity: { ...VALID_ANSWERS.clarity, probabilities: { "0": 0.33, "1": 0.33, "2": 0.33 } },
+    };
+    const { impl } = fakeFetch(() => jsonResponse(okBody(answers)));
+    const result = await callJev("idea", QUESTIONS, { fetch: impl, sleep: noSleep });
+    assert.notEqual(result.answers.clarity, null);
+  });
 
   it("una respuesta mala no invalida las demás", async () => {
     const answers = { ...VALID_ANSWERS, sector: { ...VALID_ANSWERS.sector, choice: "Hostelería" } };

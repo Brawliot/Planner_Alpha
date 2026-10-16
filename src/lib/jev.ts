@@ -19,7 +19,8 @@ const MAX_RETRIES = 2;
 const MAX_RETRY_DELAY_MS = 5_000;
 // 429 límite de peticiones, 529 sobrecarga, resto errores temporales del servidor.
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504, 529]);
-const PROBABILITY_TOLERANCE = 1e-3;
+// Jev redondea cada probabilidad a 2 decimales: la suma puede desviarse hasta 0,005 por opción.
+const PROBABILITY_ROUNDING = 0.005;
 
 export type JevQuestion =
   | { type: "choice"; instructions: string; criteria: Record<string, string> }
@@ -208,22 +209,27 @@ function validateAnswer(question: JevQuestion, raw: unknown): JevAnswer | string
   if (question.type === "choice" && answer.type === "choice") {
     const options = Object.keys(question.criteria);
     if (!options.includes(answer.choice)) return "unknown_option";
-    if (!isDistribution(answer.probabilities, options)) return "bad_probabilities";
+    const problem = distributionProblem(answer.probabilities, options);
+    if (problem) return problem;
   }
 
   if (question.type === "score" && answer.type === "score") {
     const levels = question.criteria.map((_, index) => String(index));
     if (answer.score < 0 || answer.score > levels.length - 1) return "out_of_range";
-    if (!isDistribution(answer.probabilities, levels)) return "bad_probabilities";
+    const problem = distributionProblem(answer.probabilities, levels);
+    if (problem) return problem;
   }
 
   return answer;
 }
 
-/** Una probabilidad por cada clave esperada, ni más ni menos, y que sumen 1. */
-function isDistribution(probs: Record<string, number>, keys: string[]) {
+/** Una probabilidad por cada clave esperada, ni más ni menos, y que sumen 1 salvo redondeo. */
+function distributionProblem(probs: Record<string, number>, keys: string[]) {
   const received = Object.keys(probs);
-  if (received.length !== keys.length || !keys.every((key) => Object.hasOwn(probs, key))) return false;
+  if (received.length !== keys.length || !keys.every((key) => Object.hasOwn(probs, key))) {
+    return "probability_keys";
+  }
   const sum = received.reduce((total, key) => total + probs[key], 0);
-  return Math.abs(sum - 1) <= PROBABILITY_TOLERANCE;
+  const tolerance = PROBABILITY_ROUNDING * keys.length + 1e-9;
+  return Math.abs(sum - 1) <= tolerance ? null : "probability_sum";
 }
