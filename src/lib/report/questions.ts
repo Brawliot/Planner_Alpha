@@ -90,7 +90,7 @@ export const CATALOG = {
         Subscription: "Recurring monthly or annual fees",
         "One-time sale": "Customers pay once for each purchase: a product, a meal, a service or a license",
         "Transaction commission": "A commission on transactions between other parties",
-        "Usage-based": "Fees based on usage or consumption",
+        "Usage-based": "A service billed by metered usage over time, such as per gigabyte, per minute or per API call",
         Advertising: "Revenue from ads shown to users",
         Freemium: "A free tier with paid premium features",
         "Services by hours or projects": "Hourly rates or project-based fees",
