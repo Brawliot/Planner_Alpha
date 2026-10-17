@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CALIBRATED_JEV_MODEL, NOT_SPECIFIED } from "../../src/lib/report/certainty.ts";
+import { CALIBRATED_JEV_MODEL, DONT_KNOW, NOT_SPECIFIED } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
 import {
   improvementsByArea,
@@ -32,10 +32,19 @@ describe("improvementsByArea", () => {
     assert.equal(questions[0].reason, "unlock_verdict");
   });
 
-  it("un Risk apoyado en un dato estimado pide confirmarlo", () => {
-    const questions = questionsOf("competition", [estimated("competition", "Crowded market"), known("differentiator", "Price")]);
-    assert.deepEqual(questions.map((q) => q.key), ["competition"]);
-    assert.equal(questions[0].reason, "confirm_risk");
+  it("no pregunta lo estimado: se corrige en Edit", () => {
+    assert.deepEqual(questionsOf("competition", [estimated("competition", "Crowded market")]), []);
+  });
+
+  it("después de lo imprescindible, pregunta lo que falta por concretar", () => {
+    const questions = questionsOf("concept", [known("sector", "Other"), known("offering_type", "Software"), known("revenue_model", "Subscription")]);
+    assert.deepEqual(questions.map((q) => [q.key, q.reason]), [["differentiator", "complete_area"]]);
+  });
+
+  it("no vuelve a preguntar lo que respondió el usuario, aunque fuera 'I don't know'", () => {
+    const answered: Fact = { key: "differentiator", value: DONT_KNOW, source: { origin: "user", quote: DONT_KNOW } };
+    const questions = questionsOf("concept", [known("sector", "Other"), known("offering_type", "Software"), known("revenue_model", "Subscription"), answered]);
+    assert.deepEqual(questions, []);
   });
 
   it("no pregunta lo que ya es sabido", () => {

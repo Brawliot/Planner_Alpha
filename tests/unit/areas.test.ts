@@ -83,7 +83,7 @@ describe("buildAreas: contenido de cada área", () => {
   it("lo descartado no se usa y cuenta como falta", () => {
     const competition = buildAreas([estimated("competition", "Crowded market", 0.1)]).find((a) => a.area === "competition");
     assert.deepEqual(competition?.inputs, []);
-    assert.deepEqual(competition?.missing, ["competition", "differentiator"]);
+    assert.deepEqual(competition?.missing, ["competition"]);
   });
 
   it("las cifras de Money aparecen como pendientes hasta el paso 8b", () => {

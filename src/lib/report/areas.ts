@@ -47,7 +47,7 @@ export const AREAS = {
   },
   competition: {
     title: "Competition",
-    inputs: ["competition", "differentiator"],
+    inputs: ["competition"],
   },
   money: {
     title: "Money",

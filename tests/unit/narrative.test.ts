@@ -61,9 +61,9 @@ describe("numbersAreAllowed", () => {
 describe("mainRisks", () => {
   const v = (area: string, verdict: AreaVerdict["verdict"]) => ({ area, verdict }) as AreaVerdict;
 
-  it("primero Risk, luego Watch, como mucho 3", () => {
-    const risks = mainRisks([v("concept", "watch"), v("money", "risk"), v("market", "strong"), v("founder", "watch"), v("competition", "risk")]);
-    assert.deepEqual(risks.map((r) => r.area), ["money", "competition", "concept"]);
+  it("solo las áreas en rojo, como mucho 3", () => {
+    const risks = mainRisks([v("concept", "risk"), v("money", "risk"), v("market", "strong"), v("founder", "risk"), v("competition", "risk")]);
+    assert.deepEqual(risks.map((r) => r.area), ["concept", "money", "founder"]);
   });
 });
 
@@ -119,13 +119,12 @@ describe("plantillas y esquema", () => {
     const reasons = [
       "money.short", "money.tight", "money.covers_runway", "money.no_runway", "money.runway_unknown",
       "validation.validated", "validation.partial", "validation.idea_only", "validation.unvalidated_investment",
-      "competition.niche", "competition.few", "competition.few_no_differentiator",
-      "competition.crowded_differentiated", "competition.crowded_undifferentiated",
-      "location.fits", "location.above_average", "location.prime", "location.prime_tight_money",
-      "regulation.holds_funds", "regulation.critical", "regulation.regulated",
+      "competition.niche", "competition.few", "competition.crowded",
+      "location.fits", "location.above_average", "location.prime",
+      "regulation.moderate", "regulation.heavy", "regulation.holds_funds", "regulation.critical",
       "team.demanding", "dependencies.platform", "dependencies.critical",
-      "concept.strong", "concept.watch", "concept.risk", "market.strong", "market.watch", "market.risk",
-      "founder.strong", "founder.watch", "founder.risk", "needs_info", "jev.unsure",
+      "concept.strong", "concept.no_differentiator", "market.strong", "market.risk",
+      "founder.strong", "founder.risk", "needs_info", "jev.unsure",
     ];
     for (const reason of reasons) assert.ok(TEMPLATE_REASONS.includes(reason), reason);
   });

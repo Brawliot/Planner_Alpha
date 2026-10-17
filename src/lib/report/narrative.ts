@@ -58,41 +58,36 @@ const TEMPLATES: Record<string, Record<Language, string>> = {
   "money.tight": { en: "Your budget covers the cheaper estimates, but not the higher ones.", es: "Tu presupuesto cubre las estimaciones más bajas, pero no las altas." },
   "money.covers_runway": { en: "Your budget covers opening and the months until first revenue.", es: "Tu presupuesto cubre la apertura y los meses hasta los primeros ingresos." },
   "money.no_runway": { en: "You can open, but the money may run out before revenue arrives.", es: "Puedes abrir, pero el dinero puede acabarse antes de que lleguen ingresos." },
-  "money.runway_unknown": { en: "You can open, but it's unclear how long the money will last.", es: "Puedes abrir, pero no está claro cuánto aguantará el dinero." },
+  "money.runway_unknown": { en: "Your budget covers opening; how long it lasts is still to be worked out.", es: "Tu presupuesto cubre la apertura; cuánto aguanta está por concretar." },
 
   "validation.validated": { en: "Customers already pay for it: the idea is validated.", es: "Ya hay clientes que pagan: la idea está validada." },
   "validation.partial": { en: "There are first signs, but no paying customers yet.", es: "Hay primeras señales, pero aún no hay clientes que paguen." },
-  "validation.idea_only": { en: "Still an idea: test it with real customers before investing much.", es: "Aún es una idea: pruébala con clientes reales antes de invertir mucho." },
+  "validation.idea_only": { en: "Still an idea: it needs testing with real customers.", es: "Aún es una idea: hay que probarla con clientes reales." },
   "validation.unvalidated_investment": { en: "A large investment in an idea not yet tested with customers.", es: "Una inversión grande en una idea aún sin probar con clientes." },
 
   "competition.niche": { en: "Few or no clear competitors in this niche.", es: "Pocos o ningún competidor claro en este nicho." },
-  "competition.few": { en: "Few competitors and something of your own to stand out.", es: "Pocos competidores y algo propio para destacar." },
-  "competition.few_no_differentiator": { en: "Few competitors, but it's not clear what sets you apart.", es: "Pocos competidores, pero no está claro qué te diferencia." },
-  "competition.crowded_differentiated": { en: "A crowded market, but you have something of your own.", es: "Un mercado saturado, pero tienes algo propio." },
-  "competition.crowded_undifferentiated": { en: "A crowded market with nothing clear to set you apart.", es: "Un mercado saturado sin nada claro que te diferencie." },
+  "competition.few": { en: "Only a few established competitors.", es: "Solo hay unos pocos competidores establecidos." },
+  "competition.crowded": { en: "Many competitors or big players: standing out will take work.", es: "Muchos competidores o grandes empresas: destacar requerirá trabajo." },
 
   "location.fits": { en: "The rent level fits this kind of business.", es: "El nivel de alquiler encaja con este tipo de negocio." },
   "location.above_average": { en: "Rent in this area is above average.", es: "El alquiler en esta zona está por encima de la media." },
   "location.prime": { en: "A prime location: high rent that the business must justify.", es: "Una zona prime: alquiler alto que el negocio debe justificar." },
-  "location.prime_tight_money": { en: "A prime location with a tight budget.", es: "Una zona prime con un presupuesto justo." },
 
+  "regulation.moderate": { en: "Usual licences and data protection.", es: "Licencias y protección de datos habituales." },
+  "regulation.heavy": { en: "Strict regulation: permits and inspections need work early.", es: "Regulación estricta: permisos e inspecciones requieren trabajo pronto." },
   "regulation.holds_funds": { en: "Holding customers' money requires specific licences.", es: "Custodiar dinero de clientes exige licencias específicas." },
   "regulation.critical": { en: "Very strict or cross-border regulation.", es: "Regulación muy estricta o en varios países." },
-  "regulation.regulated": { en: "A regulated activity: check licences and permits early.", es: "Una actividad regulada: revisa licencias y permisos pronto." },
 
   "team.demanding": { en: "It needs a large team or specialised profiles.", es: "Necesita un equipo grande o perfiles especializados." },
   "dependencies.platform": { en: "It depends on a third-party platform.", es: "Depende de una plataforma de terceros." },
   "dependencies.critical": { en: "It depends critically on a single provider.", es: "Depende de forma crítica de un único proveedor." },
 
-  "concept.strong": { en: "Clear offer, customer and way to make money.", es: "Oferta, cliente y forma de ganar dinero claros." },
-  "concept.watch": { en: "Understandable, but generic or with something unclear.", es: "Se entiende, pero es genérica o tiene algo poco claro." },
-  "concept.risk": { en: "The offer, the customer or how it makes money is unclear.", es: "No está clara la oferta, el cliente o cómo gana dinero." },
+  "concept.strong": { en: "Clear offer and way to make money.", es: "Oferta y forma de ganar dinero claras." },
+  "concept.no_differentiator": { en: "Clear offer, but nothing of its own yet to stand out.", es: "Oferta clara, pero aún sin nada propio para destacar." },
   "market.strong": { en: "Customer, channel and scope fit together.", es: "Cliente, canal y alcance encajan entre sí." },
-  "market.watch": { en: "Reachable, but the channel or the scope may be costly.", es: "Alcanzable, pero el canal o el alcance pueden salir caros." },
   "market.risk": { en: "The channel or the scope doesn't fit the customer.", es: "El canal o el alcance no encajan con el cliente." },
   "founder.strong": { en: "Your experience and dedication fit what it needs.", es: "Tu experiencia y dedicación encajan con lo que necesita." },
-  "founder.watch": { en: "There is a gap in experience, dedication or timing.", es: "Hay una carencia en experiencia, dedicación o plazos." },
-  "founder.risk": { en: "Your dedication or experience doesn't fit what it needs.", es: "Tu dedicación o experiencia no encajan con lo que necesita." },
+  "founder.risk": { en: "Your experience or dedication falls short of what it needs.", es: "Tu experiencia o dedicación se quedan cortas para lo que necesita." },
 };
 
 export function templateFor(reason: string, language: Language) {
@@ -105,10 +100,7 @@ export const TEMPLATE_REASONS = Object.keys(TEMPLATES);
 // ---- Riesgos principales (los elige el código)
 
 export function mainRisks(verdicts: readonly AreaVerdict[]): AreaVerdict[] {
-  return [...verdicts.filter((v) => v.verdict === "risk"), ...verdicts.filter((v) => v.verdict === "watch")].slice(
-    0,
-    MAX_MAIN_RISKS,
-  );
+  return verdicts.filter((v) => v.verdict === "risk").slice(0, MAX_MAIN_RISKS);
 }
 
 // ---- Lo que recibe GPT

@@ -375,8 +375,8 @@ test.describe("pantalla del informe", () => {
     await expect(page).toHaveURL(/\?area=competition$/);
     const competition = page.getByRole("button", { name: /Competition/ });
     await expect(competition).toHaveAttribute("aria-expanded", "true");
-    // Saturado con diferenciador propio (el Jev falso da "Technology or IP"): Watch.
-    await expect(competition).toContainText("Watch");
+    // Saturado: rojo, tenga o no diferenciador (la etiqueta cambia en el paso V2).
+    await expect(competition).toContainText("Risk");
     await expect(page.getByRole("button", { name: /Improve this area/ })).toHaveCount(0);
 
     const after = await getReport(reportIdFrom(page.url()));

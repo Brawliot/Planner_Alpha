@@ -1,5 +1,4 @@
-import { AREAS, type AreaKey } from "./areas.ts";
-import { certaintyOf } from "./certainty.ts";
+import type { AreaKey } from "./areas.ts";
 import type { Fact } from "./facts.ts";
 import { RENT_LEVELS } from "./figures.ts";
 import { answerOptions, CATALOG, type QuestionKey } from "./questions.ts";
@@ -12,7 +11,8 @@ import { areaVerdicts, type AreaVerdict } from "./verdict.ts";
 
 export const MAX_QUESTIONS_PER_AREA = 3;
 
-export type ImproveReason = "unlock_verdict" | "confirm_risk" | "confirm_watch" | "confirm_strong";
+/** unlock_verdict: falta para dar color al área. complete_area: no cambia el color, concreta el plan. */
+export type ImproveReason = "unlock_verdict" | "complete_area";
 
 export interface ImproveQuestion {
   key: string;
@@ -63,29 +63,22 @@ export function improvePrompt(key: string): string {
   return IMPROVE_PROMPTS[key] ?? key;
 }
 
-function reasonFor(verdict: AreaVerdict["verdict"]): ImproveReason {
-  if (verdict === "risk") return "confirm_risk";
-  if (verdict === "watch") return "confirm_watch";
-  if (verdict === "strong") return "confirm_strong";
-  return "unlock_verdict";
+/** Lo que el usuario ya respondió no se vuelve a preguntar, aunque fuera "I don't know": ya es un hecho. */
+function answeredByUser(facts: readonly Fact[], key: string) {
+  return facts.some((f) => f.key === key && f.source.origin === "user");
 }
 
+/**
+ * Solo lo que no se sabe: primero lo imprescindible para dar color, luego lo que falta por concretar.
+ * Lo estimado (deducido por Jev o validado como plausible) no se pregunta: se corrige en Edit.
+ */
 function questionsFor(verdict: AreaVerdict, facts: readonly Fact[]): ImproveQuestion[] {
-  const inputs: readonly string[] = AREAS[verdict.area].inputs;
-  const candidates = inputs.filter((key) => {
-    if (!isAskable(key)) return false;
-    const fact = facts.find((f) => f.key === key);
-    return !fact || certaintyOf(fact) !== "known";
-  });
-
-  // En un área sin veredicto, primero los datos imprescindibles que le faltan.
-  const ordered = [
-    ...candidates.filter((key) => verdict.missing.includes(key)),
-    ...candidates.filter((key) => !verdict.missing.includes(key)),
+  const askable = (key: string) => isAskable(key) && !answeredByUser(facts, key);
+  const candidates = [
+    ...verdict.missing.filter(askable).map((key) => ({ key, reason: "unlock_verdict" as const })),
+    ...verdict.gaps.filter(askable).map((key) => ({ key, reason: "complete_area" as const })),
   ];
-
-  const reason = reasonFor(verdict.verdict);
-  return ordered.slice(0, MAX_QUESTIONS_PER_AREA).map((key) => ({
+  return candidates.slice(0, MAX_QUESTIONS_PER_AREA).map(({ key, reason }) => ({
     key,
     prompt: improvePrompt(key),
     options: improveOptions(key),

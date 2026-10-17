@@ -23,6 +23,19 @@ function verdictOf(area: string, facts: Fact[]) {
   return found;
 }
 
+describe("ninguna regla da watch", () => {
+  it("con datos variados, solo verde, rojo o gris", () => {
+    const facts = [
+      known("offering_type", "Physical venue"), known("revenue_model", "Subscription"),
+      known("customer_segment", "Mixed segments"), known("acquisition_channel", "Paid advertising"),
+      known("founder_experience", "2-5 years"), known("time_commitment", "Full time"),
+      known("validation_stage", "Prototype"), estimated("competition", "Few competitors"),
+      known("regulatory_load", "Moderate (licenses, data protection)"), estimated("rent_level", "Average"),
+    ];
+    for (const v of areaVerdicts(facts)) assert.notEqual(v.verdict, "watch", v.area);
+  });
+});
+
 describe("Money", () => {
   it("sin presupuesto o sin coste de arranque: needs_info con lo que falta", () => {
     const v = verdictOf("money", []);
@@ -30,15 +43,13 @@ describe("Money", () => {
     assert.deepEqual(v.missing, ["budget_band", "startup_cost_eur"]);
   });
 
-  it("no llega al coste mínimo: risk", () => {
-    assert.equal(verdictOf("money", [budget(30000), range("startup_cost_eur", 45000, 60000)]).verdict, "risk");
+  it("no llega o va justo: rojo", () => {
+    assert.equal(verdictOf("money", [budget(30000), range("startup_cost_eur", 45000, 60000)]).reason, "money.short");
+    const tight = verdictOf("money", [budget(50000), range("startup_cost_eur", 45000, 60000)]);
+    assert.deepEqual([tight.verdict, tight.reason], ["risk", "money.tight"]);
   });
 
-  it("entre mínimo y máximo: watch", () => {
-    assert.equal(verdictOf("money", [budget(50000), range("startup_cost_eur", 45000, 60000)]).reason, "money.tight");
-  });
-
-  it("cubre y aguanta hasta el primer ingreso: strong", () => {
+  it("cubre y aguanta hasta el primer ingreso: verde", () => {
     const v = verdictOf("money", [
       budget(100000),
       range("startup_cost_eur", 40000, 60000),
@@ -49,34 +60,27 @@ describe("Money", () => {
     assert.equal(v.estimated, true);
   });
 
-  it("cubre pero sin gastos fijos conocidos: watch, nunca strong", () => {
+  it("cubre sin gastos fijos conocidos: verde, y los gastos quedan por concretar", () => {
     const v = verdictOf("money", [budget(100000), range("startup_cost_eur", 40000, 60000)]);
-    assert.equal(v.verdict, "watch");
-    assert.equal(v.reason, "money.runway_unknown");
+    assert.deepEqual([v.verdict, v.reason], ["strong", "money.runway_unknown"]);
+    assert.ok(v.gaps.includes("monthly_fixed_costs_eur"));
+    assert.equal(v.gaps.includes("budget_eur"), false, "el exacto es opcional");
   });
 });
 
 describe("Validation", () => {
-  it("validado: strong", () => {
+  it("con clientes: verde", () => {
     assert.equal(verdictOf("validation", [known("validation_stage", "MVP with customers")]).verdict, "strong");
   });
 
-  it("solo idea con poca inversión: watch", () => {
-    assert.equal(verdictOf("validation", [known("validation_stage", "Idea only")]).verdict, "watch");
-  });
-
-  it("solo idea con capital alto o arranque caro: risk", () => {
-    assert.equal(
-      verdictOf("validation", [
-        known("validation_stage", "Idea only"),
-        known("capital_intensity", "High (inventory, equipment, premises or R&D)"),
-      ]).verdict,
-      "risk",
-    );
+  it("sin clientes que paguen: rojo, con el motivo según la inversión", () => {
+    assert.equal(verdictOf("validation", [known("validation_stage", "Idea only")]).reason, "validation.idea_only");
+    assert.equal(verdictOf("validation", [known("validation_stage", "Prototype")]).reason, "validation.partial");
     assert.equal(
       verdictOf("validation", [known("validation_stage", "Idea only"), range("startup_cost_eur", 30000, 80000)]).reason,
       "validation.unvalidated_investment",
     );
+    assert.equal(verdictOf("validation", [known("validation_stage", "Idea only")]).verdict, "risk");
   });
 
   it("sin dato: needs_info", () => {
@@ -85,26 +89,15 @@ describe("Validation", () => {
 });
 
 describe("Competition", () => {
-  it("nicho: strong", () => {
+  it("nicho o pocos: verde, sin depender del diferenciador", () => {
     assert.equal(verdictOf("competition", [known("competition", "Niche with no clear competitors")]).verdict, "strong");
+    assert.equal(verdictOf("competition", [estimated("competition", "Few competitors")]).verdict, "strong");
   });
 
-  it("saturado y solo precio o sin diferenciador: risk", () => {
-    assert.equal(
-      verdictOf("competition", [estimated("competition", "Crowded market"), known("differentiator", "Price")]).verdict,
-      "risk",
-    );
-    assert.equal(verdictOf("competition", [estimated("competition", "Crowded market")]).verdict, "risk");
-  });
-
-  it("saturado pero con algo propio: watch", () => {
-    assert.equal(
-      verdictOf("competition", [
-        estimated("competition", "Dominated by large players"),
-        known("differentiator", "Technology or IP"),
-      ]).verdict,
-      "watch",
-    );
+  it("saturado o dominado: rojo, tenga o no diferenciador", () => {
+    for (const value of ["Crowded market", "Dominated by large players"]) {
+      assert.equal(verdictOf("competition", [estimated("competition", value), known("differentiator", "Technology or IP")]).verdict, "risk");
+    }
   });
 
   it("una competencia descartada por Jev no cuenta: needs_info", () => {
@@ -121,19 +114,12 @@ describe("Location", () => {
     assert.deepEqual(v.missing, ["rent_level"]);
   });
 
-  it("alquiler normal: strong; por encima de la media: watch", () => {
+  it("normal o por debajo: verde; por encima o prime: rojo, sin mirar el dinero", () => {
     assert.equal(verdictOf("location", [venue, estimated("rent_level", "Average")]).verdict, "strong");
-    assert.equal(verdictOf("location", [venue, estimated("rent_level", "Above average")]).verdict, "watch");
-  });
-
-  it("zona prime: watch si el dinero cubre, risk si va justo o no llega", () => {
+    assert.equal(verdictOf("location", [venue, estimated("rent_level", "Above average")]).verdict, "risk");
     assert.equal(
-      verdictOf("location", [venue, estimated("rent_level", "Prime location"), budget(200000), range("startup_cost_eur", 50000, 80000)]).reason,
+      verdictOf("location", [venue, estimated("rent_level", "Prime location"), budget(500000), range("startup_cost_eur", 50000, 80000)]).reason,
       "location.prime",
-    );
-    assert.equal(
-      verdictOf("location", [venue, estimated("rent_level", "Prime location"), budget(30000), range("startup_cost_eur", 50000, 80000)]).verdict,
-      "risk",
     );
   });
 
@@ -143,37 +129,37 @@ describe("Location", () => {
 });
 
 describe("áreas que aparecen según los datos", () => {
-  it("Regulation: custodiar fondos es risk; regulación pesada, watch", () => {
+  it("Regulation: moderada verde; pesada, crítica o custodia de fondos, rojo", () => {
+    assert.equal(verdictOf("regulation", [known("regulatory_load", "Moderate (licenses, data protection)")]).verdict, "strong");
+    assert.equal(verdictOf("regulation", [known("regulatory_load", "Heavy (health, finance, food)")]).reason, "regulation.heavy");
     assert.equal(verdictOf("regulation", [known("money_handling", "Holds or intermediates funds")]).verdict, "risk");
-    assert.equal(verdictOf("regulation", [known("regulatory_load", "Heavy (health, finance, food)")]).verdict, "watch");
   });
 
-  it("Dependencies: plataforma watch, proveedor crítico risk", () => {
-    assert.equal(verdictOf("dependencies", [known("third_party_dependency", "Depends on a platform")]).verdict, "watch");
-    assert.equal(verdictOf("dependencies", [known("third_party_dependency", "Critical dependency")]).verdict, "risk");
-  });
-
-  it("Team exigente: watch", () => {
-    assert.equal(verdictOf("team", [known("team_requirement", "Large team")]).verdict, "watch");
+  it("Dependencies y Team: si aparecen, rojo", () => {
+    assert.equal(verdictOf("dependencies", [known("third_party_dependency", "Depends on a platform")]).verdict, "risk");
+    assert.equal(verdictOf("dependencies", [known("third_party_dependency", "Critical dependency")]).reason, "dependencies.critical");
+    assert.equal(verdictOf("team", [known("team_requirement", "Specialized profiles required")]).verdict, "risk");
   });
 });
 
 describe("Concept", () => {
+  const base = [known("offering_type", "Software"), known("revenue_model", "Subscription")];
+
   it("sin qué ofrece o cómo gana dinero: needs_info", () => {
     assert.deepEqual(verdictOf("concept", [known("offering_type", "Software")]).missing, ["revenue_model"]);
   });
 
-  it("con diferenciador propio: strong", () => {
-    const facts = [known("offering_type", "Software"), known("revenue_model", "Subscription"), known("differentiator", "Specialized niche")];
-    assert.equal(verdictOf("concept", facts).verdict, "strong");
+  it("precio, calidad o algo propio: verde; diferenciador desconocido queda por concretar", () => {
+    for (const differentiator of ["Price", "Quality or experience", "Specialized niche"]) {
+      assert.equal(verdictOf("concept", [...base, known("differentiator", differentiator)]).verdict, "strong", differentiator);
+    }
+    const unknown = verdictOf("concept", base);
+    assert.equal(unknown.verdict, "strong");
+    assert.ok(unknown.gaps.includes("differentiator"));
   });
 
-  it("solo precio, solo calidad, ninguno o desconocido: watch, nunca risk", () => {
-    const base = [known("offering_type", "Software"), known("revenue_model", "Subscription")];
-    for (const differentiator of ["Price", "Quality or experience", "None identified"]) {
-      assert.equal(verdictOf("concept", [...base, known("differentiator", differentiator)]).verdict, "watch", differentiator);
-    }
-    assert.equal(verdictOf("concept", base).verdict, "watch");
+  it("sin nada propio (sabido): rojo", () => {
+    assert.equal(verdictOf("concept", [...base, known("differentiator", "None identified")]).reason, "concept.no_differentiator");
   });
 });
 
@@ -184,28 +170,22 @@ describe("Market", () => {
     assert.equal(verdictOf("market", []).verdict, "needs_info");
   });
 
-  it("coherente: strong", () => {
-    const facts = [consumers, known("geographic_scope", "Hyper-local"), estimated("acquisition_channel", "Foot traffic or location")];
-    assert.equal(verdictOf("market", facts).verdict, "strong");
+  it("coherente, mezclado, con anuncios o con datos que faltan: verde", () => {
+    assert.equal(verdictOf("market", [consumers, known("geographic_scope", "Hyper-local"), estimated("acquisition_channel", "Foot traffic or location")]).verdict, "strong");
+    assert.equal(verdictOf("market", [known("customer_segment", "Mixed segments"), known("acquisition_channel", "Paid advertising")]).verdict, "strong");
+    const partial = verdictOf("market", [consumers]);
+    assert.equal(partial.verdict, "strong");
+    assert.deepEqual(partial.gaps, ["geographic_scope", "acquisition_channel"]);
   });
 
-  it("local físico con alcance online, o autoservicio para sector público: risk", () => {
-    assert.equal(
-      verdictOf("market", [consumers, known("geographic_scope", "Online"), known("acquisition_channel", "Foot traffic or location")]).verdict,
-      "risk",
-    );
-    assert.equal(
-      verdictOf("market", [known("customer_segment", "Public sector"), known("geographic_scope", "National"), known("acquisition_channel", "Online self-service")]).verdict,
-      "risk",
-    );
-  });
-
-  it("local con alcance nacional, cliente mixto, solo anuncios o datos que faltan: watch", () => {
+  it("combinaciones que no encajan: rojo", () => {
     const local = (scope: string) => [consumers, known("geographic_scope", scope), known("acquisition_channel", "Foot traffic or location")];
-    assert.equal(verdictOf("market", local("National")).verdict, "watch");
-    assert.equal(verdictOf("market", [known("customer_segment", "Mixed segments"), known("geographic_scope", "Local"), known("acquisition_channel", "Direct sales")]).verdict, "watch");
-    assert.equal(verdictOf("market", [consumers, known("geographic_scope", "Local"), known("acquisition_channel", "Paid advertising")]).verdict, "watch");
-    assert.equal(verdictOf("market", [consumers, known("acquisition_channel", "Direct sales")]).verdict, "watch", "sin alcance");
+    assert.equal(verdictOf("market", local("Online")).verdict, "risk");
+    assert.equal(verdictOf("market", local("National")).verdict, "risk");
+    assert.equal(
+      verdictOf("market", [known("customer_segment", "Public sector"), known("acquisition_channel", "Online self-service")]).verdict,
+      "risk",
+    );
   });
 });
 
@@ -214,25 +194,15 @@ describe("Founder (You)", () => {
     assert.deepEqual(verdictOf("founder", []).missing, ["founder_experience", "time_commitment"]);
   });
 
-  it("experiencia y dedicación suficientes: strong", () => {
-    const facts = [known("founder_experience", "Over 5 years"), known("founder_profile", "Sector expert"), known("time_commitment", "Full time")];
-    assert.equal(verdictOf("founder", facts).verdict, "strong");
+  it("experiencia y dedicación suficientes: verde; perfil desconocido por concretar", () => {
+    const v = verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "Full time")]);
+    assert.equal(v.verdict, "strong");
+    assert.ok(v.gaps.includes("founder_profile"));
   });
 
-  it("menos de 10 h con lanzamiento en menos de 3 meses, o sin experiencia ni perfil: risk", () => {
-    assert.equal(
-      verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "Under 10 h/week"), known("launch_timeline", "Under 3 months")]).verdict,
-      "risk",
-    );
-    assert.equal(
-      verdictOf("founder", [known("founder_experience", "None"), known("founder_profile", "No relevant background"), known("time_commitment", "Full time")]).verdict,
-      "risk",
-    );
-  });
-
-  it("poca experiencia, poca dedicación o equipo grande sin perfil de gestión: watch", () => {
-    assert.equal(verdictOf("founder", [known("founder_experience", "Under 2 years"), known("time_commitment", "Full time")]).verdict, "watch");
-    assert.equal(verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "10-20 h/week")]).verdict, "watch");
+  it("poca experiencia, menos de 20 h o equipo grande sin perfil de gestión: rojo", () => {
+    assert.equal(verdictOf("founder", [known("founder_experience", "Under 2 years"), known("time_commitment", "Full time")]).verdict, "risk");
+    assert.equal(verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "10-20 h/week")]).verdict, "risk");
     assert.equal(
       verdictOf("founder", [
         known("founder_experience", "Over 5 years"),
@@ -240,7 +210,7 @@ describe("Founder (You)", () => {
         known("time_commitment", "Full time"),
         known("team_requirement", "Large team"),
       ]).verdict,
-      "watch",
+      "risk",
     );
   });
 });
