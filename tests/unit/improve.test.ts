@@ -1,0 +1,83 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { CALIBRATED_JEV_MODEL, NOT_SPECIFIED } from "../../src/lib/report/certainty.ts";
+import type { Fact } from "../../src/lib/report/facts.ts";
+import { improvementsByArea, improveOptions, improvePrompt, MAX_QUESTIONS_PER_AREA } from "../../src/lib/report/improve.ts";
+
+const M = CALIBRATED_JEV_MODEL;
+
+function known(key: string, value: unknown): Fact {
+  return { key, value, source: { origin: "jev", model: M, confidence: 0.95, from: "user" } };
+}
+
+function estimated(key: string, value: unknown, noul = 0.8): Fact {
+  return { key, value, source: { origin: "gpt", model: "gpt", assumptions: [], plausibility: { noul, model: M } } };
+}
+
+function questionsOf(area: string, facts: Fact[]) {
+  const found = improvementsByArea(facts).find((a) => a.area === area);
+  assert.ok(found, `el área ${area} no aparece`);
+  return found.questions;
+}
+
+describe("improvementsByArea", () => {
+  it("un área en Needs info pide primero su dato imprescindible", () => {
+    const questions = questionsOf("competition", [known("differentiator", "Price")]);
+    assert.equal(questions[0].key, "competition");
+    assert.equal(questions[0].reason, "unlock_verdict");
+  });
+
+  it("un Risk apoyado en un dato estimado pide confirmarlo", () => {
+    const questions = questionsOf("competition", [estimated("competition", "Crowded market"), known("differentiator", "Price")]);
+    assert.deepEqual(questions.map((q) => q.key), ["competition"]);
+    assert.equal(questions[0].reason, "confirm_risk");
+  });
+
+  it("no pregunta lo que ya es sabido", () => {
+    const questions = questionsOf("competition", [known("competition", "Niche with no clear competitors"), known("differentiator", "Price")]);
+    assert.deepEqual(questions, []);
+  });
+
+  it("nunca pregunta las cifras que estimamos nosotros", () => {
+    const keys = questionsOf("money", []).map((q) => q.key);
+    assert.equal(keys.includes("startup_cost_eur"), false);
+    assert.equal(keys.includes("monthly_fixed_costs_eur"), false);
+    assert.equal(keys.includes("budget_eur"), false);
+    assert.ok(keys.includes("budget_band"));
+  });
+
+  it("como mucho 3 preguntas por área", () => {
+    for (const area of improvementsByArea([])) {
+      assert.ok(area.questions.length <= MAX_QUESTIONS_PER_AREA, area.area);
+    }
+  });
+
+  it("lo descartado por Jev o no especificado también se puede mejorar", () => {
+    assert.equal(questionsOf("competition", [estimated("competition", "Crowded market", 0.1)])[0].key, "competition");
+    assert.equal(questionsOf("validation", [known("validation_stage", NOT_SPECIFIED)])[0].key, "validation_stage");
+  });
+
+  it("en Location pregunta el nivel de alquiler con sus opciones", () => {
+    const questions = questionsOf("location", [known("offering_type", "Physical venue"), known("geographic_scope", "Local")]);
+    assert.equal(questions[0].key, "rent_level");
+    assert.deepEqual(questions[0].options, ["Below average", "Average", "Above average", "Prime location"]);
+  });
+});
+
+describe("textos y opciones", () => {
+  it("las 'ask' usan el prompt del catálogo y las 'infer' el suyo", () => {
+    assert.equal(improvePrompt("budget_band"), "How much can you invest to start?");
+    assert.equal(improvePrompt("competition"), "How much competition is there where you will operate?");
+  });
+
+  it('las opciones nunca incluyen "Not specified"', () => {
+    assert.equal(improveOptions("competition").includes(NOT_SPECIFIED), false);
+    assert.ok(improveOptions("competition").includes("Crowded market"));
+  });
+
+  it("toda pregunta posible tiene texto propio, no su clave", () => {
+    for (const key of ["acquisition_channel", "competition", "capital_intensity", "team_requirement", "time_to_revenue", "regulatory_load", "third_party_dependency", "money_handling", "rent_level"]) {
+      assert.notEqual(improvePrompt(key), key, key);
+    }
+  });
+});
