@@ -8,14 +8,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { callJev, type JevQuestion, type JevState } from "../src/lib/jev.ts";
 import { buildJevState } from "../src/lib/report/facts.ts";
-import { VERDICT_QUESTIONS } from "../src/lib/report/verdict-questions.ts";
 import {
   CHOICE_CASES,
   CHOICE_QUESTIONS,
   NOUL_CASES,
   PLAUSIBILITY_QUESTION,
-  VERDICT_CASES,
-  caseFacts,
   type NoulCase,
 } from "./calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize, type Scored } from "./calibration/metrics.ts";
@@ -87,14 +84,6 @@ function choiceTasks(): ChoiceTask[] {
       expected: c.expected,
       state: buildJevState(c.text, []),
       jev: CHOICE_QUESTIONS[c.question],
-    })),
-    ...VERDICT_CASES.map((v) => ({
-      id: v.id,
-      lang: v.lang,
-      question: `verdict.${v.area}`,
-      expected: v.expected,
-      state: buildJevState(v.idea, caseFacts(v)),
-      jev: VERDICT_QUESTIONS[v.area],
     })),
   ];
 }

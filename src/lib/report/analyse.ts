@@ -2,7 +2,6 @@ import "server-only";
 import { callGpt } from "@/lib/gpt";
 import { callJev } from "@/lib/jev";
 import { buildJevState, type Fact } from "./facts";
-import { buildAreas } from "./areas";
 import { areaVerdicts } from "./verdict";
 import {
   areaFingerprints,
@@ -16,16 +15,6 @@ import {
   type NarrativeResult,
   type StoredNarrative,
 } from "./narrative";
-import { certaintyOf } from "./certainty";
-import {
-  areaFacts,
-  isJevVerdictArea,
-  missingCore,
-  NOT_ENOUGH_INFORMATION,
-  VERDICT_QUESTIONS,
-  verdictKey,
-  type JevVerdictArea,
-} from "./verdict-questions";
 import { mergeFacts } from "./questions";
 import { PLAUSIBILITY_QUESTION } from "./plausibility";
 import {
@@ -59,35 +48,8 @@ export async function analyse(idea: string, facts: Fact[]): Promise<Fact[]> {
   const fromGpt = [...inferred, ...figures].filter((fact) => fact.source.origin === "gpt");
   const fromUser = figures.filter((fact) => fact.source.origin === "user");
   const checked = await Promise.all(fromGpt.map((fact) => withPlausibility(idea, fact)));
-  const complete = mergeFacts(facts, [...checked, ...fromUser]);
-  // Los veredictos de Jev se piden al final: necesitan los datos ya inferidos y validados.
-  return mergeFacts(complete, await jevVerdicts(idea, complete));
-}
-
-/** Una llamada por área, en paralelo, con solo los datos de esa área (como en la calibración). */
-async function jevVerdicts(idea: string, facts: Fact[]): Promise<Fact[]> {
-  const areas = buildAreas(facts)
-    .map((view) => view.area)
-    .filter(isJevVerdictArea)
-    .filter((area) => missingCore(facts, area).length === 0);
-  return Promise.all(areas.map((area) => jevVerdict(idea, facts, area)));
-}
-
-async function jevVerdict(idea: string, facts: Fact[], area: JevVerdictArea): Promise<Fact> {
-  const inputs = areaFacts(facts, area);
-  const result = await callJev(buildJevState(idea, inputs), { q: VERDICT_QUESTIONS[area] });
-  const answer = result.answers.q;
-  return {
-    key: verdictKey(area),
-    value: answer?.choice ?? NOT_ENOUGH_INFORMATION,
-    source: {
-      origin: "jev",
-      model: result.model,
-      confidence: answer?.confidence ?? null,
-      // Si algún dato del área era estimado, el veredicto también lo es (nunca "sabido").
-      from: inputs.every((fact) => certaintyOf(fact) === "known") ? "user" : "inferred",
-    },
-  };
+  // Los veredictos se calculan en código al leer: no hay que pedir nada más.
+  return mergeFacts(facts, [...checked, ...fromUser]);
 }
 
 async function inferDimensions(idea: string, facts: Fact[]): Promise<Fact[]> {
@@ -166,33 +128,6 @@ export async function writeNarrative(
 
   return mergeNarrative(buildNarrative(result, idea, facts, verdicts), previous, stale, fingerprints);
 }
-
-
-/**
- * Vuelve a pedir a Jev solo los veredictos de estas áreas (tras mejorar un área).
- * Si Jev falla en una, su veredicto queda sin confianza (Needs info): las respuestas no se pierden.
- */
-export async function refreshJevVerdicts(
-  idea: string,
-  facts: Fact[],
-  areas: readonly JevVerdictArea[],
-): Promise<Fact[]> {
-  const present = new Set(buildAreas(facts).map((view) => view.area));
-  const targets = areas.filter((area) => present.has(area) && missingCore(facts, area).length === 0);
-  const results = await Promise.allSettled(targets.map((area) => jevVerdict(idea, facts, area)));
-
-  const updates = results.map((result, index): Fact => {
-    if (result.status === "fulfilled") return result.value;
-    console.error("report: no se pudo recalcular un veredicto", result.reason instanceof Error ? result.reason.name : "desconocido");
-    return {
-      key: verdictKey(targets[index]),
-      value: NOT_ENOUGH_INFORMATION,
-      source: { origin: "jev", model: "unavailable", confidence: null, from: "user" },
-    };
-  });
-  return mergeFacts(facts, updates);
-}
-
 
 /**
  * Tras un cambio estructural (otro sector, otra oferta...), las estimaciones de GPT y los veredictos

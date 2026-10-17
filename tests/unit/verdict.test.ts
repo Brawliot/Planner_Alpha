@@ -118,7 +118,6 @@ describe("Location", () => {
   it("sin nivel de alquiler: needs_info", () => {
     const v = verdictOf("location", [venue]);
     assert.equal(v.verdict, "needs_info");
-    assert.equal(v.decidedBy, "code");
     assert.deepEqual(v.missing, ["rent_level"]);
   });
 
@@ -159,41 +158,89 @@ describe("áreas que aparecen según los datos", () => {
   });
 });
 
-describe("áreas de Jev", () => {
-  const jevVerdict = (area: string, value: string, confidence: number, from: "user" | "inferred" = "user"): Fact => ({
-    key: `verdict.${area}`,
-    value,
-    source: { origin: "jev", model: M, confidence, from },
+describe("Concept", () => {
+  it("sin qué ofrece o cómo gana dinero: needs_info", () => {
+    assert.deepEqual(verdictOf("concept", [known("offering_type", "Software")]).missing, ["revenue_model"]);
   });
 
-  it("sin datos imprescindibles: needs_info con lo que falta, sin preguntar a Jev", () => {
-    const concept = verdictOf("concept", []);
-    assert.equal(concept.verdict, "needs_info");
-    assert.equal(concept.decidedBy, "jev");
-    assert.deepEqual(concept.missing, ["offering_type"]);
+  it("con diferenciador propio: strong", () => {
+    const facts = [known("offering_type", "Software"), known("revenue_model", "Subscription"), known("differentiator", "Specialized niche")];
+    assert.equal(verdictOf("concept", facts).verdict, "strong");
   });
 
-  it("usa el veredicto de Jev si es seguro", () => {
-    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Watch", 0.95)]);
-    assert.equal(v.verdict, "watch");
-    assert.equal(v.reason, "concept.watch");
-    assert.equal(v.estimated, false);
+  it("solo precio, solo calidad, ninguno o desconocido: watch, nunca risk", () => {
+    const base = [known("offering_type", "Software"), known("revenue_model", "Subscription")];
+    for (const differentiator of ["Price", "Quality or experience", "None identified"]) {
+      assert.equal(verdictOf("concept", [...base, known("differentiator", differentiator)]).verdict, "watch", differentiator);
+    }
+    assert.equal(verdictOf("concept", base).verdict, "watch");
+  });
+});
+
+describe("Market", () => {
+  const consumers = known("customer_segment", "Consumers");
+
+  it("sin cliente: needs_info", () => {
+    assert.equal(verdictOf("market", []).verdict, "needs_info");
   });
 
-  it("con confianza baja: needs_info, nunca un veredicto dudoso", () => {
-    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Strong", 0.6)]);
-    assert.equal(v.verdict, "needs_info");
-    assert.equal(v.reason, "jev.unsure");
+  it("coherente: strong", () => {
+    const facts = [consumers, known("geographic_scope", "Hyper-local"), estimated("acquisition_channel", "Foot traffic or location")];
+    assert.equal(verdictOf("market", facts).verdict, "strong");
   });
 
-  it("si se apoyó en datos estimados, el veredicto es estimado", () => {
-    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Strong", 0.95, "inferred")]);
-    assert.equal(v.verdict, "strong");
-    assert.equal(v.estimated, true);
+  it("local físico con alcance online, o autoservicio para sector público: risk", () => {
+    assert.equal(
+      verdictOf("market", [consumers, known("geographic_scope", "Online"), known("acquisition_channel", "Foot traffic or location")]).verdict,
+      "risk",
+    );
+    assert.equal(
+      verdictOf("market", [known("customer_segment", "Public sector"), known("geographic_scope", "National"), known("acquisition_channel", "Online self-service")]).verdict,
+      "risk",
+    );
   });
 
-  it('"Not enough information" de Jev es needs_info', () => {
-    const v = verdictOf("concept", [known("offering_type", "Software"), jevVerdict("concept", "Not enough information", 0.95)]);
-    assert.equal(v.verdict, "needs_info");
+  it("local con alcance nacional, cliente mixto, solo anuncios o datos que faltan: watch", () => {
+    const local = (scope: string) => [consumers, known("geographic_scope", scope), known("acquisition_channel", "Foot traffic or location")];
+    assert.equal(verdictOf("market", local("National")).verdict, "watch");
+    assert.equal(verdictOf("market", [known("customer_segment", "Mixed segments"), known("geographic_scope", "Local"), known("acquisition_channel", "Direct sales")]).verdict, "watch");
+    assert.equal(verdictOf("market", [consumers, known("geographic_scope", "Local"), known("acquisition_channel", "Paid advertising")]).verdict, "watch");
+    assert.equal(verdictOf("market", [consumers, known("acquisition_channel", "Direct sales")]).verdict, "watch", "sin alcance");
+  });
+});
+
+describe("Founder (You)", () => {
+  it("sin experiencia o dedicación: needs_info", () => {
+    assert.deepEqual(verdictOf("founder", []).missing, ["founder_experience", "time_commitment"]);
+  });
+
+  it("experiencia y dedicación suficientes: strong", () => {
+    const facts = [known("founder_experience", "Over 5 years"), known("founder_profile", "Sector expert"), known("time_commitment", "Full time")];
+    assert.equal(verdictOf("founder", facts).verdict, "strong");
+  });
+
+  it("menos de 10 h con lanzamiento en menos de 3 meses, o sin experiencia ni perfil: risk", () => {
+    assert.equal(
+      verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "Under 10 h/week"), known("launch_timeline", "Under 3 months")]).verdict,
+      "risk",
+    );
+    assert.equal(
+      verdictOf("founder", [known("founder_experience", "None"), known("founder_profile", "No relevant background"), known("time_commitment", "Full time")]).verdict,
+      "risk",
+    );
+  });
+
+  it("poca experiencia, poca dedicación o equipo grande sin perfil de gestión: watch", () => {
+    assert.equal(verdictOf("founder", [known("founder_experience", "Under 2 years"), known("time_commitment", "Full time")]).verdict, "watch");
+    assert.equal(verdictOf("founder", [known("founder_experience", "Over 5 years"), known("time_commitment", "10-20 h/week")]).verdict, "watch");
+    assert.equal(
+      verdictOf("founder", [
+        known("founder_experience", "Over 5 years"),
+        known("founder_profile", "Technical"),
+        known("time_commitment", "Full time"),
+        known("team_requirement", "Large team"),
+      ]).verdict,
+      "watch",
+    );
   });
 });

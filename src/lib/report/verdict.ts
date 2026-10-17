@@ -3,12 +3,11 @@ import type { Fact } from "./facts.ts";
 import { moneyCheck } from "./money.ts";
 import { RENT_LEVELS } from "./figures.ts";
 import { CATALOG, type QuestionKey } from "./questions.ts";
-import { certaintyOf } from "./certainty.ts";
-import { isJevVerdictArea, missingCore, NOT_ENOUGH_INFORMATION, verdictKey } from "./verdict-questions.ts";
 
 /**
- * Veredicto por área. Donde el veredicto sale directamente de los datos, lo decide el código
- * (predecible y testeable). Concept, Market, You y Location necesitan juicio: los decide Jev (paso 9b).
+ * Veredicto por área, decidido siempre en código a partir de los datos: predecible y testeable.
+ * Jev clasifica el texto y valida la plausibilidad; no decide veredictos (sus veredictos salían
+ * casi siempre con confianza baja y dejaban áreas vacías).
  */
 
 export type Verdict = "strong" | "watch" | "risk" | "needs_info";
@@ -16,10 +15,8 @@ export type Verdict = "strong" | "watch" | "risk" | "needs_info";
 export interface AreaVerdict {
   area: AreaKey;
   verdict: Verdict;
-  /** Motivo con código estable; el paso 11 lo convierte en frase. */
+  /** Motivo con código estable; las frases y plantillas parten de él. */
   reason: string;
-  /** code: reglas de este archivo. jev: veredicto de Jev guardado como dato verdict.<área>. */
-  decidedBy: "code" | "jev";
   /** Datos imprescindibles que faltan (solo con needs_info). */
   missing: string[];
   /** El veredicto se apoya en algún dato estimado. */
@@ -46,7 +43,29 @@ const UNVALIDATED_INVESTMENT_EUR = 50_000;
 
 const NICHE = option("competition", "Niche with no clear competitors");
 const FEW = option("competition", "Few competitors");
-const WEAK_DIFFERENTIATORS = [option("differentiator", "Price"), option("differentiator", "None identified")];
+const PRICE = option("differentiator", "Price");
+const NO_DIFFERENTIATOR = option("differentiator", "None identified");
+const QUALITY = option("differentiator", "Quality or experience");
+const WEAK_DIFFERENTIATORS = [PRICE, NO_DIFFERENTIATOR];
+/** En el concepto, "calidad" tampoco diferencia: casi todos dicen tenerla. */
+const GENERIC_CONCEPT = [PRICE, NO_DIFFERENTIATOR, QUALITY];
+
+const FOOT_TRAFFIC = option("acquisition_channel", "Foot traffic or location");
+const SELF_SERVICE = option("acquisition_channel", "Online self-service");
+const PAID_ADS = option("acquisition_channel", "Paid advertising");
+const PUBLIC_SECTOR = option("customer_segment", "Public sector");
+const MIXED_SEGMENTS = option("customer_segment", "Mixed segments");
+const ONLINE = option("geographic_scope", "Online");
+const WIDE_SCOPES = [option("geographic_scope", "National"), option("geographic_scope", "International")];
+
+const NO_EXPERIENCE = option("founder_experience", "None");
+const LITTLE_EXPERIENCE = option("founder_experience", "Under 2 years");
+const NO_BACKGROUND = option("founder_profile", "No relevant background");
+const MANAGES = [option("founder_profile", "Management"), option("founder_profile", "Several areas")];
+const UNDER_10H = option("time_commitment", "Under 10 h/week");
+const UNDER_20H = [UNDER_10H, option("time_commitment", "10-20 h/week")];
+const LAUNCH_UNDER_3M = option("launch_timeline", "Under 3 months");
+const LARGE_TEAM = option("team_requirement", "Large team");
 
 function rentLevel(label: (typeof RENT_LEVELS)[number]) {
   return label;
@@ -67,7 +86,60 @@ function valueOf(facts: readonly Fact[], key: string) {
   return input ? String(input.value) : null;
 }
 
-const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
+/** Datos imprescindibles que faltan (no sabidos o descartados). */
+function missingOf(facts: readonly Fact[], keys: string[]) {
+  return keys.filter((key) => valueOf(facts, key) === null);
+}
+
+const RULES: Record<AreaKey, (facts: readonly Fact[]) => Decision> = {
+  concept(facts) {
+    const missing = missingOf(facts, ["offering_type", "revenue_model"]);
+    if (missing.length > 0) return needsInfo(missing);
+    // Un concepto genérico no tumba un negocio: eso lo marca Competencia. Aquí, como mucho, Vigilar.
+    const differentiator = valueOf(facts, "differentiator");
+    return differentiator && !GENERIC_CONCEPT.includes(differentiator)
+      ? { verdict: "strong", reason: "concept.strong" }
+      : { verdict: "watch", reason: "concept.watch" };
+  },
+
+  market(facts) {
+    const customer = valueOf(facts, "customer_segment");
+    if (!customer) return needsInfo(["customer_segment"]);
+    const scope = valueOf(facts, "geographic_scope");
+    const channel = valueOf(facts, "acquisition_channel");
+
+    if ((channel === FOOT_TRAFFIC && scope === ONLINE) || (channel === SELF_SERVICE && customer === PUBLIC_SECTOR)) {
+      return { verdict: "risk", reason: "market.risk" };
+    }
+    const doubtful =
+      (channel === FOOT_TRAFFIC && scope !== null && WIDE_SCOPES.includes(scope)) ||
+      customer === MIXED_SEGMENTS ||
+      channel === null ||
+      channel === PAID_ADS ||
+      scope === null;
+    return doubtful ? { verdict: "watch", reason: "market.watch" } : { verdict: "strong", reason: "market.strong" };
+  },
+
+  founder(facts) {
+    const missing = missingOf(facts, ["founder_experience", "time_commitment"]);
+    if (missing.length > 0) return needsInfo(missing);
+    const experience = valueOf(facts, "founder_experience");
+    const time = valueOf(facts, "time_commitment");
+    const profile = valueOf(facts, "founder_profile");
+    const launch = valueOf(facts, "launch_timeline");
+    const team = valueOf(facts, "team_requirement");
+
+    if ((time === UNDER_10H && launch === LAUNCH_UNDER_3M) || (experience === NO_EXPERIENCE && profile === NO_BACKGROUND)) {
+      return { verdict: "risk", reason: "founder.risk" };
+    }
+    const gap =
+      experience === NO_EXPERIENCE ||
+      experience === LITTLE_EXPERIENCE ||
+      (time !== null && UNDER_20H.includes(time)) ||
+      (team === LARGE_TEAM && !(profile !== null && MANAGES.includes(profile)));
+    return gap ? { verdict: "watch", reason: "founder.watch" } : { verdict: "strong", reason: "founder.strong" };
+  },
+
   money(facts) {
     const check = moneyCheck(facts);
     const missing = [
@@ -113,7 +185,7 @@ const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
       : { verdict: "risk", reason: "competition.crowded_undifferentiated" };
   },
 
-    location(facts) {
+  location(facts) {
     const level = valueOf(facts, FIGURE_KEYS.rentLevel);
     if (!level) return needsInfo([FIGURE_KEYS.rentLevel]);
     if (level === PRIME_RENT) {
@@ -126,7 +198,6 @@ const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
     if (level === ABOVE_AVERAGE_RENT) return { verdict: "watch", reason: "location.above_average" };
     return { verdict: "strong", reason: "location.fits" };
   },
-
 
   regulation(facts) {
     if (valueOf(facts, "money_handling") === HOLDS_FUNDS) return { verdict: "risk", reason: "regulation.holds_funds" };
@@ -145,52 +216,16 @@ const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
   },
 };
 
-const JEV_VERDICTS: Record<string, Verdict> = {
-  Strong: "strong",
-  Watch: "watch",
-  Risk: "risk",
-  [NOT_ENOUGH_INFORMATION]: "needs_info",
-};
-
-/** Veredicto de un área juzgada por Jev: solo cuenta si es sabido o estimado (confianza >= umbral). */
-function jevDecision(facts: readonly Fact[], area: AreaKey): Decision & { estimated: boolean } {
-  if (!isJevVerdictArea(area)) return { ...needsInfo([]), estimated: false };
-  const missing = missingCore(facts, area);
-  if (missing.length > 0) return { ...needsInfo(missing), estimated: false };
-
-  const fact = facts.find((f) => f.key === verdictKey(area));
-  const certainty = fact ? certaintyOf(fact) : "unknown";
-  const verdict = fact ? JEV_VERDICTS[String(fact.value)] : undefined;
-  if (!verdict || (certainty !== "known" && certainty !== "estimated")) {
-    return { verdict: "needs_info", reason: "jev.unsure", estimated: false };
-  }
-  return { verdict, reason: `${area}.${verdict}`, estimated: certainty === "estimated" };
-}
-
 /** Veredicto de cada área del informe, en el mismo orden que buildAreas. */
 export function areaVerdicts(facts: readonly Fact[]): AreaVerdict[] {
   return buildAreas(facts).map((view) => {
-    const rule = RULES[view.area];
-    if (!rule) {
-      const decision = jevDecision(facts, view.area);
-      return {
-        area: view.area,
-        verdict: decision.verdict,
-        reason: decision.reason,
-        decidedBy: "jev",
-        missing: decision.missing ?? [],
-        estimated: view.estimated || decision.estimated,
-      };
-    }
-    const decision = rule(facts);
-    const estimated = view.estimated || (view.area === "money" && moneyCheck(facts).estimated);
+    const decision = RULES[view.area](facts);
     return {
       area: view.area,
       verdict: decision.verdict,
       reason: decision.reason,
-      decidedBy: "code",
       missing: decision.missing ?? [],
-      estimated,
+      estimated: view.estimated || (view.area === "money" && moneyCheck(facts).estimated),
     };
   });
 }

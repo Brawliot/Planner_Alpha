@@ -4,14 +4,13 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
-import { analyse, reanalyse, refreshJevVerdicts, writeNarrative } from "@/lib/report/analyse";
 import { parseEdits } from "@/lib/report/edit";
 import { findContradictions } from "@/lib/report/contradictions";
-import { improvementsByArea, jevAreasAffectedBy, parseImproveAnswers } from "@/lib/report/improve";
 import type { Fact } from "@/lib/report/facts";
 import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
 import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
-
+import { analyse, reanalyse, writeNarrative } from "@/lib/report/analyse";
+import { improvementsByArea, parseImproveAnswers } from "@/lib/report/improve";
 export type FormState = { error: string | null };
 
 // Las Server Actions se pueden llamar con un POST directo: sesión y dueño se comprueban siempre aquí.
@@ -99,10 +98,9 @@ export async function improveArea(
   if (!parsed.ok) return { error: "invalid" };
 
   try {
-    const answered = mergeFacts(report.facts, parsed.facts);
-    // Solo los veredictos de Jev que usan lo respondido; los de código se recalculan solos al leer.
-    const facts = await refreshJevVerdicts(report.idea, answered, jevAreasAffectedBy(parsed.facts.map((f) => f.key)));
-    // Solo se redactan de nuevo las áreas cuyos datos han cambiado.
+    // Los veredictos se recalculan solos al leer el informe.
+    const facts = mergeFacts(report.facts, parsed.facts);
+  // Solo se redactan de nuevo las áreas cuyos datos han cambiado.
     const narrative = await writeNarrative(report.idea, facts, report.narrative ?? null);
     await updateOwnReport(user.id, report.id, "review", { facts, status: "review", narrative });
   } catch (err) {
@@ -126,9 +124,8 @@ export async function saveEdits(id: string, _prev: EditState, formData: FormData
 
   try {
     const edited = mergeFacts(report.facts, parsed.changes);
-    const facts = parsed.structural
-      ? await reanalyse(report.idea, edited)
-      : await refreshJevVerdicts(report.idea, edited, jevAreasAffectedBy(parsed.changes.map((c) => c.key)));
+    // Un cambio estructural repite el análisis; el resto se recalcula solo al leer.
+    const facts = parsed.structural ? await reanalyse(report.idea, edited) : edited;
     const narrative = await writeNarrative(report.idea, facts, report.narrative ?? null);
     await updateOwnReport(user.id, report.id, "review", { facts, status: "review", narrative });
   } catch (err) {

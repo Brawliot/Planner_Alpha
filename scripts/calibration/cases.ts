@@ -4,9 +4,6 @@
  * Cada caso va en inglés y en español para medir si el idioma cambia el acierto.
  */
 import { CATALOG_JEV_QUESTIONS } from "../../src/lib/report/questions.ts";
-import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
-import type { Fact } from "../../src/lib/report/facts.ts";
-import type { JevVerdictArea } from "../../src/lib/report/verdict-questions.ts";
 
 export type Lang = "en" | "es";
 
@@ -414,98 +411,3 @@ export const NOUL_CASES: NoulCase[] = [
 
 // La misma pregunta de plausibilidad que usa la app.
 export { PLAUSIBILITY_QUESTION } from "../../src/lib/report/plausibility.ts";
-
-
-// ---- Veredictos de Jev (paso 9b). Las etiquetas son criterio de negocio: revísalas.
-
-type CaseFact = [key: string, value: unknown, origin: "user" | "gpt"];
-
-export interface VerdictCase {
-  id: string;
-  lang: Lang;
-  area: JevVerdictArea;
-  idea: string;
-  facts: CaseFact[];
-  expected: string;
-}
-
-function verdictPair(
-  id: string,
-  area: JevVerdictArea,
-  expected: string,
-  facts: CaseFact[],
-  en: string,
-  es: string,
-): VerdictCase[] {
-  return [
-    { id, lang: "en", area, idea: en, facts, expected },
-    { id, lang: "es", area, idea: es, facts, expected },
-  ];
-}
-
-/** Datos del caso como Fact: los "gpt" van como estimaciones plausibles. */
-export function caseFacts(item: VerdictCase): Fact[] {
-  return item.facts.map(([key, value, origin]): Fact =>
-    origin === "user"
-      ? { key, value, source: { origin: "user", quote: String(value) } }
-      : {
-          key,
-          value,
-          source: { origin: "gpt", model: "calibration", assumptions: [], plausibility: { noul: 0.8, model: CALIBRATED_JEV_MODEL } },
-        },
-  );
-}
-
-export const VERDICT_CASES: VerdictCase[] = [
-  ...verdictPair("concept-strong", "concept", "Strong",
-    [["offering_type", "Software", "user"], ["revenue_model", "Subscription", "user"], ["customer_segment", "Consumers", "user"], ["differentiator", "Specialized niche", "user"]],
-    "A subscription app that plans weekly menus for families with a diabetic member",
-    "Una app por suscripción que planifica los menús semanales de familias con un diabético"),
-  ...verdictPair("concept-watch", "concept", "Watch",
-    [["offering_type", "Physical product", "user"], ["revenue_model", "One-time sale", "user"], ["differentiator", "None identified", "user"]],
-    "An online shop selling phone cases like many others",
-    "Una tienda online de fundas de móvil como tantas otras"),
-  ...verdictPair("concept-risk", "concept", "Risk",
-    [["offering_type", "Software", "user"], ["customer_segment", "Consumers", "user"]],
-    "A social network for everyone that will be free, with no ads and no fees of any kind",
-    "Una red social para todo el mundo, gratis, sin anuncios y sin ningún tipo de cuota"),
-  ...verdictPair("concept-ni", "concept", "Not enough information",
-    [["offering_type", "Software", "user"]],
-    "Something online",
-    "Algo por internet"),
-
-  ...verdictPair("market-strong", "market", "Strong",
-    [["customer_segment", "Consumers", "user"], ["geographic_scope", "Hyper-local", "user"], ["acquisition_channel", "Foot traffic or location", "gpt"]],
-    "A bakery for the people of my neighbourhood in Gràcia",
-    "Una panadería para la gente de mi barrio en Gràcia"),
-  ...verdictPair("market-watch", "market", "Watch",
-    [["customer_segment", "Small businesses (1-50)", "user"], ["geographic_scope", "National", "user"], ["acquisition_channel", "Paid advertising", "gpt"]],
-    "Accounting software for small businesses all over Spain, sold only through paid ads",
-    "Software de contabilidad para pequeñas empresas de toda España, vendido solo con anuncios de pago"),
-  ...verdictPair("market-risk", "market", "Risk",
-    [["customer_segment", "Consumers", "user"], ["geographic_scope", "Hyper-local", "user"], ["acquisition_channel", "Direct sales", "user"]],
-    "A neighbourhood hair salon that will get its customers through sales reps visiting large companies",
-    "Una peluquería de barrio que conseguirá clientes con comerciales que visitan grandes empresas"),
-  ...verdictPair("market-ni", "market", "Not enough information",
-    [["customer_segment", "Mixed segments", "user"]],
-    "A new business",
-    "Un negocio nuevo"),
-
-  ...verdictPair("founder-strong", "founder", "Strong",
-    [["founder_experience", "Over 5 years", "user"], ["founder_profile", "Sector expert", "user"], ["time_commitment", "Full time", "user"], ["launch_timeline", "6-12 months", "user"]],
-    "After 10 years as a chef I will open my own restaurant, full time, in about eight months",
-    "Después de 10 años como cocinero abriré mi propio restaurante, a tiempo completo, en unos ocho meses"),
-  ...verdictPair("founder-watch", "founder", "Watch",
-    [["founder_experience", "None", "user"], ["time_commitment", "Full time", "user"], ["launch_timeline", "6-12 months", "user"]],
-    "I have never worked in a bar, but I will work full time on opening one within a year",
-    "Nunca he trabajado en un bar, pero me dedicaré a tiempo completo a abrir uno en menos de un año"),
-  ...verdictPair("founder-risk", "founder", "Risk",
-    [["founder_experience", "None", "user"], ["founder_profile", "No relevant background", "user"], ["time_commitment", "Under 10 h/week", "user"], ["launch_timeline", "Under 3 months", "user"]],
-    "I want to open a restaurant in two months, working on it about 5 hours a week, with no experience",
-    "Quiero abrir un restaurante en dos meses, dedicándole unas 5 horas a la semana y sin experiencia"),
-  ...verdictPair("founder-ni", "founder", "Not enough information",
-    [["founder_experience", "Under 2 years", "user"], ["time_commitment", "10-20 h/week", "user"]],
-    "A clothing brand",
-    "Una marca de ropa"),
-
-];

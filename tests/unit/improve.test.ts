@@ -6,7 +6,6 @@ import {
   improvementsByArea,
   improveOptions,
   improvePrompt,
-  jevAreasAffectedBy,
   MAX_QUESTIONS_PER_AREA,
   parseImproveAnswers,
 } from "../../src/lib/report/improve.ts";
@@ -103,13 +102,5 @@ describe("parseImproveAnswers", () => {
   it("rechaza una respuesta que falta o inventada", () => {
     assert.equal(parseImproveAnswers(questions, form({})).ok, false);
     assert.equal(parseImproveAnswers(questions, form({ competition: "Mucha" })).ok, false);
-  });
-});
-
-describe("jevAreasAffectedBy", () => {
-  it("solo las áreas de Jev que usan el dato", () => {
-    assert.deepEqual(jevAreasAffectedBy(["differentiator"]), ["concept"]);
-    assert.deepEqual(jevAreasAffectedBy(["geographic_scope"]), ["market"]);
-    assert.deepEqual(jevAreasAffectedBy(["competition"]), []);
   });
 });

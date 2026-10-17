@@ -4,7 +4,6 @@ import type { Fact } from "./facts.ts";
 import { RENT_LEVELS } from "./figures.ts";
 import { answerOptions, CATALOG, type QuestionKey } from "./questions.ts";
 import { areaVerdicts, type AreaVerdict } from "./verdict.ts";
-import { JEV_VERDICT_AREAS, type JevVerdictArea } from "./verdict-questions.ts";
 
 /**
  * Preguntas para mejorar cada área del informe ("Improve" en cada fila). Lógica pura:
@@ -112,12 +111,4 @@ export function parseImproveAnswers(questions: readonly ImproveQuestion[], get: 
     facts.push({ key: question.key, value, source: { origin: "user", quote: value } });
   }
   return { ok: true, facts };
-}
-
-/** Áreas juzgadas por Jev que usan alguno de estos datos: son las únicas cuyo veredicto hay que volver a pedir. */
-export function jevAreasAffectedBy(keys: readonly string[]): JevVerdictArea[] {
-  return JEV_VERDICT_AREAS.filter((area) => {
-    const inputs: readonly string[] = AREAS[area].inputs;
-    return keys.some((key) => inputs.includes(key));
-  });
 }
