@@ -29,7 +29,7 @@ test.describe("crear informe", () => {
     await page.getByRole("button", { name: "Enviar" }).click();
 
     await expect(page).toHaveURL(new RegExp(`^${BASE_URL}/informe/[0-9a-f-]{36}$`));
-    await expect(page.getByRole("heading", { name: "Tu idea" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea", exact: true })).toBeVisible();
     // Se guarda recortada.
     await expect(page.getByText("Un bar de tapas en Malasaña", { exact: true })).toBeVisible();
   });
@@ -94,7 +94,7 @@ test.describe("clasificación y preguntas", () => {
 
   test("si Jev lo sabe todo, no hay preguntas ni se muestra la clasificación", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
-    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     await expect(page.getByRole("group")).toHaveCount(0);
     // El Jev falso responde la primera opción del sector: no debe aparecer en pantalla.
     await expect(page.getByText("Technology/SaaS")).toHaveCount(0);
@@ -115,7 +115,7 @@ test.describe("clasificación y preguntas", () => {
     await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("€20k-€50k").check();
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
   });
 
   test("con confianza baja pregunta los 4 temas, de 3 en 3, sin 'Not specified'", async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
 
   test("si Jev sabe todas las dimensiones, GPT solo estima las cifras", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
-    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     const report = await getReport(reportIdFrom(page.url()));
     expect(report.status).toBe("review");
     const fromGpt = report.facts.filter((f) => f.source.origin === "gpt").map((f) => f.key).sort();
@@ -260,7 +260,7 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
 
   test("si falla la redacción, el informe sale igualmente con plantillas", async ({ page }) => {
     await submitIdea(page, "Una app de facturación [gpt:down-write]");
-    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     const report = await getReport(reportIdFrom(page.url()));
     expect(report.status).toBe("review");
     expect(Object.values(report.narrative?.areas ?? {}).every((s) => s.source === "template")).toBe(true);
@@ -298,5 +298,47 @@ test.describe("pantalla del informe", () => {
     const competition = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Competition/ }) });
     await expect(competition.getByText("Needs info", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add data to evaluate" })).toBeDisabled();
+  });
+
+  
+  test("al pulsar una tarjeta, el panel muestra su detalle; al volver a pulsarla, se cierra", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    const panelHelp = page.getByText("Press a card's arrow to see its information here.");
+    await expect(panelHelp).toBeVisible();
+
+    const concept = page.getByRole("button", { name: /Concept/ });
+    await concept.click();
+    await expect(concept).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByText("No estimates: assessment based on what you wrote.")).toBeVisible();
+
+    await concept.click();
+    await expect(concept).toHaveAttribute("aria-expanded", "false");
+    await expect(panelHelp).toBeVisible();
+  });
+
+  test("un área estimada muestra sus supuestos en el panel", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: /Money/ }).click();
+    await expect(page.getByText("estimated", { exact: true })).toBeVisible();
+    await expect(page.getByText("Assumptions", { exact: true })).toBeVisible();
+  });
+
+  test("pulsar otra tarjeta cambia el contenido del panel", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    const concept = page.getByRole("button", { name: /Concept/ });
+    const money = page.getByRole("button", { name: /Money/ });
+    await concept.click();
+    await money.click();
+    await expect(concept).toHaveAttribute("aria-expanded", "false");
+    await expect(money).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("en móvil, el panel se abre justo debajo de la tarjeta pulsada", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: /Money/ }).click();
+    const moneyCard = page.getByRole("listitem").filter({ has: page.getByRole("button", { name: /Money/ }) });
+    const next = moneyCard.locator("xpath=following-sibling::li[1]");
+    await expect(next.getByText("Assumptions", { exact: true })).toBeVisible();
   });
 });
