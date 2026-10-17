@@ -12,6 +12,11 @@ import type { Fact } from "./facts.ts";
  */
 export const CALIBRATED_JEV_MODEL = "jev-1.13.0";
 export const KNOWN_MIN_CONFIDENCE = 0.85;
+/**
+ * Preguntas "probable" (calibración del 2026-10-17, 66 casos ES/EN): aciertos >= 0,78, fallos <= 0,46.
+ * 0,80 deja margen sobre los fallos. Provisional: hay menos casos que en las preguntas "dicho".
+ */
+export const LIKELY_MIN_CONFIDENCE = 0.8;
 export const PLAUSIBLE_MIN_NOUL = 0.7;
 export const IMPLAUSIBLE_MAX_NOUL = 0.5;
 
@@ -44,6 +49,8 @@ export function certaintyOf({ value, source }: Fact): Certainty {
     case "jev": {
       // Con un modelo no calibrado, la confianza no significa nada conocido.
       if (source.model !== CALIBRATED_JEV_MODEL || source.confidence === null) return "unknown";
+      // Una deducción nunca es un hecho: como mucho, estimada, y con su propio umbral.
+      if (source.from === "likely") return source.confidence >= LIKELY_MIN_CONFIDENCE ? "estimated" : "unknown";
       if (source.confidence < KNOWN_MIN_CONFIDENCE) return "unknown";
       // Interpretar supuestos con seguridad no los convierte en hechos.
       return source.from === "user" ? "known" : "estimated";

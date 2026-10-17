@@ -9,8 +9,11 @@
 export type Source =
   /** Lo escribió el usuario; quote es el fragmento literal que lo respalda. */
   | { origin: "user"; quote: string }
-  /** Jev lo interpretó. from indica si interpretó texto del usuario o datos inferidos. */
-  | { origin: "jev"; model: string; confidence: number | null; from: "user" | "inferred" }
+  /**
+   * Jev lo interpretó. from: "user" = lo interpretó del texto del usuario; "inferred" = de datos
+   * inferidos; "likely" = lo dedujo como lo más probable para ese tipo de negocio (nunca es sabido).
+   */
+  | { origin: "jev"; model: string; confidence: number | null; from: "user" | "inferred" | "likely" }
   /**
    * GPT lo infirió; assumptions son los supuestos de los que depende.
    * plausibility es la validación de Jev (noul); sin ella el dato no se da por estimado.

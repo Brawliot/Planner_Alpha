@@ -134,6 +134,12 @@ export async function writeNarrative(
  * de Jev se apoyaban en otro negocio: se descartan y se repite el análisis con lo que dijo el usuario.
  */
 export async function reanalyse(idea: string, facts: Fact[]): Promise<Fact[]> {
-  const kept = facts.filter((fact) => fact.source.origin !== "gpt" && !fact.key.startsWith("verdict."));
+    // Las deducciones de Jev ("likely") se apoyaban en el negocio anterior: también se descartan.
+  const kept = facts.filter(
+    (fact) =>
+      fact.source.origin !== "gpt" &&
+      !(fact.source.origin === "jev" && fact.source.from === "likely") &&
+      !fact.key.startsWith("verdict."),
+  );
   return analyse(idea, kept);
 }

@@ -46,6 +46,16 @@ describe("pendingQuestions", () => {
     const facts = mergeFacts(classified(), [jevFact("sector", "Other", 0.6)]);
     assert.deepEqual(pendingQuestions(facts), ["sector"]);
   });
+
+    it("no pregunta lo que Jev deduce con seguridad, pero sí lo que deduce flojo", () => {
+    const deduced = (confidence: number): Fact => ({
+      key: "customer_segment",
+      value: "Consumers",
+      source: { origin: "jev", model: CALIBRATED_JEV_MODEL, confidence, from: "likely" },
+    });
+    assert.deepEqual(pendingQuestions(mergeFacts(classified(), [deduced(0.9)])), []);
+    assert.deepEqual(pendingQuestions(mergeFacts(classified(), [deduced(0.5)])), ["customer_segment"]);
+  });
 });
 
 describe("currentStep", () => {

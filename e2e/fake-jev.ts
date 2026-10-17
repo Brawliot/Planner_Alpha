@@ -2,7 +2,8 @@
  * Jev falso para los tests E2E: imita POST /v1/systemone con respuestas deterministas.
  * Escenarios por marcas en el texto del usuario (van dentro del state):
  *   [jev:unknown]  las preguntas choice responden "Not specified" si es una opción
- *   [jev:unknown=a,b]  solo las preguntas a y b responden "Not specified"
+ *   [jev:unknown=a,b]  solo las preguntas a y b responden "Not specified" (y su "probable", "Can't tell")
+ *   [jev:likely=a,b]   a y b: "dicho" responde "Not specified", pero "probable" deduce la primera opción
  *   [jev:unsure]   confianza baja (0,40)
  *   [jev:down]     error 500 en todas las llamadas
  *   [jev:implausible]  las preguntas noul responden 0,1 (inferencia absurda)
@@ -17,9 +18,14 @@ function answerFor(key: string, question: JevQuestion, text: string) {
   switch (question.type) {
     case "choice": {
       const options = Object.keys(question.criteria);
-      const forced = /\[jev:unknown=([\w,]+)\]/.exec(text)?.[1].split(",") ?? [];
-      const unknown = text.includes("[jev:unknown]") || forced.includes(key);
-      const choice = unknown && options.includes("Not specified") ? "Not specified" : options[0];
+      const base = key.replace(/^likely_/, "");
+      const isLikely = base !== key;
+      const listed = (marker: string) => new RegExp(`\\[jev:${marker}=([\\w,]+)\\]`).exec(text)?.[1].split(",") ?? [];
+      const deducible = listed("likely").includes(base);
+      const unknown =
+        text.includes("[jev:unknown]") || listed("unknown").includes(base) || (deducible && !isLikely);
+      const blank = options.find((o) => o === "Not specified" || o === "Can't tell");
+      const choice = unknown && blank ? blank : options[0];
       const confidence = text.includes("[jev:unsure]") ? 0.4 : 0.95;
       const top = text.includes("[jev:unsure]") ? 0.5 : 0.95;
       const rest = options.length > 1 ? (1 - top) / (options.length - 1) : 0;

@@ -33,6 +33,13 @@ describe("keysToInfer", () => {
     const gpt: Fact = { key: "competition", value: "Crowded market", source: { origin: "gpt", model: "g", assumptions: [] } };
     assert.equal(keysToInfer([gpt]).includes("competition"), false);
   });
+
+    it("no infiere con GPT lo que Jev ya dedujo", () => {
+    const facts: Fact[] = [
+      { key: "competition", value: "Crowded market", source: { origin: "jev", model: CALIBRATED_JEV_MODEL, confidence: 0.9, from: "likely" } },
+    ];
+    assert.equal(keysToInfer(facts).includes("competition"), false);
+  });
 });
 
 describe("inferenceFormat", () => {

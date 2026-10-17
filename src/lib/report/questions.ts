@@ -481,7 +481,8 @@ export function pendingQuestions(facts: readonly Fact[]): QuestionKey[] {
   return ASK_KEYS.filter((key) => {
     const fact = facts.find((f) => f.key === key);
     // Lo que respondió el usuario no se vuelve a preguntar, aunque sea "Not decided yet".
-    return !fact || (fact.source.origin !== "user" && certaintyOf(fact) !== "known");
+    // Lo deducido con seguridad tampoco: sale "estimated" en el informe y se puede corregir.
+    return !fact || (fact.source.origin !== "user" && certaintyOf(fact) === "unknown");
   });
 }
 

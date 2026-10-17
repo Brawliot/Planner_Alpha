@@ -9,7 +9,7 @@ import type { Fact } from "../../src/lib/report/facts.ts";
 
 const M = CALIBRATED_JEV_MODEL;
 
-function jev(confidence: number | null, from: "user" | "inferred" = "user", model = M, value: unknown = "Hospitality"): Fact {
+function jev(confidence: number | null, from: "user" | "inferred" | "likely"= "user", model = M, value: unknown = "Hospitality"): Fact {
   return { key: "sector", value, source: { origin: "jev", model, confidence, from } };
 }
 
@@ -81,5 +81,17 @@ describe("certaintyOf: inferencias de GPT", () => {
 
   it("validadas con un modelo no calibrado son unknown", () => {
     assert.equal(certaintyOf(gpt(0.9, "jev-1.14.0")), "unknown");
+  });
+});
+
+describe("deducciones de Jev (likely)", () => {
+  it("con confianza >= 0,80 es estimado, nunca sabido", () => {
+    assert.equal(certaintyOf(jev(0.99, "likely")), "estimated");
+    assert.equal(certaintyOf(jev(0.8, "likely")), "estimated");
+  });
+
+  it("por debajo de 0,80 o 'Can't tell' es no sabido", () => {
+    assert.equal(certaintyOf(jev(0.79, "likely")), "unknown");
+    assert.equal(certaintyOf(jev(0.99, "likely", M, "Can't tell")), "unknown");
   });
 });

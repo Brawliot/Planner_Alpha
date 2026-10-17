@@ -169,6 +169,24 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     await login(page, email);
   });
 
+    test("lo que Jev deduce no se pregunta ni va a GPT, y queda como estimado", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:likely=revenue_model,customer_segment,competition]");
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.status).toBe("review");
+    for (const key of ["revenue_model", "customer_segment", "competition"]) {
+      const fact = report.facts.find((f) => f.key === key);
+      expect(fact?.source.origin, key).toBe("jev");
+      expect(fact?.source.from, key).toBe("likely");
+    }
+  });
+
+  test("si Jev no puede deducirlo, se pregunta", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=customer_segment]");
+    await expect(page.getByRole("group")).toHaveCount(1);
+  });
+
   test("si Jev sabe todas las dimensiones, GPT solo estima las cifras", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
