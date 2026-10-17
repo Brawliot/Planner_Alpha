@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
 import {
+  budgetMatchesBand,
   figureFacts,
   figuresFormat,
   figuresParser,
@@ -185,5 +186,25 @@ describe("moneyCheck", () => {
     assert.equal(check.coverage, null);
     assert.equal(check.runwayMonths, null);
     assert.equal(check.survivesUntilRevenue, null);
+  });
+});
+
+
+describe("tramos de presupuesto sin solape", () => {
+  const band = (value: string): Fact => ({
+    key: "budget_band",
+    value,
+    source: { origin: "jev", model: M, confidence: 0.95, from: "user" },
+  });
+
+  it("el máximo pertenece a su tramo y no al siguiente", () => {
+    assert.equal(budgetMatchesBand(20000, [band("€5k-€20k")]), true);
+    assert.equal(budgetMatchesBand(20000, [band("€20k-€50k")]), false);
+    assert.equal(budgetMatchesBand(20001, [band("€20k-€50k")]), true);
+  });
+
+  it("el primer tramo empieza en 0", () => {
+    assert.equal(budgetMatchesBand(0, [band("Under €5k")]), true);
+    assert.equal(budgetMatchesBand(5000, [band("Under €5k")]), true);
   });
 });

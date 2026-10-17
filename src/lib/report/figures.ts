@@ -27,7 +27,10 @@ export interface EurRange {
   max: number;
 }
 
-/** Límites de cada tramo de presupuesto, en euros (max null = sin techo). */
+/**
+ * Límites de cada tramo de presupuesto, en euros (max null = sin techo). Igual que las descripciones
+ * del catálogo: cada tramo incluye su máximo y no su mínimo (salvo el primero, que empieza en 0).
+ */
 export const BUDGET_BANDS: Record<string, { min: number; max: number | null }> = {
   "Under €5k": { min: 0, max: 5_000 },
   "€5k-€20k": { min: 5_000, max: 20_000 },
@@ -153,7 +156,9 @@ export function budgetMatchesBand(amount: number, facts: readonly Fact[]) {
   const band = usable(facts, "budget_band");
   const bounds = band ? BUDGET_BANDS[String(band.value)] : undefined;
   if (!bounds) return true;
-  return amount >= bounds.min && (bounds.max === null || amount <= bounds.max);
+  // Sin solape: 20.000 € es "€5k-€20k", no "€20k-€50k".
+  const aboveMin = bounds.min === 0 ? amount >= 0 : amount > bounds.min;
+  return aboveMin && (bounds.max === null || amount <= bounds.max);
 }
 
 /**
