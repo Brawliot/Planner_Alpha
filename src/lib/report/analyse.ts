@@ -3,6 +3,19 @@ import { callGpt } from "@/lib/gpt";
 import { callJev } from "@/lib/jev";
 import { buildJevState, type Fact } from "./facts";
 import { buildAreas } from "./areas";
+import { areaVerdicts } from "./verdict";
+import {
+  areaFingerprints,
+  buildNarrative,
+  mergeNarrative,
+  NARRATIVE_INSTRUCTIONS,
+  narrativeFormat,
+  narrativeInput,
+  narrativeParser,
+  staleAreas,
+  type NarrativeResult,
+  type StoredNarrative,
+} from "./narrative";
 import { certaintyOf } from "./certainty";
 import {
   areaFacts,
@@ -115,4 +128,41 @@ async function withPlausibility(idea: string, fact: Fact): Promise<Fact> {
     ...fact,
     source: { ...fact.source, plausibility: noul === undefined ? null : { noul, model: check.model } },
   };
+}
+
+
+/**
+ * Frases del informe. Nunca lanza error: si GPT falla, se usan plantillas.
+ * Con una narrativa anterior, solo cambian las frases de las áreas cuyos datos cambiaron;
+ * si no cambió ninguna, ni siquiera se llama a GPT.
+ */
+export async function writeNarrative(
+  idea: string,
+  facts: Fact[],
+  previous: StoredNarrative | null = null,
+): Promise<StoredNarrative> {
+  const verdicts = areaVerdicts(facts);
+  const fingerprints = areaFingerprints(facts, verdicts);
+  const stale = staleAreas(previous, fingerprints);
+  if (previous && stale.length === 0) return previous;
+
+  let result: NarrativeResult | null = null;
+  if (verdicts.some((v) => v.verdict !== "needs_info")) {
+    try {
+      const response = await callGpt({
+        task: "write",
+        instructions: NARRATIVE_INSTRUCTIONS,
+        input: narrativeInput(idea, facts, verdicts),
+        format: narrativeFormat(verdicts),
+        parse: narrativeParser(),
+        effort: "low",
+      });
+      result = response.data;
+    } catch (err) {
+      // Las frases no son críticas: el informe sale con plantillas.
+      console.error("report: no se pudieron redactar las frases", err instanceof Error ? err.name : "desconocido");
+    }
+  }
+
+  return mergeNarrative(buildNarrative(result, idea, facts, verdicts), previous, stale, fingerprints);
 }

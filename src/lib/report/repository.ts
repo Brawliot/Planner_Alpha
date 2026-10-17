@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { report, type REPORT_STATUSES } from "@/db/schema";
 import type { Fact } from "./facts";
-
+import type { StoredNarrative } from "./narrative";
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 
 export async function insertReport(userId: string, idea: string) {
@@ -29,7 +29,7 @@ export async function updateOwnReport(
   userId: string,
   id: string,
   expectedStatus: ReportStatus,
-  values: { facts: Fact[]; status: ReportStatus },
+  values: { facts: Fact[]; status: ReportStatus; narrative?: StoredNarrative },
 ) {
   await db
     .update(report)

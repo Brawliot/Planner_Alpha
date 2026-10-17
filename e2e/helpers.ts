@@ -43,10 +43,18 @@ export async function login(page: Page, email: string, password = PASSWORD) {
 }
 
 
-/** Lee el estado y los datos de un informe (solo tests: el usuario no ve los datos hasta el informe). */
+/** Lee el estado, los datos y las frases de un informe (solo tests: el usuario no ve los datos hasta el informe). */
 export async function getReport(id: string) {
-  const rows = await sql`select status, facts from report where id = ${id}`;
-  return rows[0] as { status: string; facts: Array<{ key: string; value: unknown; source: Record<string, unknown> }> };
+  const rows = await sql`select status, facts, narrative from report where id = ${id}`;
+  return rows[0] as {
+    status: string;
+    facts: Array<{ key: string; value: unknown; source: Record<string, unknown> }>;
+    narrative: {
+      language: string;
+      areas: Record<string, { text: string; source: string }>;
+      risks: Array<{ area: string; sentence: { text: string; source: string } }>;
+    } | null;
+  };
 }
 
 export function reportIdFrom(url: string) {

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
-import { analyse } from "@/lib/report/analyse";
+import { analyse, writeNarrative } from "@/lib/report/analyse";
 import type { Fact } from "@/lib/report/facts";
 import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
 import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
@@ -95,7 +95,10 @@ async function saveFacts(userId: string, id: string, idea: string, expected: Rep
 
 async function analyseReport(userId: string, id: string, idea: string, facts: Fact[]) {
   try {
-    await updateOwnReport(userId, id, "analysis", { facts: await analyse(idea, facts), status: "review" });
+    const analysed = await analyse(idea, facts);
+    // writeNarrative no falla: si GPT no responde, guarda plantillas.
+    const narrative = await writeNarrative(idea, analysed);
+    await updateOwnReport(userId, id, "analysis", { facts: analysed, status: "review", narrative });
     return true;
   } catch (err) {
     logError("completar el análisis", err);

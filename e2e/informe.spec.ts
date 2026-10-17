@@ -243,4 +243,26 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     // Location solo aparece en locales físicos: no hay veredicto.
     expect(report.facts.some((f) => f.key === "verdict.location")).toBe(false);
   });
+
+  
+  test("guarda las frases del informe redactadas por GPT", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.narrative?.areas.concept).toEqual({ text: "Fake assumption", source: "gpt" });
+  });
+
+  test("una frase con una cifra inventada se sustituye por la plantilla", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación [gpt:numbers]");
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.narrative?.areas.concept?.source).toBe("template");
+    expect(report.narrative?.areas.concept?.text).not.toContain("99");
+  });
+
+  test("si falla la redacción, el informe sale igualmente con plantillas", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación [gpt:down-write]");
+    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.status).toBe("review");
+    expect(Object.values(report.narrative?.areas ?? {}).every((s) => s.source === "template")).toBe(true);
+  });
 });

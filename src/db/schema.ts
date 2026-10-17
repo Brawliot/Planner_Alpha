@@ -10,6 +10,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import type { Fact } from "../lib/report/facts";
+import type { StoredNarrative } from "../lib/report/narrative";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -106,6 +107,8 @@ export const report = pgTable(
     idea: text("idea").notNull(),
     status: text("status", { enum: REPORT_STATUSES }).notNull().default("new"),
     facts: jsonb("facts").$type<Fact[]>().notNull().default([]),
+    // Frases del informe con la huella de los datos de cada área (null en informes anteriores).
+    narrative: jsonb("narrative").$type<StoredNarrative>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

@@ -247,3 +247,51 @@ export function buildNarrative(
     risks: mainRisks(verdicts).map((v) => ({ area: v.area, sentence: pick(v, result?.risks[v.area]?.sentence) })),
   };
 }
+
+
+// ---- Guardado y regeneración parcial
+
+/** Lo que se guarda: la narrativa y la huella de los datos con los que se redactó cada área. */
+export type StoredNarrative = Narrative & { fingerprints: Partial<Record<AreaKey, string>> };
+
+/** Huella de cada área: sus datos tal como se le pasan a GPT. Si cambian, su frase está desfasada. */
+export function areaFingerprints(facts: readonly Fact[], verdicts: readonly AreaVerdict[]) {
+  return Object.fromEntries(verdicts.map((v) => [v.area, JSON.stringify(areaData(facts, v))])) as Partial<
+    Record<AreaKey, string>
+  >;
+}
+
+/** Áreas cuya frase hay que volver a redactar (todas si no hay narrativa anterior). */
+export function staleAreas(
+  previous: StoredNarrative | null,
+  fingerprints: Partial<Record<AreaKey, string>>,
+): AreaKey[] {
+  return (Object.keys(fingerprints) as AreaKey[]).filter(
+    (area) => !previous || previous.fingerprints[area] !== fingerprints[area],
+  );
+}
+
+/** Combina lo nuevo con lo anterior: las áreas que no han cambiado conservan su frase. */
+export function mergeNarrative(
+  fresh: Narrative,
+  previous: StoredNarrative | null,
+  stale: readonly AreaKey[],
+  fingerprints: Partial<Record<AreaKey, string>>,
+): StoredNarrative {
+  if (!previous) return { ...fresh, fingerprints };
+  const unchanged = (area: AreaKey) => !stale.includes(area);
+  return {
+    language: fresh.language,
+    areas: Object.fromEntries(
+      (Object.keys(fresh.areas) as AreaKey[]).map((area) => [
+        area,
+        unchanged(area) && previous.areas[area] ? previous.areas[area] : fresh.areas[area],
+      ]),
+    ),
+    risks: fresh.risks.map((risk) => {
+      const old = previous.risks.find((r) => r.area === risk.area);
+      return unchanged(risk.area) && old ? old : risk;
+    }),
+    fingerprints,
+  };
+}

@@ -3,7 +3,10 @@ import { describe, it } from "node:test";
 import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
 import {
+  areaFingerprints,
   buildNarrative,
+  mergeNarrative,
+  staleAreas,
   extractNumbers,
   mainRisks,
   MAX_SENTENCE_LENGTH,
@@ -137,5 +140,30 @@ describe("plantillas y esquema", () => {
     const areas = schema.properties.areas as { required: string[] };
     assert.ok(areas.required.includes("money"));
     assert.equal(areas.required.includes("competition"), false);
+  });
+});
+
+
+describe("regeneración parcial", () => {
+  const before = areaVerdicts(FACTS);
+  const stored = { ...buildNarrative(null, IDEA, FACTS, before), fingerprints: areaFingerprints(FACTS, before) };
+
+  it("sin cambios en los datos, ninguna área está desfasada", () => {
+    assert.deepEqual(staleAreas(stored, areaFingerprints(FACTS, before)), []);
+  });
+
+  it("al cambiar un dato, solo se desfasan las áreas que lo usan", () => {
+    const facts = [...FACTS, { key: "competition", value: "Crowded market", source: { origin: "user", quote: "x" } } as Fact];
+    const stale = staleAreas(stored, areaFingerprints(facts, areaVerdicts(facts)));
+    assert.deepEqual(stale, ["competition"]);
+  });
+
+  it("al combinar, las áreas sin cambios conservan su frase", () => {
+    const facts = [...FACTS, { key: "competition", value: "Crowded market", source: { origin: "user", quote: "x" } } as Fact];
+    const verdicts = areaVerdicts(facts);
+    const fresh = buildNarrative(result({ money: "Otra frase sin cifras.", competition: "Mucha competencia." }), IDEA, facts, verdicts);
+    const merged = mergeNarrative(fresh, stored, ["competition"], areaFingerprints(facts, verdicts));
+    assert.deepEqual(merged.areas.money, stored.areas.money, "Money no cambió: conserva su frase");
+    assert.equal(merged.areas.competition?.text, "Mucha competencia.");
   });
 });

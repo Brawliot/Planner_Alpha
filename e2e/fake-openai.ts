@@ -5,6 +5,8 @@
  *   [gpt:down]    error 500
  *   [gpt:refuse]  el modelo se niega
  *   [gpt:cannot]  en los enums que lo permiten, elige "Cannot infer"
+ *   [gpt:numbers] los textos libres llevan una cifra inventada
+ *   [gpt:down-write]  error 500 solo en la redacción (modelo de escritura)
  */
 import { createServer, type ServerResponse } from "node:http";
 
@@ -35,7 +37,7 @@ function fill(schema: Schema, text: string): unknown {
     case "boolean":
       return true;
     default:
-      return "Fake assumption";
+      return text.includes("[gpt:numbers]") ? "It costs 99,999 euros" : "Fake assumption";
   }
 }
 
@@ -70,6 +72,7 @@ createServer(async (req, res) => {
 
   const text = JSON.stringify(body.input ?? "");
   if (text.includes("[gpt:down]")) return send(res, 500);
+  if (text.includes("[gpt:down-write]") && body.model === "gpt-fake-write") return send(res, 500);
 
   const output = text.includes("[gpt:refuse]")
     ? message({ type: "refusal", refusal: "I can't help with that." })
