@@ -11,12 +11,13 @@ type QuestionsFormProps = {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   topic: string;
   title: string;
-  index: number;
-  total: number;
+  from: number;
+  to: number;
+  totalQuestions: number;
   questions: Question[];
 };
 
-export function QuestionsForm({ action, topic, title, index, total, questions }: QuestionsFormProps) {
+export function QuestionsForm({ action, topic, title, from, to, totalQuestions, questions }: QuestionsFormProps) {
   const [state, formAction, pending] = useActionState(action, { error: null });
 
   return (
@@ -25,7 +26,7 @@ export function QuestionsForm({ action, topic, title, index, total, questions }:
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">
-          Step {index} of {total}
+          {from === to ? `Question ${from} of ${totalQuestions}` : `Questions ${from}–${to} of ${totalQuestions}`}
         </p>
       </div>
       {questions.map((q) => (

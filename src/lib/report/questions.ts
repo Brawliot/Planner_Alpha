@@ -462,8 +462,16 @@ function askKeysOf(topic: Topic) {
 }
 
 /** Decisiones que el usuario puede no haber tomado aún: admiten "Not decided yet". */
-export const UNDECIDED_KEYS: readonly QuestionKey[] = ["budget_band", "launch_timeline", "time_commitment"];
-
+/** Decisiones del usuario: si aún no las ha tomado, "Not decided yet" es una respuesta válida (queda por concretar). */
+export const UNDECIDED_KEYS: readonly QuestionKey[] = [
+  "budget_band",
+  "launch_timeline",
+  "time_commitment",
+  "revenue_model",
+  "customer_segment",
+  "geographic_scope",
+  "differentiator",
+];
 /**
  * Opciones para el usuario: todas menos "Not specified". En las decisiones pendientes, además,
  * "Not decided yet": obligar a elegir convertiría en sabido algo que el usuario no ha decidido.
@@ -491,9 +499,10 @@ export interface QuestionStep {
   title: string;
   /** Solo las preguntas pendientes de ese tema. */
   keys: QuestionKey[];
-  /** Posición estable: cuenta los temas ya respondidos por el usuario y los pendientes. */
-  index: number;
-  total: number;
+  /** Números de las preguntas de esta pantalla (from–to) sobre el total del recorrido. */
+  from: number;
+  to: number;
+  totalQuestions: number;
 }
 
 /** Tema que toca responder ahora, o null si no queda nada por preguntar. */
@@ -508,12 +517,19 @@ export function currentStep(facts: readonly Fact[]): QuestionStep | null {
   const topic = involved.find((t) => askKeysOf(t).some((key) => pending.includes(key)));
   if (!topic) return null;
 
+  const keys = pending.filter((key) => CATALOG[key].topic === topic);
+  // Respondidas en este recorrido: respuesta cerrada (la cita es la opción elegida). Las cantidades
+  // escritas en la idea también son del usuario, pero su cita es el texto: no cuentan como pregunta.
+  const answered = ASK_KEYS.filter((key) =>
+    facts.some((f) => f.key === key && f.source.origin === "user" && f.source.quote === String(f.value)),
+  ).length;
   return {
     topic,
     title: TOPIC_TITLES[topic],
-    keys: pending.filter((key) => CATALOG[key].topic === topic),
-    index: involved.indexOf(topic) + 1,
-    total: involved.length,
+    keys,
+    from: answered + 1,
+    to: answered + keys.length,
+    totalQuestions: answered + pending.length,
   };
 }
 

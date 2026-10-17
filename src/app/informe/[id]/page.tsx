@@ -76,8 +76,9 @@ function ReportStep({ report }: { report: Report }) {
           action={answerQuestions.bind(null, report.id)}
           topic={step.topic}
           title={step.title}
-          index={step.index}
-          total={step.total}
+          from={step.from}
+          to={step.to}
+          totalQuestions={step.totalQuestions}
           questions={step.keys.map((key) => ({ key, prompt: promptFor(key), options: answerOptions(key) }))}
         />
       );

@@ -48,9 +48,23 @@ function isCatalogKey(key: string): key is QuestionKey {
   return Object.hasOwn(CATALOG, key);
 }
 
-/** Datos que el usuario puede responder: el catálogo y el nivel de alquiler. Las cifras, nunca. */
+/**
+ * Hechos del mercado: los investiga el programa y, si no se saben, son tareas del plan.
+ * Nunca se le preguntan al usuario en Improve (sí se pueden corregir en Edit).
+ */
+const RESEARCH_KEYS = new Set<string>([
+  "competition",
+  "capital_intensity",
+  "team_requirement",
+  "time_to_revenue",
+  "regulatory_load",
+  "third_party_dependency",
+  RENT_LEVEL_KEY,
+]);
+
+/** Datos que el usuario puede responder: los suyos del catálogo. Ni las cifras ni la investigación. */
 function isAskable(key: string) {
-  return isCatalogKey(key) || key === RENT_LEVEL_KEY;
+  return isCatalogKey(key) && !RESEARCH_KEYS.has(key);
 }
 
 export function improveOptions(key: string): string[] {

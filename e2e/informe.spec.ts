@@ -92,6 +92,13 @@ test.describe("clasificación y preguntas", () => {
     await login(page, email);
   });
 
+    test("las decisiones admiten 'Not decided yet' y no se vuelven a preguntar", async ({ page }) => {
+    await submitIdea(page, "Algo [jev:unknown=revenue_model]");
+    await page.getByRole("group", { name: "How will you make money?" }).getByLabel("Not decided yet").check();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+  });
+
   test("si Jev lo sabe todo, no hay preguntas ni se muestra la clasificación", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
 await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
@@ -116,13 +123,13 @@ await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisibl
     await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
 
     await expect(page.getByRole("heading", { name: "You" })).toBeVisible();
-    await expect(page.getByText("Step 1 of 2")).toBeVisible();
+    await expect(page.getByText("Question 1 of 2")).toBeVisible();
     await expect(page.getByRole("group")).toHaveCount(1);
     await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await expect(page.getByRole("heading", { name: "Resources and timing" })).toBeVisible();
-    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+    await expect(page.getByText("Question 2 of 2")).toBeVisible();
     await expect(page.getByRole("group")).toHaveCount(1);
     await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("€20k-€50k").check();
     await page.getByRole("button", { name: "Continue" }).click();
@@ -133,7 +140,7 @@ await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisibl
   test("con confianza baja pregunta los 4 temas, de 3 en 3, sin 'Not specified'", async ({ page }) => {
     await submitIdea(page, "Algo [jev:unsure]");
     await expect(page.getByRole("heading", { name: "Your business" })).toBeVisible();
-    await expect(page.getByText("Step 1 of 4")).toBeVisible();
+    await expect(page.getByText("Questions 1–3 of 12")).toBeVisible();
     await expect(page.getByRole("group")).toHaveCount(3);
     await expect(page.getByLabel("Not specified")).toHaveCount(0);
   });
@@ -142,11 +149,11 @@ await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisibl
     await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
     await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+    await expect(page.getByText("Question 2 of 2")).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("heading", { name: "Resources and timing" })).toBeVisible();
-    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+    await expect(page.getByText("Question 2 of 2")).toBeVisible();
   });
 
   test("una pestaña antigua no puede responder un tema que ya pasó", async ({ page, context }) => {
@@ -156,7 +163,7 @@ await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisibl
 
     await page.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Full time").check();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Step 2 of 2")).toBeVisible();
+    await expect(page.getByText("Question 2 of 2")).toBeVisible();
 
     await oldTab.getByRole("group", { name: "How much time can you dedicate?" }).getByLabel("Under 10 h/week").check();
     await oldTab.getByRole("button", { name: "Continue" }).click();
@@ -318,15 +325,12 @@ test.describe("pantalla del informe", () => {
     }
   });
 
-  test("si falta un dato imprescindible, el pie pide completar datos", async ({ page }) => {
+  test("un área gris que solo se resuelve investigando no pide completar datos", async ({ page }) => {
     await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
     const competition = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Competition/ }) });
     await expect(competition.getByText("Needs info", { exact: true })).toBeVisible();
-    // Desde el 13b, el botón abre la primera área sin datos.
-    await page.getByRole("button", { name: "Add data to evaluate" }).click();
-    await expect(page.getByRole("button", { name: /Competition/ })).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("button", { name: "Add data to evaluate" })).toHaveCount(0);
   });
-
   
   test("al pulsar una tarjeta, el panel muestra su detalle; al volver a pulsarla, se cierra", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
@@ -371,19 +375,18 @@ test.describe("pantalla del informe", () => {
   });
   
   test("mejorar un área: responde, se recalcula y vuelve con el área abierta", async ({ page }) => {
-    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    await submitIdea(page, "Una app [jev:unknown=acquisition_channel] [gpt:cannot]");
     const before = await getReport(reportIdFrom(page.url()));
 
-    await page.getByRole("button", { name: /Competition/ }).click();
+    await page.getByRole("button", { name: /Market/ }).click();
     await page.getByRole("button", { name: "Improve this area (1)" }).click();
-    await page.getByRole("group", { name: "How much competition is there where you will operate?" }).getByLabel("Crowded market").check();
+    await page.getByRole("group", { name: "How will you get your customers?" }).getByLabel("Direct sales").check();
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page).toHaveURL(/\?area=competition$/);
-    const competition = page.getByRole("button", { name: /Competition/ });
-    await expect(competition).toHaveAttribute("aria-expanded", "true");
-    // Saturado: rojo ("Needs work"), tenga o no diferenciador.
-    await expect(competition).toContainText("Needs work");
+    await expect(page).toHaveURL(/\?area=market$/);
+    const market = page.getByRole("button", { name: /Market/ });
+    await expect(market).toHaveAttribute("aria-expanded", "true");
+    await expect(market).toContainText("In your favour");
     await expect(page.getByRole("button", { name: /Improve this area/ })).toHaveCount(0);
 
     const after = await getReport(reportIdFrom(page.url()));
@@ -398,17 +401,17 @@ test.describe("pantalla del informe", () => {
   });
 
   test("una pestaña antigua no puede volver a mejorar un área ya respondida", async ({ page, context }) => {
-    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    await submitIdea(page, "Una app [jev:unknown=acquisition_channel] [gpt:cannot]");
     const oldTab = await context.newPage();
     await oldTab.goto(page.url());
 
     for (const tab of [page, oldTab]) {
-      await tab.getByRole("button", { name: /Competition/ }).click();
+      await tab.getByRole("button", { name: /Market/ }).click();
       await tab.getByRole("button", { name: "Improve this area (1)" }).click();
-      await tab.getByRole("group", { name: "How much competition is there where you will operate?" }).getByLabel("Crowded market").check();
+      await tab.getByRole("group", { name: "How will you get your customers?" }).getByLabel("Direct sales").check();
     }
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page).toHaveURL(/\?area=competition$/);
+    await expect(page).toHaveURL(/\?area=market$/);
 
     await oldTab.getByRole("button", { name: "Save" }).click();
     await expect(oldTab.getByText("These questions are no longer pending. Reload the page.")).toBeVisible();

@@ -19,6 +19,11 @@ describe("footerState", () => {
     assert.equal(footerState([v("strong"), v("risk")]), "risks");
     assert.equal(footerState([v("strong"), v("strong")]), "all_good");
   });
+
+    it("un área gris que el usuario no puede completar no pide completar datos", () => {
+    assert.equal(footerState([v("needs_info"), v("risk")], 0, () => false), "risks");
+    assert.equal(footerState([v("needs_info"), v("strong")], 0, () => false), "all_good");
+  });
 });
 
 describe("reportView", () => {

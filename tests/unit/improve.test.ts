@@ -26,10 +26,25 @@ function questionsOf(area: string, facts: Fact[]) {
 }
 
 describe("improvementsByArea", () => {
-  it("un área en Needs info pide primero su dato imprescindible", () => {
-    const questions = questionsOf("competition", [known("differentiator", "Price")]);
-    assert.equal(questions[0].key, "competition");
+  it("un área en Needs info pide primero su dato imprescindible, si es del usuario", () => {
+    const questions = questionsOf("market", []);
+    assert.equal(questions[0].key, "customer_segment");
     assert.equal(questions[0].reason, "unlock_verdict");
+  });
+
+  it("nunca pregunta datos de investigación: competencia, alquiler, regulación...", () => {
+    assert.deepEqual(questionsOf("competition", []), []);
+    assert.deepEqual(questionsOf("location", [known("offering_type", "Physical venue")]), []);
+    assert.deepEqual(questionsOf("regulation", [estimated("regulatory_load", "Heavy (health, finance, food)")]), []);
+  });
+
+  it("lo no especificado del usuario también se puede mejorar", () => {
+    assert.equal(questionsOf("validation", [known("validation_stage", NOT_SPECIFIED)])[0].key, "validation_stage");
+  });
+
+  it("el canal de captación es del usuario: se pregunta si falta", () => {
+    const keys = questionsOf("market", [known("customer_segment", "Consumers"), known("geographic_scope", "Local")]).map((q) => q.key);
+    assert.deepEqual(keys, ["acquisition_channel"]);
   });
 
   it("no pregunta lo estimado: se corrige en Edit", () => {
@@ -64,17 +79,6 @@ describe("improvementsByArea", () => {
     for (const area of improvementsByArea([])) {
       assert.ok(area.questions.length <= MAX_QUESTIONS_PER_AREA, area.area);
     }
-  });
-
-  it("lo descartado por Jev o no especificado también se puede mejorar", () => {
-    assert.equal(questionsOf("competition", [estimated("competition", "Crowded market", 0.1)])[0].key, "competition");
-    assert.equal(questionsOf("validation", [known("validation_stage", NOT_SPECIFIED)])[0].key, "validation_stage");
-  });
-
-  it("en Location pregunta el nivel de alquiler con sus opciones", () => {
-    const questions = questionsOf("location", [known("offering_type", "Physical venue"), known("geographic_scope", "Local")]);
-    assert.equal(questions[0].key, "rent_level");
-    assert.deepEqual(questions[0].options, ["Below average", "Average", "Above average", "Prime location"]);
   });
 });
 

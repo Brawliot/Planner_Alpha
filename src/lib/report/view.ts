@@ -81,10 +81,17 @@ function dataFor(facts: readonly Fact[], area: AreaKey, language: Language) {
 }
 
 
-/** Las contradicciones mandan (bloquean); después, faltan datos; después, riesgos. */
-export function footerState(verdicts: readonly AreaVerdict[], contradictions = 0): FooterState {
+/**
+ * Las contradicciones mandan (bloquean); después, faltan datos que el usuario puede dar; después, riesgos.
+ * Un área gris que solo se resuelve investigando no pide "completar datos": es una tarea del plan.
+ */
+export function footerState(
+  verdicts: readonly AreaVerdict[],
+  contradictions = 0,
+  canComplete: (verdict: AreaVerdict) => boolean = () => true,
+): FooterState {
   if (contradictions > 0) return "contradictions";
-  if (verdicts.some((v) => v.verdict === "needs_info")) return "missing_data";
+  if (verdicts.some((v) => v.verdict === "needs_info" && canComplete(v))) return "missing_data";
   if (verdicts.some((v) => v.verdict === "risk")) return "risks";
   return "all_good";
 }
@@ -108,14 +115,20 @@ export function reportView(
 ): ReportView {
   const verdicts = areaVerdicts(facts);
   const contradictions = findContradictions(facts);
-  const footer = footerState(verdicts, contradictions.length);
-  const focusVerdict = footer === "missing_data" ? "needs_info" : footer === "risks" ? "risk" : null;
-  const language: Language = narrative?.language ?? "en";
-  // Si una frase falta (informe antiguo o área nueva), la plantilla de su motivo.
-  const sentenceOf = (v: AreaVerdict) => narrative?.areas[v.area]?.text ?? templateFor(v.reason, language);
   const improvements = improvementsByArea(facts);
   const questionsOf = (area: AreaKey) =>
     (improvements.find((i) => i.area === area)?.questions ?? []).map(({ key, prompt, options }) => ({ key, prompt, options }));
+  const completable = (v: AreaVerdict) => questionsOf(v.area).length > 0;
+  const footer = footerState(verdicts, contradictions.length, completable);
+  const focus =
+    footer === "missing_data"
+      ? verdicts.find((v) => v.verdict === "needs_info" && completable(v))
+      : footer === "risks"
+        ? verdicts.find((v) => v.verdict === "risk")
+        : undefined;
+  const language: Language = narrative?.language ?? "en";
+  // Si una frase falta (informe antiguo o área nueva), la plantilla de su motivo.
+  const sentenceOf = (v: AreaVerdict) => narrative?.areas[v.area]?.text ?? templateFor(v.reason, language);
   return {
     language,
     idea,
@@ -135,7 +148,7 @@ export function reportView(
       sentence: narrative?.risks.find((r) => r.area === v.area)?.sentence.text ?? sentenceOf(v),
     })),
     footer,
-    focusArea: verdicts.find((v) => v.verdict === focusVerdict)?.area ?? null,
+    focusArea: focus?.area ?? null,
     contradictions,
     approved,
   };

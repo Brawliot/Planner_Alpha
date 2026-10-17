@@ -65,21 +65,26 @@ describe("currentStep", () => {
 
   it("devuelve el primer tema con pendientes, solo con sus preguntas pendientes", () => {
     const step = currentStep(classified(["time_commitment", "budget_band"]));
-    assert.deepEqual(step, { topic: "founder", title: "You", keys: ["time_commitment"], index: 1, total: 2 });
+    assert.deepEqual(step, { topic: "founder", title: "You", keys: ["time_commitment"], from: 1, to: 1, totalQuestions: 2 });
   });
 
-  it("el progreso es estable: al responder un tema, el siguiente es el 2 de 2", () => {
+  it("el progreso cuenta preguntas: al responder la primera, la siguiente es la 2 de 2", () => {
     const facts = mergeFacts(classified(["time_commitment", "budget_band"]), [userFact("time_commitment")]);
     const step = currentStep(facts);
     assert.equal(step?.topic, "resources");
-    assert.equal(step?.index, 2);
-    assert.equal(step?.total, 2);
+    assert.deepEqual([step?.from, step?.to, step?.totalQuestions], [2, 2, 2]);
   });
 
-  it("como mucho 3 preguntas por tema y 4 temas", () => {
+  it("como mucho 3 preguntas por pantalla; sin datos, 1–3 de 12", () => {
     const step = currentStep([]);
     assert.equal(step?.keys.length, 3);
-    assert.equal(step?.total, 4);
+    assert.deepEqual([step?.from, step?.to, step?.totalQuestions], [1, 3, 12]);
+  });
+
+  it("una cantidad escrita en la idea no cuenta como pregunta respondida", () => {
+    const written: Fact = { key: "budget_band", value: "€5k-€20k", source: { origin: "user", quote: "20.000 €" } };
+    const step = currentStep(mergeFacts(classified(["time_commitment"]), [written]));
+    assert.deepEqual([step?.from, step?.totalQuestions], [1, 1]);
   });
 });
 
