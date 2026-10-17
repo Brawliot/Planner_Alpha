@@ -352,6 +352,29 @@ function AreaDetail({
 
       <p className={cn("text-base", card.verdict === "needs_info" && "italic text-muted-foreground")}>{card.sentence}</p>
 
+      {card.data.length > 0 && (
+        <div className="flex flex-col gap-2 text-sm">
+          <p className="font-semibold">{t.dataTitle}</p>
+          <ul className="flex flex-col gap-1.5">
+            {card.data.map((item) => (
+              <li key={item.key} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-muted-foreground">{item.label}:</span>
+                <span>{item.value}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-2 text-xs",
+                    item.estimated
+                      ? "border border-dashed border-muted-foreground text-muted-foreground"
+                      : "bg-muted text-foreground",
+                  )}
+                >
+                  {item.estimated ? t.estimated : t.fromYou}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {card.estimated ? (
         <div className="flex flex-col gap-2 text-sm">
           <span className="self-start rounded-full border border-dashed border-muted-foreground px-2 text-xs text-muted-foreground">

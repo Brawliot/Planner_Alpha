@@ -285,7 +285,9 @@ test.describe("pantalla del informe", () => {
     await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
     const competition = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Competition/ }) });
     await expect(competition.getByText("Needs info", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Add data to evaluate" })).toBeDisabled();
+    // Desde el 13b, el botón abre la primera área sin datos.
+    await page.getByRole("button", { name: "Add data to evaluate" }).click();
+    await expect(page.getByRole("button", { name: /Competition/ })).toHaveAttribute("aria-expanded", "true");
   });
 
   
@@ -372,6 +374,15 @@ test.describe("pantalla del informe", () => {
 
     await oldTab.getByRole("button", { name: "Save" }).click();
     await expect(oldTab.getByText("These questions are no longer pending. Reload the page.")).toBeVisible();
+  });
+
+  
+  test("el panel muestra los datos del área con su origen", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: /Money/ }).click();
+    await expect(page.getByText("Data for this area")).toBeVisible();
+    await expect(page.getByText("Startup cost:")).toBeVisible();
+    await expect(page.getByText("From you").first()).toBeVisible();
   });
 });
 

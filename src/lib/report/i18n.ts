@@ -41,6 +41,10 @@ export interface ReportTexts {
   contradiction: Record<ContradictionId, string>;
   includesEstimate: string;
   approveError: Record<"stale" | "contradictions" | "failed", string>;
+  dataTitle: string;
+  fromYou: string;
+  perMonth: string;
+  field: Record<string, string>;
   footer: Record<FooterState, string>;
 }
 
@@ -114,6 +118,36 @@ const ES: ReportTexts = {
     stale: "El informe ha cambiado. Recarga la página.",
     contradictions: "Corrige los datos que se contradicen antes de aprobar.",
     failed: "No se ha podido completar. Inténtalo de nuevo.",
+  },
+  dataTitle: "Datos de esta área",
+  fromYou: "Tú",
+  perMonth: "/mes",
+  field: {
+    sector: "Sector",
+    offering_type: "Qué ofreces",
+    revenue_model: "Cómo ganas dinero",
+    differentiator: "Qué te diferencia",
+    customer_segment: "Cliente",
+    geographic_scope: "Alcance",
+    acquisition_channel: "Canal de captación",
+    competition: "Competencia",
+    validation_stage: "Fase",
+    budget_band: "Tramo de presupuesto",
+    budget_eur: "Presupuesto",
+    capital_intensity: "Necesidad de capital",
+    startup_cost_eur: "Coste de arranque",
+    monthly_fixed_costs_eur: "Gastos fijos",
+    time_to_revenue: "Primeros ingresos",
+    founder_experience: "Experiencia",
+    founder_profile: "Perfil",
+    time_commitment: "Dedicación",
+    launch_timeline: "Plazo de lanzamiento",
+    monthly_rent_eur: "Alquiler",
+    rent_level: "Nivel de alquiler",
+    regulatory_load: "Regulación",
+    money_handling: "Dinero de terceros",
+    team_requirement: "Equipo",
+    third_party_dependency: "Dependencia de terceros",
   },
   footer: {
     all_good: "Pasar a planificación",
@@ -193,6 +227,36 @@ const EN: ReportTexts = {
     stale: "The report has changed. Reload the page.",
     contradictions: "Fix the contradicting data before approving.",
     failed: "It could not be completed. Please try again.",
+  },
+  dataTitle: "Data for this area",
+  fromYou: "From you",
+  perMonth: "/month",
+  field: {
+    sector: "Sector",
+    offering_type: "What you offer",
+    revenue_model: "How you make money",
+    differentiator: "What sets you apart",
+    customer_segment: "Customer",
+    geographic_scope: "Scope",
+    acquisition_channel: "Acquisition channel",
+    competition: "Competition",
+    validation_stage: "Stage",
+    budget_band: "Budget range",
+    budget_eur: "Budget",
+    capital_intensity: "Capital needs",
+    startup_cost_eur: "Startup cost",
+    monthly_fixed_costs_eur: "Fixed costs",
+    time_to_revenue: "First revenue",
+    founder_experience: "Experience",
+    founder_profile: "Profile",
+    time_commitment: "Time commitment",
+    launch_timeline: "Launch timeline",
+    monthly_rent_eur: "Rent",
+    rent_level: "Rent level",
+    regulatory_load: "Regulation",
+    money_handling: "Third-party money",
+    team_requirement: "Team",
+    third_party_dependency: "Third-party dependency",
   },
   footer: {
     all_good: "Continue to planning",

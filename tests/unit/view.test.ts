@@ -52,3 +52,28 @@ describe("reportView", () => {
     for (const internal of ["confidence", "plausibility", "origin", M]) assert.equal(json.includes(internal), false, internal);
   });
 });
+
+
+describe("datos de cada área", () => {
+  const facts: Fact[] = [
+    { key: "budget_eur", value: 60000, source: { origin: "user", quote: "60.000 €" } },
+    estimated("startup_cost_eur", { min: 70000, max: 200000 }, ["Local de 80 m²"]),
+    estimated("monthly_fixed_costs_eur", { min: 9000, max: 16000 }, []),
+  ];
+
+  it("muestra el valor formateado y si es tuyo o estimado, en el idioma del informe", () => {
+    const narrative = { language: "es" as const, areas: {}, risks: [], fingerprints: {} };
+    const money = reportView("idea", facts, narrative).areas.find((a) => a.area === "money");
+    const byKey = Object.fromEntries((money?.data ?? []).map((d) => [d.key, d]));
+    assert.equal(byKey.budget_eur.label, "Presupuesto");
+    assert.equal(byKey.budget_eur.estimated, false);
+    assert.match(byKey.budget_eur.value, /60\.000/);
+    assert.equal(byKey.startup_cost_eur.estimated, true);
+    assert.match(byKey.monthly_fixed_costs_eur.value, /\/mes$/);
+  });
+
+  it("no muestra lo no sabido", () => {
+    const money = reportView("idea", facts, null).areas.find((a) => a.area === "money");
+    assert.equal(money?.data.some((d) => d.key === "time_to_revenue"), false);
+  });
+});
