@@ -520,8 +520,8 @@ test.describe("revisar y aprobar", () => {
   test("'Revisar riesgos' abre la primera área en riesgo", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     await page.getByRole("button", { name: "Review risks before planning" }).click();
-    // Con el Jev y el GPT falsos, Money no llega al coste: es la primera en riesgo.
-    await expect(page.getByRole("button", { name: /Money/ })).toHaveAttribute("aria-expanded", "true");
+    // Con el Jev falso la fase es "Idea only" (rojo) y Validación va antes que Money en el informe.
+    await expect(page.getByRole("button", { name: /Validation/ })).toHaveAttribute("aria-expanded", "true");
   });
 
   test("una contradicción bloquea la aprobación", async ({ page }) => {
