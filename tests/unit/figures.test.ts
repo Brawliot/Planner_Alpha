@@ -46,7 +46,8 @@ describe("figuresFormat", () => {
     const { schema } = figuresFormat(["startup_cost_eur"]);
     assert.deepEqual(schema.required, ["budget", "ranges"]);
     assert.equal(schema.additionalProperties, false);
-    assert.deepEqual(schema.properties.ranges.required, ["startup_cost_eur"]);
+    const ranges = schema.properties.ranges as { required: string[] };
+    assert.deepEqual(ranges.required, ["startup_cost_eur"]);
   });
 });
 
