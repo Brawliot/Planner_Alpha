@@ -46,6 +46,8 @@ export const stepSchema = z
   .object({
     id: z.string().min(1),
     order: z.number().int().nonnegative(),
+    /** Pasos de la misma tarea que deben estar resueltos antes (bloqueo blando). */
+    dependsOn: z.array(z.string().min(1)).optional(),
     text: z.string().min(1),
     doneWhen: z.string().min(1),
     suggestedActor: z.enum(ACTORS),
