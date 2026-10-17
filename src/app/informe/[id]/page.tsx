@@ -40,7 +40,7 @@ async function ReportContent({ id, area }: { id: string; area: string | null }) 
 
   // Con el análisis terminado, el informe. Antes, la idea y el paso en curso (preguntas o reintentar).
   if (report.status === "review" || report.status === "approved") {
-    const view = reportView(report.idea, report.facts, report.narrative ?? null);
+    const view = reportView(report.idea, report.facts, report.narrative ?? null, report.status === "approved");
     // Solo se abre si es un área de este informe; cualquier otro valor se ignora.
     const initialArea = view.areas.find((card) => card.area === area)?.area ?? null;
     return <ReportScreen view={view} reportId={report.id} initialArea={initialArea} />;

@@ -2,6 +2,7 @@ import type { AreaKey } from "./areas.ts";
 import type { Language } from "./narrative.ts";
 import type { Verdict } from "./verdict.ts";
 import type { FooterState } from "./view.ts";
+import type { ContradictionId } from "./contradictions.ts";
 
 /** Textos de la interfaz del informe, en el idioma del usuario. */
 export interface ReportTexts {
@@ -33,6 +34,13 @@ export interface ReportTexts {
   budgetExact: string;
   topic: Record<"business" | "market" | "founder" | "resources" | "location" | "risk", string>;
   editError: Record<"stale" | "invalid" | "inconsistent_budget" | "failed", string>;
+  continueAnyway: string;
+  approved: string;
+  reopen: string;
+  contradictionsTitle: string;
+  contradiction: Record<ContradictionId, string>;
+  includesEstimate: string;
+  approveError: Record<"stale" | "contradictions" | "failed", string>;
   footer: Record<FooterState, string>;
 }
 
@@ -92,10 +100,26 @@ const ES: ReportTexts = {
     inconsistent_budget: "El presupuesto exacto no cuadra con el tramo elegido.",
     failed: "No se han podido guardar los cambios. Inténtalo de nuevo.",
   },
+  continueAnyway: "Continuar igualmente",
+  approved: "Aprobado · listo para planificar",
+  reopen: "Reabrir",
+  contradictionsTitle: "Hay datos que se contradicen",
+  contradiction: {
+    online_with_premises: "El negocio es solo online, pero tiene local o alquiler.",
+    commission_without_money: "Cobras comisión por transacción, pero no manejas dinero de terceros.",
+    marketplace_with_own_offer: "Es un marketplace de dos partes, pero ofreces un local o un producto propio.",
+  },
+  includesEstimate: "Incluye un dato estimado: puedes corregirlo o retirarlo.",
+  approveError: {
+    stale: "El informe ha cambiado. Recarga la página.",
+    contradictions: "Corrige los datos que se contradicen antes de aprobar.",
+    failed: "No se ha podido completar. Inténtalo de nuevo.",
+  },
   footer: {
     all_good: "Pasar a planificación",
     risks: "Revisar riesgos antes de planificar",
     missing_data: "Completar datos para evaluar",
+    contradictions: "Corregir datos",
   },
 };
 
@@ -155,10 +179,26 @@ const EN: ReportTexts = {
     inconsistent_budget: "The exact budget does not match the chosen range.",
     failed: "The changes could not be saved. Please try again.",
   },
+  continueAnyway: "Continue anyway",
+  approved: "Approved · ready to plan",
+  reopen: "Reopen",
+  contradictionsTitle: "Some data contradict each other",
+  contradiction: {
+    online_with_premises: "The business is online only, but it has premises or rent.",
+    commission_without_money: "You charge a transaction commission, but you don't handle other people's money.",
+    marketplace_with_own_offer: "It is a two-sided marketplace, but you offer your own premises or product.",
+  },
+  includesEstimate: "It includes an estimated value: you can correct or remove it.",
+  approveError: {
+    stale: "The report has changed. Reload the page.",
+    contradictions: "Fix the contradicting data before approving.",
+    failed: "It could not be completed. Please try again.",
+  },
   footer: {
     all_good: "Continue to planning",
     risks: "Review risks before planning",
     missing_data: "Add data to evaluate",
+    contradictions: "Fix data",
   },
 };
 

@@ -460,3 +460,49 @@ test.describe("decisiones pendientes en las preguntas base", () => {
     await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
   });
 });
+
+
+test.describe("revisar y aprobar", () => {
+  test.beforeEach(async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+  });
+
+  test("con riesgos se puede continuar igualmente; el aprobado es de solo lectura y se puede reabrir", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: "Continue anyway" }).click();
+
+    await expect(page.getByText("Approved · ready to plan")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Edit data" })).toHaveCount(0);
+    expect((await getReport(reportIdFrom(page.url()))).status).toBe("approved");
+
+    // La página de edición devuelve al informe.
+    const reportUrl = page.url();
+    await page.goto(`${reportUrl}/editar`);
+    await expect(page).toHaveURL(reportUrl);
+
+    await page.getByRole("button", { name: "Reopen" }).click();
+    await expect(page.getByRole("link", { name: "Edit data" })).toBeVisible();
+    expect((await getReport(reportIdFrom(page.url()))).status).toBe("review");
+  });
+
+  test("'Revisar riesgos' abre la primera área en riesgo", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: "Review risks before planning" }).click();
+    // Con el Jev y el GPT falsos, Money no llega al coste: es la primera en riesgo.
+    await expect(page.getByRole("button", { name: /Money/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("una contradicción bloquea la aprobación", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("link", { name: "Edit data" }).click();
+    await page.getByRole("group", { name: "What do you offer?" }).getByLabel("Physical venue").check();
+    await page.getByRole("group", { name: "Where will your business operate?" }).getByLabel("Online").check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(page.getByText("Some data contradict each other")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Fix data" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue anyway" })).toHaveCount(0);
+  });
+});

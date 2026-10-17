@@ -27,7 +27,7 @@ export interface AreaVerdict {
 }
 
 /** Opción del catálogo usada en una regla. Si no existe, falla al cargar: nunca una regla muda por una errata. */
-function option(key: QuestionKey, label: string) {
+export function option(key: QuestionKey, label: string) {
   if (!Object.hasOwn(CATALOG[key].jev.criteria, label)) {
     throw new Error(`verdict: "${label}" no es una opción de ${key}`);
   }

@@ -6,6 +6,7 @@ import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
 import { analyse, reanalyse, refreshJevVerdicts, writeNarrative } from "@/lib/report/analyse";
 import { parseEdits } from "@/lib/report/edit";
+import { findContradictions } from "@/lib/report/contradictions";
 import { improvementsByArea, jevAreasAffectedBy, parseImproveAnswers } from "@/lib/report/improve";
 import type { Fact } from "@/lib/report/facts";
 import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
@@ -132,6 +133,39 @@ export async function saveEdits(id: string, _prev: EditState, formData: FormData
     await updateOwnReport(user.id, report.id, "review", { facts, status: "review", narrative });
   } catch (err) {
     logError("guardar los cambios", err);
+    return { error: "failed" };
+  }
+  redirect(`/informe/${report.id}`);
+}
+
+export type ApproveState = { error: "stale" | "contradictions" | "failed" | null };
+
+export async function approveReport(id: string): Promise<ApproveState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report || report.status !== "review") return { error: "stale" };
+  // Se vuelve a comprobar aquí: el botón oculto no protege.
+  if (findContradictions(report.facts).length > 0) return { error: "contradictions" };
+
+  try {
+    await updateOwnReport(user.id, report.id, "review", { facts: report.facts, status: "approved" });
+  } catch (err) {
+    logError("aprobar", err);
+    return { error: "failed" };
+  }
+  redirect(`/informe/${report.id}`);
+}
+
+/** Devuelve un informe aprobado a revisión. Cuando exista el plan, no se podrá reabrir. */
+export async function reopenReport(id: string): Promise<ApproveState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report || report.status !== "approved") return { error: "stale" };
+
+  try {
+    await updateOwnReport(user.id, report.id, "approved", { facts: report.facts, status: "review" });
+  } catch (err) {
+    logError("reabrir", err);
     return { error: "failed" };
   }
   redirect(`/informe/${report.id}`);

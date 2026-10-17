@@ -1,18 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId, useMemo, useState, useSyncExternalStore } from "react";
-import { improveArea, type ImproveState } from "@/app/actions/report";
-import { Button, buttonStyles } from "@/components/ui/button";
-import { ChoiceGroup } from "@/components/ui/choice-group";
+import {
+  approveReport,
+  improveArea,
+  reopenReport,
+  type ApproveState,
+  type ImproveState,
+} from "@/app/actions/report";
 import type { AreaKey } from "@/lib/report/areas";
 import { reportTexts, type ReportTexts } from "@/lib/report/i18n";
 import type { AreaCard, ReportView } from "@/lib/report/view";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { ChoiceGroup } from "@/components/ui/choice-group";
 import { VerdictIcon, VerdictLabel } from "@/components/ui/verdict-icon";
 import { cn } from "@/lib/cn";
 
 const LEGEND = ["strong", "watch", "risk", "needs_info"] as const;
 // Mismo corte que md: de Tailwind (768px).
 const MOBILE_QUERY = "(max-width: 767px)";
+const cardButtonId = (area: AreaKey) => `card-${area}`;
 
 type Selection = AreaKey | "risks" | null;
 
@@ -45,92 +53,211 @@ export function ReportInteractive({
   const panelId = useId();
 
   const toggle = (key: Exclude<Selection, null>) => setSelected((current) => (current === key ? null : key));
+  // Abre un área y lleva el foco a su tarjeta (el navegador la hace visible).
+  const focusArea = (area: AreaKey) => {
+    setSelected(area);
+    requestAnimationFrame(() => document.getElementById(cardButtonId(area))?.focus());
+  };
   const panel = <DetailPanel id={panelId} view={view} reportId={reportId} selected={selected} t={t} />;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold leading-tight">{t.title}</h1>
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="flex flex-col gap-6">
+          <h1 className="text-2xl font-semibold leading-tight">{t.title}</h1>
 
-        <section aria-labelledby="your-idea" className="rounded-lg border p-4">
-          <h2 id="your-idea" className="text-base font-semibold">
-            {t.yourIdea}
-          </h2>
-          <p className="mt-2 whitespace-pre-wrap break-words italic">{view.idea}</p>
-        </section>
+          {view.approved && (
+            <p role="status" className="rounded-lg border border-success px-4 py-2 font-semibold text-success">
+              {t.approved}
+            </p>
+          )}
 
-        <section aria-labelledby="assessment" className="flex flex-col gap-3">
-          <h2 id="assessment" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            {t.assessmentByArea}
-          </h2>
+          <section aria-labelledby="your-idea" className="rounded-lg border p-4">
+            <h2 id="your-idea" className="text-base font-semibold">
+              {t.yourIdea}
+            </h2>
+            <p className="mt-2 whitespace-pre-wrap break-words italic">{view.idea}</p>
+          </section>
 
-          <div>
-            <p className="sr-only">{t.verdicts}</p>
-            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-              {LEGEND.map((verdict) => (
-                <li key={verdict} className="flex items-center gap-2">
-                  <VerdictIcon verdict={verdict} />
-                  {t.verdict[verdict]}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <ul className="flex flex-col gap-2">
-            {view.areas.map((card) => {
-              const expanded = selected === card.area;
-              return [
-                <li key={card.area} className={cn("rounded-lg border", expanded && "border-primary")}>
-                  <h3>
-                    <CardButton expanded={expanded} controls={panelId} onClick={() => toggle(card.area)}>
-                      <VerdictIcon verdict={card.verdict} />
-                      <span className="flex-1">{t.area[card.area]}</span>
-                      <VerdictLabel verdict={card.verdict}>{t.verdict[card.verdict]}</VerdictLabel>
-                    </CardButton>
-                  </h3>
-                  <p className="truncate px-3.5 pb-2.5 pl-[48px] text-sm text-muted-foreground">{card.sentence}</p>
-                </li>,
-                // En móvil, el panel va justo debajo de la tarjeta abierta.
-                isMobile && expanded && (
-                  <li key={`${card.area}-panel`} className="rounded-lg border p-5">
-                    {panel}
+          {view.contradictions.length > 0 && (
+            <section aria-labelledby="contradictions" className="rounded-lg border border-danger p-4">
+              <h2 id="contradictions" className="text-base font-semibold text-danger">
+                {t.contradictionsTitle}
+              </h2>
+              <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
+                {view.contradictions.map((c) => (
+                  <li key={c.id}>
+                    {t.contradiction[c.id]} {c.estimated && <span className="text-muted-foreground">{t.includesEstimate}</span>}
                   </li>
-                ),
-              ];
-            })}
-          </ul>
-        </section>
+                ))}
+              </ul>
+            </section>
+          )}
 
-        <section aria-labelledby="main-risks" className={cn("rounded-lg border", selected === "risks" && "border-primary")}>
-          <h2 id="main-risks">
-            <CardButton expanded={selected === "risks"} controls={panelId} onClick={() => toggle("risks")}>
-              <span className="flex-1">{t.mainRisks}</span>
-              {view.risks.length > 0 && (
-                <span className="text-sm font-normal text-muted-foreground">{t.riskCount(view.risks.length)}</span>
-              )}
-            </CardButton>
-          </h2>
-          {isMobile && selected === "risks" && <div className="border-t p-5">{panel}</div>}
-        </section>
+          <section aria-labelledby="assessment" className="flex flex-col gap-3">
+            <h2 id="assessment" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {t.assessmentByArea}
+            </h2>
 
-        <p className="text-sm text-muted-foreground">{t.disclaimer}</p>
+            <div>
+              <p className="sr-only">{t.verdicts}</p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                {LEGEND.map((verdict) => (
+                  <li key={verdict} className="flex items-center gap-2">
+                    <VerdictIcon verdict={verdict} />
+                    {t.verdict[verdict]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <ul className="flex flex-col gap-2">
+              {view.areas.map((card) => {
+                const expanded = selected === card.area;
+                return [
+                  <li key={card.area} className={cn("rounded-lg border", expanded && "border-primary")}>
+                    <h3>
+                      <CardButton
+                        id={cardButtonId(card.area)}
+                        expanded={expanded}
+                        controls={panelId}
+                        onClick={() => toggle(card.area)}
+                      >
+                        <VerdictIcon verdict={card.verdict} />
+                        <span className="flex-1">{t.area[card.area]}</span>
+                        <VerdictLabel verdict={card.verdict}>{t.verdict[card.verdict]}</VerdictLabel>
+                      </CardButton>
+                    </h3>
+                    <p className="truncate px-3.5 pb-2.5 pl-[48px] text-sm text-muted-foreground">{card.sentence}</p>
+                  </li>,
+                  // En móvil, el panel va justo debajo de la tarjeta abierta.
+                  isMobile && expanded && (
+                    <li key={`${card.area}-panel`} className="rounded-lg border p-5">
+                      {panel}
+                    </li>
+                  ),
+                ];
+              })}
+            </ul>
+          </section>
+
+          <section aria-labelledby="main-risks" className={cn("rounded-lg border", selected === "risks" && "border-primary")}>
+            <h2 id="main-risks">
+              <CardButton expanded={selected === "risks"} controls={panelId} onClick={() => toggle("risks")}>
+                <span className="flex-1">{t.mainRisks}</span>
+                {view.risks.length > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground">{t.riskCount(view.risks.length)}</span>
+                )}
+              </CardButton>
+            </h2>
+            {isMobile && selected === "risks" && <div className="border-t p-5">{panel}</div>}
+          </section>
+
+          <p className="text-sm text-muted-foreground">{t.disclaimer}</p>
+        </div>
+
+        {!isMobile && (
+          <aside className="min-h-60 self-start overflow-y-auto rounded-lg border p-5 md:sticky md:top-4 md:max-h-[calc(100vh-2rem)]">
+            {panel}
+          </aside>
+        )}
       </div>
 
-      {!isMobile && (
-        <aside className="min-h-60 self-start overflow-y-auto rounded-lg border p-5 md:sticky md:top-4 md:max-h-[calc(100vh-2rem)]">
-          {panel}
-        </aside>
-      )}
+      <Footer view={view} reportId={reportId} t={t} onFocusArea={focusArea} />
+    </div>
+  );
+}
+
+const ACTION_INITIAL: ApproveState = { error: null };
+
+function Footer({
+  view,
+  reportId,
+  t,
+  onFocusArea,
+}: {
+  view: ReportView;
+  reportId: string;
+  t: ReportTexts;
+  onFocusArea: (area: AreaKey) => void;
+}) {
+  const approve = useMemo(() => approveReport.bind(null, reportId), [reportId]);
+  const reopen = useMemo(() => reopenReport.bind(null, reportId), [reportId]);
+  const [approveState, approveAction, approving] = useActionState(approve, ACTION_INITIAL);
+  const [reopenState, reopenAction, reopening] = useActionState(reopen, ACTION_INITIAL);
+  const error = approveState.error ?? reopenState.error;
+
+  const startOver = (
+    <Link href="/" className={buttonStyles("secondary", "min-h-11")}>
+      {t.startOver}
+    </Link>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        {startOver}
+
+        {view.approved ? (
+          <form action={reopenAction}>
+            <Button type="submit" variant="secondary" disabled={reopening} className="min-h-11 w-full">
+              {t.reopen}
+            </Button>
+          </form>
+        ) : (
+          <>
+            <Link href={`/informe/${reportId}/editar`} className={buttonStyles("secondary", "min-h-11")}>
+              {t.editData}
+            </Link>
+
+            {view.footer === "contradictions" && (
+              <Link href={`/informe/${reportId}/editar`} className={buttonStyles("primary", "min-h-11")}>
+                {t.footer.contradictions}
+              </Link>
+            )}
+
+            {(view.footer === "risks" || view.footer === "missing_data") && (
+              <>
+                <form action={approveAction}>
+                  <Button type="submit" variant="secondary" disabled={approving} className="min-h-11 w-full">
+                    {t.continueAnyway}
+                  </Button>
+                </form>
+                <Button
+                  className="min-h-11"
+                  onClick={() => view.focusArea && onFocusArea(view.focusArea)}
+                >
+                  {t.footer[view.footer]}
+                </Button>
+              </>
+            )}
+
+            {view.footer === "all_good" && (
+              <form action={approveAction}>
+                <Button type="submit" disabled={approving} className="min-h-11 w-full">
+                  {t.footer.all_good}
+                </Button>
+              </form>
+            )}
+          </>
+        )}
+      </div>
+
+      <p aria-live="polite" className="text-sm text-danger sm:text-right">
+        {error ? t.approveError[error] : null}
+      </p>
     </div>
   );
 }
 
 function CardButton({
+  id,
   expanded,
   controls,
   onClick,
   children,
 }: {
+  id?: string;
   expanded: boolean;
   controls: string;
   onClick: () => void;
@@ -138,6 +265,7 @@ function CardButton({
 }) {
   return (
     <button
+      id={id}
       type="button"
       aria-expanded={expanded}
       // Solo apunta al panel cuando existe: en móvil no se pinta hasta que la tarjeta se abre.
@@ -155,7 +283,6 @@ function CardButton({
     </button>
   );
 }
-
 
 function DetailPanel({
   id,
@@ -192,13 +319,28 @@ function DetailPanel({
       )}
 
       {selected !== null && selected !== "risks" && (
-        <AreaDetail card={view.areas.find((a) => a.area === selected)} reportId={reportId} t={t} />
+        <AreaDetail
+          card={view.areas.find((a) => a.area === selected)}
+          reportId={reportId}
+          readOnly={view.approved}
+          t={t}
+        />
       )}
     </div>
   );
 }
 
-function AreaDetail({ card, reportId, t }: { card: AreaCard | undefined; reportId: string; t: ReportTexts }) {
+function AreaDetail({
+  card,
+  reportId,
+  readOnly,
+  t,
+}: {
+  card: AreaCard | undefined;
+  reportId: string;
+  readOnly: boolean;
+  t: ReportTexts;
+}) {
   if (!card) return null;
   return (
     <>
@@ -230,8 +372,8 @@ function AreaDetail({ card, reportId, t }: { card: AreaCard | undefined; reportI
         <p className="text-sm text-muted-foreground">{t.noEstimates}</p>
       )}
 
-      {/* key por área: al cambiar de tarjeta, el formulario empieza cerrado y vacío. */}
-      <ImproveSection key={card.area} card={card} reportId={reportId} t={t} />
+      {/* Aprobado = solo lectura. key por área: al cambiar de tarjeta, el formulario empieza cerrado. */}
+      {!readOnly && <ImproveSection key={card.area} card={card} reportId={reportId} t={t} />}
     </>
   );
 }
