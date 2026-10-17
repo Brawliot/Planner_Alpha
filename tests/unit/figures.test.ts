@@ -13,7 +13,6 @@ import {
 import { moneyCheck } from "../../src/lib/report/money.ts";
 
 const M = CALIBRATED_JEV_MODEL;
-const IDEA = "Un bar de tapas en Malasaña, tengo 40.000 € para empezar";
 
 function known(key: string, value: unknown): Fact {
   return { key, value, source: { origin: "jev", model: M, confidence: 0.95, from: "user" } };
@@ -23,8 +22,8 @@ function estimatedRange(key: string, min: number, max: number, noul = 0.8): Fact
   return { key, value: { min, max }, source: { origin: "gpt", model: "gpt", assumptions: [], plausibility: { noul, model: M } } };
 }
 
-function result(budget: FiguresResult["budget"], ranges: FiguresResult["ranges"] = {}): FiguresResult {
-  return { budget, ranges };
+function result(ranges: FiguresResult["ranges"] = {}): FiguresResult {
+  return { ranges };
 }
 
 describe("rangesToEstimate", () => {
@@ -45,7 +44,8 @@ describe("rangesToEstimate", () => {
 describe("figuresFormat", () => {
   it("cumple Structured Outputs estricto: todo required y additionalProperties false", () => {
     const { schema } = figuresFormat(["startup_cost_eur"]);
-    assert.deepEqual(schema.required, ["budget", "ranges"]);
+    assert.deepEqual(schema.required, ["ranges"]);
+    assert.equal(Object.hasOwn(schema.properties, "budget"), false, "GPT ya no extrae el presupuesto");
     assert.equal(schema.additionalProperties, false);
     const ranges = schema.properties.ranges as { required: string[] };
     assert.deepEqual(ranges.required, ["startup_cost_eur"]);
@@ -60,17 +60,17 @@ describe("nivel de alquiler", () => {
   });
 
   it("crea el dato con origen GPT y omite 'Cannot estimate'", () => {
-    const base = { budget: { amount_eur: null, quote: "" }, ranges: {} };
-    const facts = figureFacts({ ...base, rent_level: { value: "Prime location", assumptions: ["Gran Vía"] } }, [], "gpt", IDEA, []);
+    const base = { ranges: {} };
+    const facts = figureFacts({ ...base, rent_level: { value: "Prime location", assumptions: ["Gran Vía"] } }, [], "gpt");
     assert.deepEqual(facts, [
       { key: "rent_level", value: "Prime location", source: { origin: "gpt", model: "gpt", assumptions: ["Gran Vía"] } },
     ]);
-    assert.deepEqual(figureFacts({ ...base, rent_level: { value: "Cannot estimate", assumptions: [] } }, [], "gpt", IDEA, []), []);
+    assert.deepEqual(figureFacts({ ...base, rent_level: { value: "Cannot estimate", assumptions: [] } }, [], "gpt"), []);
   });
 
   it("el parser rechaza un nivel inventado", () => {
     const parser = figuresParser([], true);
-    const bad = parser.safeParse({ budget: { amount_eur: null, quote: "" }, ranges: {}, rent_level: { value: "Carísimo", assumptions: [] } });
+    const bad = parser.safeParse({ ranges: {}, rent_level: { value: "Carísimo", assumptions: [] } });
     assert.equal(bad.success, false);
   });
 });
@@ -80,49 +80,20 @@ describe("figuresParser", () => {
   const parser = figuresParser(["startup_cost_eur"]);
 
   it("un rango incoherente o negativo pasa a null sin rechazar todo", () => {
-    const inverted = parser.parse({
-      budget: { amount_eur: null, quote: "" },
-      ranges: { startup_cost_eur: { min: 9000, max: 100, assumptions: [] } },
-    });
+    const inverted = parser.parse({ ranges: { startup_cost_eur: { min: 9000, max: 100, assumptions: [] } } });
     assert.equal(inverted.ranges.startup_cost_eur, null);
 
-    const negative = parser.parse({
-      budget: { amount_eur: -5, quote: "" },
-      ranges: { startup_cost_eur: { min: -1, max: 100, assumptions: [] } },
-    });
+    const negative = parser.parse({ ranges: { startup_cost_eur: { min: -1, max: 100, assumptions: [] } } });
     assert.equal(negative.ranges.startup_cost_eur, null);
-    assert.equal(negative.budget.amount_eur, null);
   });
 });
 
 describe("figureFacts", () => {
-  it("acepta el presupuesto si la cita está en el texto", () => {
-    const facts = figureFacts(result({ amount_eur: 40000, quote: "40.000 €" }), [], "gpt", IDEA, []);
-    assert.deepEqual(facts, [{ key: "budget_eur", value: 40000, source: { origin: "user", quote: "40.000 €" } }]);
-  });
-
-  it("rechaza un presupuesto con cita inventada", () => {
-    const facts = figureFacts(result({ amount_eur: 400000, quote: "400.000 €" }), [], "gpt", IDEA, []);
-    assert.deepEqual(facts, []);
-  });
-
-  it("rechaza un presupuesto que no encaja con su tramo", () => {
-    const facts = figureFacts(result({ amount_eur: 400000, quote: "40.000 €" }), [], "gpt", IDEA, [
-      known("budget_band", "€20k-€50k"),
-    ]);
-    assert.deepEqual(facts, []);
-  });
-
   it("los rangos salen con origen GPT, y los nulos no generan dato", () => {
     const facts = figureFacts(
-      result(
-        { amount_eur: null, quote: "" },
-        { startup_cost_eur: { min: 60000, max: 120000, assumptions: ["80 m²"] }, monthly_fixed_costs_eur: null },
-      ),
+      result({ startup_cost_eur: { min: 60000, max: 120000, assumptions: ["80 m²"] }, monthly_fixed_costs_eur: null }),
       ["startup_cost_eur", "monthly_fixed_costs_eur"],
       "gpt-6.1-sol",
-      IDEA,
-      [],
     );
     assert.deepEqual(facts, [
       {
@@ -133,7 +104,6 @@ describe("figureFacts", () => {
     ]);
   });
 });
-
 describe("moneyCheck", () => {
   const userBudget = (amount: number): Fact => ({ key: "budget_eur", value: amount, source: { origin: "user", quote: "x" } });
 

@@ -24,7 +24,7 @@ function answerFor(key: string, question: JevQuestion, text: string) {
       const deducible = listed("likely").includes(base);
       const unknown =
         text.includes("[jev:unknown]") || listed("unknown").includes(base) || (deducible && !isLikely);
-      const blank = options.find((o) => o === "Not specified" || o === "Can't tell");
+      const blank = options.find((o) => o === "Not specified" || o === "Can't tell" || o === "None");
       const choice = unknown && blank ? blank : options[0];
       const confidence = text.includes("[jev:unsure]") ? 0.4 : 0.95;
       const top = text.includes("[jev:unsure]") ? 0.5 : 0.95;

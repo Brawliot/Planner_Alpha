@@ -33,7 +33,6 @@ import {
   figuresParser,
   rangesToEstimate,
   shouldEstimateRentLevel,
-  shouldExtractBudget,
 } from "./figures";
 /**
  * Completa el análisis:
@@ -44,12 +43,9 @@ import {
 export async function analyse(idea: string, facts: Fact[]): Promise<Fact[]> {
   const [inferred, figures] = await Promise.all([inferDimensions(idea, facts), estimateFigures(idea, facts)]);
 
-  // El presupuesto extraído es del usuario (con cita): no pasa por la plausibilidad.
-  const fromGpt = [...inferred, ...figures].filter((fact) => fact.source.origin === "gpt");
-  const fromUser = figures.filter((fact) => fact.source.origin === "user");
-  const checked = await Promise.all(fromGpt.map((fact) => withPlausibility(idea, fact)));
+  const checked = await Promise.all([...inferred, ...figures].map((fact) => withPlausibility(idea, fact)));
   // Los veredictos se calculan en código al leer: no hay que pedir nada más.
-  return mergeFacts(facts, [...checked, ...fromUser]);
+  return mergeFacts(facts, checked);
 }
 
 async function inferDimensions(idea: string, facts: Fact[]): Promise<Fact[]> {
@@ -69,7 +65,7 @@ async function inferDimensions(idea: string, facts: Fact[]): Promise<Fact[]> {
 async function estimateFigures(idea: string, facts: Fact[]): Promise<Fact[]> {
   const ranges = rangesToEstimate(facts);
   const rentLevel = shouldEstimateRentLevel(facts);
-  if (ranges.length === 0 && !rentLevel && !shouldExtractBudget(facts)) return [];
+  if (ranges.length === 0 && !rentLevel) return [];
   const result = await callGpt({
     task: "infer",
     instructions: FIGURES_INSTRUCTIONS,
@@ -78,7 +74,7 @@ async function estimateFigures(idea: string, facts: Fact[]): Promise<Fact[]> {
     parse: figuresParser(ranges, rentLevel),
     effort: "low",
   });
-  return figureFacts(result.data, ranges, result.model, idea, facts);
+  return figureFacts(result.data, ranges, result.model);
 }
 
 /** Cada dato se valida por separado, con el mismo formato de state con el que se calibró. */

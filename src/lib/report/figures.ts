@@ -1,17 +1,16 @@
 import { z } from "zod";
 import { FIGURE_KEYS, usable } from "./areas.ts";
 import { certaintyOf } from "./certainty.ts";
-import { userFact, type Fact } from "./facts.ts";
+import type { Fact } from "./facts.ts";
 
 /**
- * Cifras del informe: el presupuesto exacto (solo si el usuario lo escribió, con cita) y tres rangos
- * estimados por GPT. Lógica pura: la llamada está en analyse.ts.
+ * Cifras del informe estimadas por GPT: tres rangos y el nivel de alquiler. El presupuesto exacto
+ * ya no lo extrae GPT: sale de las cantidades del texto (phrases.ts). Lógica pura: la llamada está en analyse.ts.
  */
 
 const MAX_EUR = 50_000_000;
 const MAX_ASSUMPTIONS = 3;
 const MAX_ASSUMPTION_LENGTH = 200;
-const MAX_QUOTE_LENGTH = 300;
 
 export type RangeKey =
   | typeof FIGURE_KEYS.startupCost
@@ -42,8 +41,6 @@ export const BUDGET_BANDS: Record<string, { min: number; max: number | null }> =
 
 export const FIGURES_INSTRUCTIONS = [
   "You estimate money figures for a business idea, in euros, for the place, size and standard described.",
-  "budget: if user_text states how much money the user has to start, give amount_eur and quote the exact words",
-  "of user_text that state it; otherwise amount_eur null and an empty quote. Never compute or guess the budget.",
   "ranges: for each key, give a realistic min and max in euros for this specific business, or null for both",
   "if there is no reasonable basis. Prefer an honest wide range to false precision.",
   "startup_cost_eur is the one-off cost to open; monthly_fixed_costs_eur is the total monthly fixed cost;",
@@ -67,12 +64,6 @@ export function shouldEstimateRentLevel(facts: readonly Fact[]) {
   );
 }
 
-
-/** Solo se intenta extraer el presupuesto si aún no lo tenemos. */
-export function shouldExtractBudget(facts: readonly Fact[]) {
-  return !facts.some((f) => f.key === FIGURE_KEYS.budget);
-}
-
 export function figuresInput(idea: string, facts: readonly Fact[], ranges: readonly RangeKey[]) {
   return {
     user_text: idea,
@@ -92,12 +83,6 @@ export function figuresFormat(ranges: readonly RangeKey[], rentLevel = false) {
     properties: { min: nullableEur, max: nullableEur, assumptions },
   };
   const properties: Record<string, unknown> = {
-    budget: {
-      type: "object",
-      additionalProperties: false,
-      required: ["amount_eur", "quote"],
-      properties: { amount_eur: nullableEur, quote: { type: "string" } },
-    },
     ranges: {
       type: "object",
       additionalProperties: false,
@@ -122,7 +107,6 @@ export function figuresFormat(ranges: readonly RangeKey[], rentLevel = false) {
 type EstimatedRange = EurRange & { assumptions: string[] };
 
 export interface FiguresResult {
-  budget: { amount_eur: number | null; quote: string };
   ranges: Record<string, EstimatedRange | null>;
   rent_level?: { value: string; assumptions: string[] };
 }
@@ -145,7 +129,6 @@ export function figuresParser(ranges: readonly RangeKey[], rentLevel = false): z
     );
   const level = z.object({ value: z.enum([...RENT_LEVELS, CANNOT_ESTIMATE]), assumptions });
   return z.object({
-    budget: z.object({ amount_eur: eur.catch(null), quote: z.string().max(MAX_QUOTE_LENGTH).catch("") }),
     ranges: z.object(Object.fromEntries(ranges.map((key) => [key, range]))),
     ...(rentLevel ? { rent_level: level } : {}),
   }) as unknown as z.ZodType<FiguresResult>;
@@ -161,25 +144,9 @@ export function budgetMatchesBand(amount: number, facts: readonly Fact[]) {
   return aboveMin && (bounds.max === null || amount <= bounds.max);
 }
 
-/**
- * Convierte el resultado en datos:
- * - presupuesto: origen usuario, solo si la cita está en su texto y encaja con su tramo;
- * - rangos: origen GPT, pendientes de la plausibilidad de Jev.
- */
-export function figureFacts(
-  result: FiguresResult,
-  ranges: readonly RangeKey[],
-  model: string,
-  idea: string,
-  facts: readonly Fact[],
-): Fact[] {
+/** Convierte el resultado en datos con origen GPT, pendientes de la plausibilidad de Jev. */
+export function figureFacts(result: FiguresResult, ranges: readonly RangeKey[], model: string): Fact[] {
   const out: Fact[] = [];
-
-  const { amount_eur: amount, quote } = result.budget;
-  if (shouldExtractBudget(facts) && amount !== null && budgetMatchesBand(amount, facts)) {
-    const fact = userFact(FIGURE_KEYS.budget, amount, quote, [idea]);
-    if (fact) out.push(fact);
-  }
 
   const level = result.rent_level;
   if (level && level.value !== CANNOT_ESTIMATE) {

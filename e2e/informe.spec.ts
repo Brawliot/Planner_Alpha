@@ -100,6 +100,18 @@ await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisibl
     await expect(page.getByText("Technology/SaaS")).toHaveCount(0);
   });
 
+    test("las cantidades escritas no se preguntan y quedan como dichas por el usuario", async ({ page }) => {
+    await submitIdea(page, "Un bar de tapas, tengo 20.000 € y abriré en 4 meses");
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+
+    const report = await getReport(reportIdFrom(page.url()));
+    const fact = (key: string) => report.facts.find((f) => f.key === key);
+    expect(fact("budget_band")?.value).toBe("€5k-€20k");
+    expect(fact("budget_eur")?.value).toBe(20000);
+    expect(fact("budget_eur")?.source).toEqual({ origin: "user", quote: "20.000 €" });
+    expect(fact("launch_timeline")?.value).toBe("3-6 months");
+  });
+
   test("solo pregunta lo que no sabe, un tema por pantalla, y salta los temas conocidos", async ({ page }) => {
     await submitIdea(page, "Algo [jev:unknown=time_commitment,budget_band]");
 
@@ -196,13 +208,13 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     expect(fromGpt).toEqual(["monthly_fixed_costs_eur", "startup_cost_eur"]);
   });
 
-  test("las cifras se guardan como rango validado y sin presupuesto inventado", async ({ page }) => {
+  test("las cifras se guardan como rango validado y sin presupuesto si no se escribió", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     const report = await getReport(reportIdFrom(page.url()));
     const startup = report.facts.find((f) => f.key === "startup_cost_eur");
     expect(startup?.value).toEqual({ min: 1, max: 1 });
     expect(startup?.source.plausibility).toEqual({ noul: 0.8, model: "jev-1.13.0" });
-    // El GPT falso cita un texto que no está en la idea: el presupuesto no se acepta.
+    // La idea no trae cantidades: no hay presupuesto exacto.
     expect(report.facts.some((f) => f.key === "budget_eur")).toBe(false);
   });
 
