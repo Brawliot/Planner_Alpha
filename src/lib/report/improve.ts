@@ -4,6 +4,7 @@ import type { Fact } from "./facts.ts";
 import { RENT_LEVELS } from "./figures.ts";
 import { answerOptions, CATALOG, type QuestionKey } from "./questions.ts";
 import { areaVerdicts, type AreaVerdict } from "./verdict.ts";
+import { JEV_VERDICT_AREAS, type JevVerdictArea } from "./verdict-questions.ts";
 
 /**
  * Preguntas para mejorar cada área del informe ("Improve" en cada fila). Lógica pura:
@@ -96,4 +97,27 @@ function questionsFor(verdict: AreaVerdict, facts: readonly Fact[]): ImproveQues
 /** Preguntas de mejora de cada área, en el orden del informe. Un área sin preguntas no muestra "Improve". */
 export function improvementsByArea(facts: readonly Fact[]): AreaImprovement[] {
   return areaVerdicts(facts).map((verdict) => ({ area: verdict.area, questions: questionsFor(verdict, facts) }));
+}
+
+
+export type ImproveAnswers = { ok: true; facts: Fact[] } | { ok: false };
+
+/** Valida en servidor las respuestas a las preguntas del área: todas, y solo con opciones de la lista. */
+export function parseImproveAnswers(questions: readonly ImproveQuestion[], get: (name: string) => unknown): ImproveAnswers {
+  const facts: Fact[] = [];
+  for (const question of questions) {
+    const value = get(question.key);
+    if (typeof value !== "string" || !question.options.includes(value)) return { ok: false };
+    // En una respuesta cerrada, la cita es la opción que eligió el usuario.
+    facts.push({ key: question.key, value, source: { origin: "user", quote: value } });
+  }
+  return { ok: true, facts };
+}
+
+/** Áreas juzgadas por Jev que usan alguno de estos datos: son las únicas cuyo veredicto hay que volver a pedir. */
+export function jevAreasAffectedBy(keys: readonly string[]): JevVerdictArea[] {
+  return JEV_VERDICT_AREAS.filter((area) => {
+    const inputs: readonly string[] = AREAS[area].inputs;
+    return keys.some((key) => inputs.includes(key));
+  });
 }

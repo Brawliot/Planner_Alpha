@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
-import { analyse, writeNarrative } from "@/lib/report/analyse";
+import { analyse, refreshJevVerdicts, writeNarrative } from "@/lib/report/analyse";
+import { improvementsByArea, jevAreasAffectedBy, parseImproveAnswers } from "@/lib/report/improve";
 import type { Fact } from "@/lib/report/facts";
 import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
 import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
@@ -74,6 +75,41 @@ export async function answerQuestions(id: string, _prev: FormState, formData: Fo
   }
   redirect(`/informe/${report.id}`);
 }
+
+/** Errores como código: el panel los muestra en el idioma del informe. */
+export type ImproveState = { error: "stale" | "invalid" | "failed" | null };
+
+export async function improveArea(
+  id: string,
+  area: string,
+  _prev: ImproveState,
+  formData: FormData,
+): Promise<ImproveState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report || report.status !== "review") return { error: "stale" };
+
+  // El servidor recalcula qué preguntas tiene el área ahora: una pestaña antigua no cuela respuestas.
+  const questions = improvementsByArea(report.facts).find((a) => a.area === area)?.questions ?? [];
+  if (questions.length === 0) return { error: "stale" };
+
+  const parsed = parseImproveAnswers(questions, (name) => formData.get(name));
+  if (!parsed.ok) return { error: "invalid" };
+
+  try {
+    const answered = mergeFacts(report.facts, parsed.facts);
+    // Solo los veredictos de Jev que usan lo respondido; los de código se recalculan solos al leer.
+    const facts = await refreshJevVerdicts(report.idea, answered, jevAreasAffectedBy(parsed.facts.map((f) => f.key)));
+    // Solo se redactan de nuevo las áreas cuyos datos han cambiado.
+    const narrative = await writeNarrative(report.idea, facts, report.narrative ?? null);
+    await updateOwnReport(user.id, report.id, "review", { facts, status: "review", narrative });
+  } catch (err) {
+    logError("mejorar el área", err);
+    return { error: "failed" };
+  }
+  redirect(`/informe/${report.id}?area=${encodeURIComponent(area)}`);
+}
+
 
 async function classifyReport(userId: string, id: string, idea: string) {
   try {

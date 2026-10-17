@@ -2,8 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CALIBRATED_JEV_MODEL, NOT_SPECIFIED } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
-import { improvementsByArea, improveOptions, improvePrompt, MAX_QUESTIONS_PER_AREA } from "../../src/lib/report/improve.ts";
-
+import {
+  improvementsByArea,
+  improveOptions,
+  improvePrompt,
+  jevAreasAffectedBy,
+  MAX_QUESTIONS_PER_AREA,
+  parseImproveAnswers,
+} from "../../src/lib/report/improve.ts";
 const M = CALIBRATED_JEV_MODEL;
 
 function known(key: string, value: unknown): Fact {
@@ -79,5 +85,31 @@ describe("textos y opciones", () => {
     for (const key of ["acquisition_channel", "competition", "capital_intensity", "team_requirement", "time_to_revenue", "regulatory_load", "third_party_dependency", "money_handling", "rent_level"]) {
       assert.notEqual(improvePrompt(key), key, key);
     }
+  });
+});
+
+
+describe("parseImproveAnswers", () => {
+  const questions = [{ key: "competition", prompt: "p", options: ["Crowded market", "Few competitors"], reason: "unlock_verdict" as const }];
+  const form = (values: Record<string, unknown>) => (name: string) => values[name] ?? null;
+
+  it("convierte una respuesta válida en dato del usuario", () => {
+    assert.deepEqual(parseImproveAnswers(questions, form({ competition: "Crowded market" })), {
+      ok: true,
+      facts: [{ key: "competition", value: "Crowded market", source: { origin: "user", quote: "Crowded market" } }],
+    });
+  });
+
+  it("rechaza una respuesta que falta o inventada", () => {
+    assert.equal(parseImproveAnswers(questions, form({})).ok, false);
+    assert.equal(parseImproveAnswers(questions, form({ competition: "Mucha" })).ok, false);
+  });
+});
+
+describe("jevAreasAffectedBy", () => {
+  it("solo las áreas de Jev que usan el dato", () => {
+    assert.deepEqual(jevAreasAffectedBy(["differentiator"]), ["concept"]);
+    assert.deepEqual(jevAreasAffectedBy(["geographic_scope"]), ["market"]);
+    assert.deepEqual(jevAreasAffectedBy(["competition"]), []);
   });
 });

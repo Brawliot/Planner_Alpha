@@ -1,6 +1,9 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import { useActionState, useId, useMemo, useState, useSyncExternalStore } from "react";
+import { improveArea, type ImproveState } from "@/app/actions/report";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { ChoiceGroup } from "@/components/ui/choice-group";
 import type { AreaKey } from "@/lib/report/areas";
 import { reportTexts, type ReportTexts } from "@/lib/report/i18n";
 import type { AreaCard, ReportView } from "@/lib/report/view";
@@ -26,14 +29,23 @@ function useIsMobile() {
   );
 }
 
-export function ReportInteractive({ view }: { view: ReportView }) {
+export function ReportInteractive({
+  view,
+  reportId,
+  initialArea,
+}: {
+  view: ReportView;
+  reportId: string;
+  initialArea: AreaKey | null;
+}) {
   const t = reportTexts(view.language);
-  const [selected, setSelected] = useState<Selection>(null);
+  // Tras mejorar un área, se vuelve con ella abierta.
+  const [selected, setSelected] = useState<Selection>(initialArea);
   const isMobile = useIsMobile();
   const panelId = useId();
 
   const toggle = (key: Exclude<Selection, null>) => setSelected((current) => (current === key ? null : key));
-  const panel = <DetailPanel id={panelId} view={view} selected={selected} t={t} />;
+  const panel = <DetailPanel id={panelId} view={view} reportId={reportId} selected={selected} t={t} />;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -144,7 +156,20 @@ function CardButton({
   );
 }
 
-function DetailPanel({ id, view, selected, t }: { id: string; view: ReportView; selected: Selection; t: ReportTexts }) {
+
+function DetailPanel({
+  id,
+  view,
+  reportId,
+  selected,
+  t,
+}: {
+  id: string;
+  view: ReportView;
+  reportId: string;
+  selected: Selection;
+  t: ReportTexts;
+}) {
   return (
     <div id={id} aria-live="polite" className="flex flex-col gap-3">
       {selected === null && <p className="text-sm text-muted-foreground">{t.panelHelp}</p>}
@@ -166,12 +191,14 @@ function DetailPanel({ id, view, selected, t }: { id: string; view: ReportView; 
         </>
       )}
 
-      {selected !== null && selected !== "risks" && <AreaDetail card={view.areas.find((a) => a.area === selected)} t={t} />}
+      {selected !== null && selected !== "risks" && (
+        <AreaDetail card={view.areas.find((a) => a.area === selected)} reportId={reportId} t={t} />
+      )}
     </div>
   );
 }
 
-function AreaDetail({ card, t }: { card: AreaCard | undefined; t: ReportTexts }) {
+function AreaDetail({ card, reportId, t }: { card: AreaCard | undefined; reportId: string; t: ReportTexts }) {
   if (!card) return null;
   return (
     <>
@@ -202,6 +229,48 @@ function AreaDetail({ card, t }: { card: AreaCard | undefined; t: ReportTexts })
       ) : (
         <p className="text-sm text-muted-foreground">{t.noEstimates}</p>
       )}
+
+      {/* key por área: al cambiar de tarjeta, el formulario empieza cerrado y vacío. */}
+      <ImproveSection key={card.area} card={card} reportId={reportId} t={t} />
     </>
+  );
+}
+
+const IMPROVE_INITIAL: ImproveState = { error: null };
+
+function ImproveSection({ card, reportId, t }: { card: AreaCard; reportId: string; t: ReportTexts }) {
+  const [open, setOpen] = useState(false);
+  const formId = useId();
+  const action = useMemo(() => improveArea.bind(null, reportId, card.area), [reportId, card.area]);
+  const [state, formAction, pending] = useActionState(action, IMPROVE_INITIAL);
+
+  if (card.questions.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={formId}
+        onClick={() => setOpen((value) => !value)}
+        className={buttonStyles("secondary", "min-h-9 self-start")}
+      >
+        {t.improveArea(card.questions.length)}
+      </button>
+
+      {open && (
+        <form id={formId} action={formAction} className="flex flex-col gap-4 rounded-md border border-dashed bg-muted p-3">
+          {card.questions.map((question) => (
+            <ChoiceGroup key={question.key} name={question.key} legend={question.prompt} options={question.options} required />
+          ))}
+          <Button type="submit" disabled={pending} className="self-end">
+            {pending ? t.saving : t.save}
+          </Button>
+          <p aria-live="polite" className="text-sm text-danger">
+            {state.error ? t.improveError[state.error] : null}
+          </p>
+        </form>
+      )}
+    </div>
   );
 }

@@ -21,6 +21,10 @@ export interface ReportTexts {
   noEstimates: string;
   showDetails: (area: string) => string;
   startOver: string;
+  improveArea: (n: number) => string;
+  save: string;
+  saving: string;
+  improveError: Record<"stale" | "invalid" | "failed", string>;
   footer: Record<FooterState, string>;
 }
 
@@ -52,6 +56,14 @@ const ES: ReportTexts = {
   noEstimates: "Sin estimaciones: valoración basada en lo que has escrito.",
   showDetails: (area) => `Mostrar detalle de ${area}`,
   startOver: "Empezar de nuevo",
+  improveArea: (n) => `Mejorar esta área (${n})`,
+  save: "Guardar",
+  saving: "Guardando…",
+  improveError: {
+    stale: "Estas preguntas ya no están pendientes. Recarga la página.",
+    invalid: "Responde todas las preguntas.",
+    failed: "No se han podido guardar tus respuestas. Inténtalo de nuevo.",
+  },
   footer: {
     all_good: "Pasar a planificación",
     risks: "Revisar riesgos antes de planificar",
@@ -87,6 +99,14 @@ const EN: ReportTexts = {
   noEstimates: "No estimates: assessment based on what you wrote.",
   showDetails: (area) => `Show details for ${area}`,
   startOver: "Start over",
+  improveArea: (n) => `Improve this area (${n})`,
+  save: "Save",
+  saving: "Saving…",
+  improveError: {
+    stale: "These questions are no longer pending. Reload the page.",
+    invalid: "Answer all the questions.",
+    failed: "Your answers could not be saved. Please try again.",
+  },
   footer: {
     all_good: "Continue to planning",
     risks: "Review risks before planning",

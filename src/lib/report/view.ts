@@ -3,6 +3,7 @@ import { certaintyOf } from "./certainty.ts";
 import type { Fact } from "./facts.ts";
 import { mainRisks, templateFor, type Language, type StoredNarrative } from "./narrative.ts";
 import { areaVerdicts, type AreaVerdict, type Verdict } from "./verdict.ts";
+import { improvementsByArea } from "./improve.ts";
 
 /**
  * Vista del informe: lo único que llega al navegador. Textos y veredictos ya decididos;
@@ -19,6 +20,8 @@ export interface AreaCard {
   sentence: string;
   estimated: boolean;
   assumptions: string[];
+  /** Preguntas para mejorar el área (vacío: sin botón "Mejorar"). */
+  questions: Array<{ key: string; prompt: string; options: string[] }>;
 }
 
 export interface ReportView {
@@ -52,7 +55,9 @@ export function reportView(idea: string, facts: readonly Fact[], narrative: Stor
   const language: Language = narrative?.language ?? "en";
   // Si una frase falta (informe antiguo o área nueva), la plantilla de su motivo.
   const sentenceOf = (v: AreaVerdict) => narrative?.areas[v.area]?.text ?? templateFor(v.reason, language);
-
+  const improvements = improvementsByArea(facts);
+  const questionsOf = (area: AreaKey) =>
+    (improvements.find((i) => i.area === area)?.questions ?? []).map(({ key, prompt, options }) => ({ key, prompt, options }));
   return {
     language,
     idea,
@@ -62,6 +67,7 @@ export function reportView(idea: string, facts: readonly Fact[], narrative: Stor
       sentence: sentenceOf(v),
       estimated: v.estimated,
       assumptions: v.estimated ? assumptionsFor(facts, v.area) : [],
+      questions: questionsOf(v.area),
     })),
     risks: mainRisks(verdicts).map((v) => ({
       area: v.area,

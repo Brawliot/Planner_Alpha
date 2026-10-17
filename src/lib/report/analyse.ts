@@ -166,3 +166,29 @@ export async function writeNarrative(
 
   return mergeNarrative(buildNarrative(result, idea, facts, verdicts), previous, stale, fingerprints);
 }
+
+
+/**
+ * Vuelve a pedir a Jev solo los veredictos de estas áreas (tras mejorar un área).
+ * Si Jev falla en una, su veredicto queda sin confianza (Needs info): las respuestas no se pierden.
+ */
+export async function refreshJevVerdicts(
+  idea: string,
+  facts: Fact[],
+  areas: readonly JevVerdictArea[],
+): Promise<Fact[]> {
+  const present = new Set(buildAreas(facts).map((view) => view.area));
+  const targets = areas.filter((area) => present.has(area) && missingCore(facts, area).length === 0);
+  const results = await Promise.allSettled(targets.map((area) => jevVerdict(idea, facts, area)));
+
+  const updates = results.map((result, index): Fact => {
+    if (result.status === "fulfilled") return result.value;
+    console.error("report: no se pudo recalcular un veredicto", result.reason instanceof Error ? result.reason.name : "desconocido");
+    return {
+      key: verdictKey(targets[index]),
+      value: NOT_ENOUGH_INFORMATION,
+      source: { origin: "jev", model: "unavailable", confidence: null, from: "user" },
+    };
+  });
+  return mergeFacts(facts, updates);
+}

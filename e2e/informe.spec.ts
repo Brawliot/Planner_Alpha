@@ -341,4 +341,49 @@ test.describe("pantalla del informe", () => {
     const next = moneyCard.locator("xpath=following-sibling::li[1]");
     await expect(next.getByText("Assumptions", { exact: true })).toBeVisible();
   });
+
+  
+  test("mejorar un área: responde, se recalcula y vuelve con el área abierta", async ({ page }) => {
+    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    const before = await getReport(reportIdFrom(page.url()));
+
+    await page.getByRole("button", { name: /Competition/ }).click();
+    await page.getByRole("button", { name: "Improve this area (1)" }).click();
+    await page.getByRole("group", { name: "How much competition is there where you will operate?" }).getByLabel("Crowded market").check();
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await expect(page).toHaveURL(/\?area=competition$/);
+    const competition = page.getByRole("button", { name: /Competition/ });
+    await expect(competition).toHaveAttribute("aria-expanded", "true");
+    // Saturado con diferenciador propio (el Jev falso da "Technology or IP"): Watch.
+    await expect(competition).toContainText("Watch");
+    await expect(page.getByRole("button", { name: /Improve this area/ })).toHaveCount(0);
+
+    const after = await getReport(reportIdFrom(page.url()));
+    // Solo cambia la frase del área mejorada.
+    expect(after.narrative?.areas.money).toEqual(before.narrative?.areas.money);
+  });
+
+  test("un área sin preguntas no muestra 'Improve'", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await page.getByRole("button", { name: /Concept/ }).click();
+    await expect(page.getByRole("button", { name: /Improve this area/ })).toHaveCount(0);
+  });
+
+  test("una pestaña antigua no puede volver a mejorar un área ya respondida", async ({ page, context }) => {
+    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    const oldTab = await context.newPage();
+    await oldTab.goto(page.url());
+
+    for (const tab of [page, oldTab]) {
+      await tab.getByRole("button", { name: /Competition/ }).click();
+      await tab.getByRole("button", { name: "Improve this area (1)" }).click();
+      await tab.getByRole("group", { name: "How much competition is there where you will operate?" }).getByLabel("Crowded market").check();
+    }
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page).toHaveURL(/\?area=competition$/);
+
+    await oldTab.getByRole("button", { name: "Save" }).click();
+    await expect(oldTab.getByText("These questions are no longer pending. Reload the page.")).toBeVisible();
+  });
 });

@@ -13,20 +13,26 @@ import { reportView } from "@/lib/report/view";
 
 export const metadata: Metadata = { title: "Tu informe" };
 
-export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ReportPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ area?: string | string[] }>;
+}) {
   return (
     <PageContainer size="lg">
       {/* Sin generateStaticParams, params es dato de la petición: va dentro de Suspense (cacheComponents). */}
       <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando...</p>}>
-        {params.then(({ id }) => (
-          <ReportContent id={id} />
+        {Promise.all([params, searchParams]).then(([{ id }, { area }]) => (
+          <ReportContent id={id} area={typeof area === "string" ? area : null} />
         ))}
       </Suspense>
     </PageContainer>
   );
 }
 
-async function ReportContent({ id }: { id: string }) {
+async function ReportContent({ id, area }: { id: string; area: string | null }) {
   const user = await requireUser();
   const report = await getOwnReport(user.id, id);
   // Si no existe o es de otro usuario, la misma respuesta: no se revela que exista.
@@ -34,7 +40,10 @@ async function ReportContent({ id }: { id: string }) {
 
   // Con el análisis terminado, el informe. Antes, la idea y el paso en curso (preguntas o reintentar).
   if (report.status === "review" || report.status === "approved") {
-    return <ReportScreen view={reportView(report.idea, report.facts, report.narrative ?? null)} />;
+    const view = reportView(report.idea, report.facts, report.narrative ?? null);
+    // Solo se abre si es un área de este informe; cualquier otro valor se ignora.
+    const initialArea = view.areas.find((card) => card.area === area)?.area ?? null;
+    return <ReportScreen view={view} reportId={report.id} initialArea={initialArea} />;
   }
 
   return (
