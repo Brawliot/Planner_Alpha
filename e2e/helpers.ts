@@ -58,5 +58,6 @@ export async function getReport(id: string) {
 }
 
 export function reportIdFrom(url: string) {
-  return url.split("/").pop() ?? "";
+  // Solo la ruta: tras mejorar un área la URL lleva ?area=...
+  return new URL(url).pathname.split("/").pop() ?? "";
 }
