@@ -34,8 +34,13 @@ describe("improvementsByArea", () => {
 
   it("nunca pregunta datos de investigación: competencia, alquiler, regulación...", () => {
     assert.deepEqual(questionsOf("competition", []), []);
-    assert.deepEqual(questionsOf("location", [known("offering_type", "Physical venue")]), []);
-    assert.deepEqual(questionsOf("regulation", [estimated("regulatory_load", "Heavy (health, finance, food)")]), []);
+    // En Ubicación sí puede preguntar el alcance (decisión tuya), nunca el nivel de alquiler.
+    const location = questionsOf("location", [known("offering_type", "Physical venue")]).map((q) => q.key);
+    assert.equal(location.includes("rent_level"), false);
+    assert.deepEqual(location, ["geographic_scope"]);
+    // En Regulación puede preguntar si manejarás dinero de clientes (decisión tuya), nunca la carga regulatoria.
+    const regulation = questionsOf("regulation", [estimated("regulatory_load", "Heavy (health, finance, food)")]).map((q) => q.key);
+    assert.deepEqual(regulation, ["money_handling"]);
   });
 
   it("lo no especificado del usuario también se puede mejorar", () => {
