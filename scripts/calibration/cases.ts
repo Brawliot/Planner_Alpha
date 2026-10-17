@@ -520,3 +520,61 @@ export const LIKELY_CASES: ChoiceCase[] = [
   ...choicePair("lk-project-sector", "sector", "Can't tell",
     "A new project", "Un proyecto nuevo"),
 ];
+
+// ---- Cantidades (N2): Jev elige qué cantidad del texto responde a cada pregunta.
+import type { PhraseDimension } from "../../src/lib/report/phrases.ts";
+
+export interface PhraseCase {
+  id: string;
+  lang: Lang;
+  dimension: PhraseDimension;
+  text: string;
+  /** Texto literal de la cantidad correcta (tal como la extrae el código) o "None". */
+  expected: string;
+}
+
+function phrasePair(id: string, dimension: PhraseDimension, en: [string, string], es: [string, string]): PhraseCase[] {
+  return [
+    { id, lang: "en", dimension, text: en[0], expected: en[1] },
+    { id, lang: "es", dimension, text: es[0], expected: es[1] },
+  ];
+}
+
+const WAITER_EN = "I've been a waiter for 10 years and want to open my bar in 2 years";
+const WAITER_ES = "Llevo 10 años de camarero y quiero abrir mi bar en 2 años";
+const AGE_EN = "I'm 30 years old and want to build an app";
+const AGE_ES = "Tengo 30 años y quiero montar una app";
+
+export const PHRASE_CASES: PhraseCase[] = [
+  ...phrasePair("ph-bud-saved", "budget",
+    ["I have €20,000 saved to open a café", "€20,000"],
+    ["Tengo 20.000 € ahorrados para abrir una cafetería", "20.000 €"]),
+  ...phrasePair("ph-bud-rent", "budget",
+    ["A bar; the rent is €2,000 a month and I have €30,000 to start", "€30,000"],
+    ["Un bar; el alquiler es de 2.000 € al mes y tengo 30.000 € para empezar", "30.000 €"]),
+  ...phrasePair("ph-bud-cost", "budget",
+    ["A café that costs about €80,000 to set up", "None"],
+    ["Una cafetería que cuesta unos 80.000 € montar", "None"]),
+  ...phrasePair("ph-bud-k", "budget",
+    ["I have 15k to start an online shop", "15k"],
+    ["Tengo 15k para empezar una tienda online", "15k"]),
+  ...phrasePair("ph-bud-mil", "budget",
+    ["I can count on 50 thousand euros for my bakery", "50 thousand euros"],
+    ["Cuento con 50 mil euros para mi panadería", "50 mil euros"]),
+  ...phrasePair("ph-lau-months", "launch",
+    ["I want to open a hair salon in 4 months", "4 months"],
+    ["Quiero abrir una peluquería en 4 meses", "4 meses"]),
+  ...phrasePair("ph-lau-range", "launch",
+    ["I'll open my shop in 6-8 months", "6-8 months"],
+    ["Abriré mi tienda en 6-8 meses", "6-8 meses"]),
+  ...phrasePair("ph-lau-waiter", "launch", [WAITER_EN, "2 years"], [WAITER_ES, "2 años"]),
+  ...phrasePair("ph-exp-waiter", "experience", [WAITER_EN, "10 years"], [WAITER_ES, "10 años"]),
+  ...phrasePair("ph-lau-age", "launch", [AGE_EN, "None"], [AGE_ES, "None"]),
+  ...phrasePair("ph-exp-age", "experience", [AGE_EN, "None"], [AGE_ES, "None"]),
+  ...phrasePair("ph-exp-range", "experience",
+    ["I worked 3 to 5 years at a marketing agency and want to start my own", "3 to 5 years"],
+    ["Trabajé de 3 a 5 años en una agencia de marketing y quiero montar la mía", "3 a 5 años"]),
+  ...phrasePair("ph-exp-other", "experience",
+    ["I was an accountant for 8 years and now want to open a restaurant", "None"],
+    ["Fui contable 8 años y ahora quiero abrir un restaurante", "None"]),
+];

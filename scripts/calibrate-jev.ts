@@ -14,10 +14,12 @@ import {
   LIKELY_CASES,
   LIKELY_QUESTIONS,
   NOUL_CASES,
+  PHRASE_CASES,
   PLAUSIBILITY_QUESTION,
   type NoulCase,
 } from "./calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize, type Scored } from "./calibration/metrics.ts";
+import { extractQuantities, NONE, phraseQuestion, phraseState } from "../src/lib/report/phrases.ts";
 /**
  * Acierto exigido a lo que se muestre como sabido o estimado: ningún error observado.
  * Con un 95 %, el umbral propuesto podía dejar pasar fallos y los umbrales de noul parecían solaparse.
@@ -96,6 +98,14 @@ function choiceTasks(): ChoiceTask[] {
       state: buildJevState(c.text, []),
       jev: LIKELY_QUESTIONS[c.question],
     })),
+    // Cantidades: interpretan lo que dijo el usuario, así que cuentan para el umbral de lo sabido.
+    ...PHRASE_CASES.flatMap((c) => {
+      const quantities = extractQuantities(c.text);
+      const jev = phraseQuestion(c.dimension, quantities);
+      if (!jev) return [];
+      const expected = c.expected === NONE ? NONE : (quantities.find((q) => q.text === c.expected)?.id ?? "?");
+      return [{ id: c.id, lang: c.lang, question: `phrase.${c.dimension}`, expected, state: phraseState(c.text, quantities), jev }];
+    }),
   ];
 }
 

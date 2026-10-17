@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CHOICE_CASES, CHOICE_QUESTIONS, LIKELY_CASES, LIKELY_QUESTIONS, NOUL_CASES } from "../../scripts/calibration/cases.ts";
+import { CHOICE_CASES, CHOICE_QUESTIONS, PHRASE_CASES, LIKELY_CASES, LIKELY_QUESTIONS, NOUL_CASES } from "../../scripts/calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize } from "../../scripts/calibration/metrics.ts";
+import { extractQuantities, NONE } from "../../src/lib/report/phrases.ts";
+
+describe("casos de cantidades", () => {
+  it("la cantidad esperada la extrae el código tal cual", () => {
+    for (const c of PHRASE_CASES) {
+      if (c.expected === NONE) continue;
+      assert.ok(
+        extractQuantities(c.text).some((q) => q.text === c.expected),
+        `${c.id} ${c.lang}: "${c.expected}" no se extrae`,
+      );
+    }
+  });
+});
 
 describe("casos de calibración", () => {
   it("cada respuesta esperada es una opción real de su pregunta", () => {
