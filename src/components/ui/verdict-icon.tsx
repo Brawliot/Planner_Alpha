@@ -3,7 +3,6 @@ import { cn } from "@/lib/cn";
 
 const STYLES: Record<Verdict, { symbol: string; className: string }> = {
   strong: { symbol: "✓", className: "border-success text-success" },
-  watch: { symbol: "!", className: "border-warning text-warning" },
   risk: { symbol: "✕", className: "border-danger text-danger" },
   needs_info: { symbol: "?", className: "border-muted-foreground text-muted-foreground" },
 };
@@ -27,7 +26,6 @@ export function VerdictIcon({ verdict, className }: { verdict: Verdict; classNam
 
 const LABEL_COLOR: Record<Verdict, string> = {
   strong: "text-success",
-  watch: "text-warning",
   risk: "text-danger",
   needs_info: "text-muted-foreground",
 };

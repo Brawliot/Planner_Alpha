@@ -10,10 +10,9 @@ import { CATALOG, type QuestionKey } from "./questions.ts";
  * - risk (rojo): el hecho tiene efecto negativo; no es "mala idea", es una línea de trabajo del plan;
  * - needs_info (gris): falta lo imprescindible para dar color.
  * No saber algo nunca cuenta como negativo: va a gaps ("por concretar") y será una tarea del plan.
- * watch ya no lo da ninguna regla; sale del tipo en el paso V2.
  */
 
-export type Verdict = "strong" | "watch" | "risk" | "needs_info";
+export type Verdict = "strong" | "risk" | "needs_info";
 
 export interface AreaVerdict {
   area: AreaKey;

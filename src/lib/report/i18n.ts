@@ -42,6 +42,7 @@ export interface ReportTexts {
   includesEstimate: string;
   approveError: Record<"stale" | "contradictions" | "failed", string>;
   dataTitle: string;
+  pendingTitle: string;
   fromYou: string;
   perMonth: string;
   field: Record<string, string>;
@@ -52,7 +53,7 @@ const ES: ReportTexts = {
   title: "Informe de tu idea",
   yourIdea: "Tu idea",
   verdicts: "Veredictos",
-  verdict: { strong: "Sólido", watch: "Vigilar", risk: "Riesgo", needs_info: "Faltan datos" },
+  verdict: { strong: "A favor", risk: "A trabajar", needs_info: "Falta información" },
   assessmentByArea: "Evaluación por área",
   area: {
     concept: "Concepto",
@@ -66,9 +67,9 @@ const ES: ReportTexts = {
     team: "Equipo",
     dependencies: "Dependencias",
   },
-  mainRisks: "Riesgos principales",
-  riskCount: (n) => (n === 1 ? "1 riesgo" : `${n} riesgos`),
-  noRisks: "Aún no hay riesgos claros: faltan datos clave.",
+  mainRisks: "Lo que hay que trabajar",
+  riskCount: (n) => (n === 1 ? "1 área" : `${n} áreas`),
+  noRisks: "Nada a trabajar con lo que sabemos hasta ahora.",
   disclaimer: "Estimación orientativa, no es asesoramiento financiero ni legal.",
   panelHelp: "Pulsa la flecha de una tarjeta para ver su información aquí.",
   estimated: "estimado",
@@ -120,6 +121,7 @@ const ES: ReportTexts = {
     failed: "No se ha podido completar. Inténtalo de nuevo.",
   },
   dataTitle: "Datos de esta área",
+  pendingTitle: "Por concretar",
   fromYou: "Tú",
   perMonth: "/mes",
   field: {
@@ -151,7 +153,7 @@ const ES: ReportTexts = {
   },
   footer: {
     all_good: "Pasar a planificación",
-    risks: "Revisar riesgos antes de planificar",
+    risks: "Revisar lo que hay que trabajar",
     missing_data: "Completar datos para evaluar",
     contradictions: "Corregir datos",
   },
@@ -161,8 +163,7 @@ const EN: ReportTexts = {
   title: "Your idea report",
   yourIdea: "Your idea",
   verdicts: "Verdicts",
-  verdict: { strong: "Strong", watch: "Watch", risk: "Risk", needs_info: "Needs info" },
-  assessmentByArea: "Assessment by area",
+  verdict: { strong: "In your favour", risk: "Needs work", needs_info: "Needs info" },  assessmentByArea: "Assessment by area",
   area: {
     concept: "Concept",
     validation: "Validation",
@@ -175,9 +176,9 @@ const EN: ReportTexts = {
     team: "Team",
     dependencies: "Dependencies",
   },
-  mainRisks: "Main risks",
-  riskCount: (n) => (n === 1 ? "1 risk" : `${n} risks`),
-  noRisks: "No clear risks yet: key data is missing.",
+  mainRisks: "What needs work",
+  riskCount: (n) => (n === 1 ? "1 area" : `${n} areas`),
+  noRisks: "Nothing needs work with what we know so far.",
   disclaimer: "Indicative estimate only. It is not financial or legal advice.",
   panelHelp: "Press a card's arrow to see its information here.",
   estimated: "estimated",
@@ -229,6 +230,7 @@ const EN: ReportTexts = {
     failed: "It could not be completed. Please try again.",
   },
   dataTitle: "Data for this area",
+  pendingTitle: "Still to define",
   fromYou: "From you",
   perMonth: "/month",
   field: {
@@ -260,7 +262,7 @@ const EN: ReportTexts = {
   },
   footer: {
     all_good: "Continue to planning",
-    risks: "Review risks before planning",
+    risks: "Review what needs work",
     missing_data: "Add data to evaluate",
     contradictions: "Fix data",
   },

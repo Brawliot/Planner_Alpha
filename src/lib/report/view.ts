@@ -27,6 +27,8 @@ export interface AreaCard {
   questions: Array<{ key: string; prompt: string; options: string[] }>;
   /** Datos en que se apoya el área, ya formateados: valor y si es tuyo o una estimación. */
   data: Array<{ key: string; label: string; value: string; estimated: boolean }>;
+  /** Lo que no se sabe del área ("por concretar"): no cambia el color y será tarea del plan. */
+  pending: Array<{ key: string; label: string }>;
 }
 
 export interface ReportView {
@@ -79,7 +81,6 @@ function dataFor(facts: readonly Fact[], area: AreaKey, language: Language) {
 }
 
 
-/** Faltan datos si algún área no tiene veredicto; si no, hay riesgos si alguna es Risk. */
 /** Las contradicciones mandan (bloquean); después, faltan datos; después, riesgos. */
 export function footerState(verdicts: readonly AreaVerdict[], contradictions = 0): FooterState {
   if (contradictions > 0) return "contradictions";
@@ -126,6 +127,7 @@ export function reportView(
       assumptions: v.estimated ? assumptionsFor(facts, v.area) : [],
       questions: questionsOf(v.area),
       data: dataFor(facts, v.area, language),
+      pending: [...v.missing, ...v.gaps].map((key) => ({ key, label: reportTexts(language).field[key] ?? key })),
     })),
     risks: mainRisks(verdicts).map((v) => ({
       area: v.area,

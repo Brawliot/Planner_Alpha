@@ -293,11 +293,18 @@ test.describe("pantalla del informe", () => {
     await login(page, email);
   });
 
+    test("el panel muestra lo que falta por concretar y la leyenda no tiene Watch", async ({ page }) => {
+    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    await page.getByRole("button", { name: /Competition/ }).click();
+    await expect(page.getByText("Still to define", { exact: true })).toBeVisible();
+    await expect(page.getByText("Watch", { exact: true })).toHaveCount(0);
+  });
+
   test("muestra cada área con su veredicto y su frase", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     const concept = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Concept/ }) });
-    await expect(concept.getByText("Strong", { exact: true })).toBeVisible();
+    await expect(concept.getByText("In your favour", { exact: true })).toBeVisible();
     await expect(concept.getByText("Fake assumption")).toBeVisible();
     await expect(page.getByText("Indicative estimate only. It is not financial or legal advice.")).toBeVisible();
   });
@@ -375,8 +382,8 @@ test.describe("pantalla del informe", () => {
     await expect(page).toHaveURL(/\?area=competition$/);
     const competition = page.getByRole("button", { name: /Competition/ });
     await expect(competition).toHaveAttribute("aria-expanded", "true");
-    // Saturado: rojo, tenga o no diferenciador (la etiqueta cambia en el paso V2).
-    await expect(competition).toContainText("Risk");
+    // Saturado: rojo ("Needs work"), tenga o no diferenciador.
+    await expect(competition).toContainText("Needs work");
     await expect(page.getByRole("button", { name: /Improve this area/ })).toHaveCount(0);
 
     const after = await getReport(reportIdFrom(page.url()));
@@ -519,7 +526,7 @@ test.describe("revisar y aprobar", () => {
 
   test("'Revisar riesgos' abre la primera área en riesgo", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
-    await page.getByRole("button", { name: "Review risks before planning" }).click();
+    await page.getByRole("button", { name: "Review what needs work" }).click();
     // Con el Jev falso la fase es "Idea only" (rojo) y Validación va antes que Money en el informe.
     await expect(page.getByRole("button", { name: /Validation/ })).toHaveAttribute("aria-expanded", "true");
   });

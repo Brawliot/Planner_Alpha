@@ -17,7 +17,7 @@ import { ChoiceGroup } from "@/components/ui/choice-group";
 import { VerdictIcon, VerdictLabel } from "@/components/ui/verdict-icon";
 import { cn } from "@/lib/cn";
 
-const LEGEND = ["strong", "watch", "risk", "needs_info"] as const;
+const LEGEND = ["strong", "risk", "needs_info"] as const;
 // Mismo corte que md: de Tailwind (768px).
 const MOBILE_QUERY = "(max-width: 767px)";
 const cardButtonId = (area: AreaKey) => `card-${area}`;
@@ -371,6 +371,16 @@ function AreaDetail({
                   {item.estimated ? t.estimated : t.fromYou}
                 </span>
               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+            {card.pending.length > 0 && (
+        <div className="flex flex-col gap-2 text-sm">
+          <p className="font-semibold">{t.pendingTitle}</p>
+          <ul className="list-disc pl-5 text-muted-foreground">
+            {card.pending.map((item) => (
+              <li key={item.key}>{item.label}</li>
             ))}
           </ul>
         </div>

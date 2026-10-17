@@ -17,7 +17,7 @@ describe("footerState", () => {
   it("faltan datos manda sobre los riesgos; si no, riesgos; si no, todo bien", () => {
     assert.equal(footerState([v("risk"), v("needs_info")]), "missing_data");
     assert.equal(footerState([v("strong"), v("risk")]), "risks");
-    assert.equal(footerState([v("strong"), v("watch")]), "all_good");
+    assert.equal(footerState([v("strong"), v("strong")]), "all_good");
   });
 });
 
@@ -75,5 +75,27 @@ describe("datos de cada área", () => {
   it("no muestra lo no sabido", () => {
     const money = reportView("idea", facts, null).areas.find((a) => a.area === "money");
     assert.equal(money?.data.some((d) => d.key === "time_to_revenue"), false);
+  });
+});
+
+describe("por concretar", () => {
+  const jev = (key: string, value: string): Fact => ({
+    key,
+    value,
+    source: { origin: "jev", model: M, confidence: 0.95, from: "user" },
+  });
+
+  it("cada área lista lo que no se sabe con su nombre legible, sin cambiar el color", () => {
+    const view = reportView("Una app", [jev("offering_type", "Software"), jev("revenue_model", "Subscription")], null);
+    const concept = view.areas.find((a) => a.area === "concept");
+    assert.equal(concept?.verdict, "strong");
+    assert.deepEqual(concept?.pending.map((p) => p.label), ["Sector", "What sets you apart"]);
+  });
+
+  it("un área en gris lista primero lo imprescindible que falta", () => {
+    const view = reportView("Una app", [], null);
+    const founder = view.areas.find((a) => a.area === "founder");
+    assert.equal(founder?.verdict, "needs_info");
+    assert.deepEqual(founder?.pending.slice(0, 2).map((p) => p.key), ["founder_experience", "time_commitment"]);
   });
 });
