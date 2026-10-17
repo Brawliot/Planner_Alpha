@@ -341,7 +341,6 @@ test.describe("pantalla del informe", () => {
     const next = moneyCard.locator("xpath=following-sibling::li[1]");
     await expect(next.getByText("Assumptions", { exact: true })).toBeVisible();
   });
-
   
   test("mejorar un área: responde, se recalcula y vuelve con el área abierta", async ({ page }) => {
     await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
@@ -385,5 +384,79 @@ test.describe("pantalla del informe", () => {
 
     await oldTab.getByRole("button", { name: "Save" }).click();
     await expect(oldTab.getByText("These questions are no longer pending. Reload the page.")).toBeVisible();
+  });
+});
+
+
+test.describe("editar el informe", () => {
+  test.beforeEach(async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+  });
+
+  async function openEditor(page: import("@playwright/test").Page) {
+    await page.getByRole("link", { name: "Edit data" }).click();
+    await expect(page.getByRole("heading", { name: "Edit the report data" })).toBeVisible();
+  }
+
+  test("un cambio estructural repite el análisis conservando lo del usuario", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await openEditor(page);
+    await page.getByRole("group", { name: "What sector is your business in?" }).getByLabel("Hospitality/Food service").check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+    const report = await getReport(reportIdFrom(page.url()));
+    const sector = report.facts.find((f) => f.key === "sector");
+    expect(sector?.value).toBe("Hospitality/Food service");
+    expect(sector?.source.origin).toBe("user");
+    // Las cifras se han vuelto a estimar.
+    expect(report.facts.find((f) => f.key === "startup_cost_eur")?.source.origin).toBe("gpt");
+  });
+
+  test("lo que no se toca conserva su origen", async ({ page }) => {
+    await submitIdea(page, "Un bar [jev:unknown=competition]");
+    await openEditor(page);
+    await page.getByLabel("Exact budget in euros (optional)").fill("");
+    await page.getByRole("group", { name: "How far along is your idea?" }).getByLabel("Prototype").check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+    const report = await getReport(reportIdFrom(page.url()));
+    expect(report.facts.find((f) => f.key === "competition")?.source.origin).toBe("gpt");
+    expect(report.facts.find((f) => f.key === "validation_stage")?.source.origin).toBe("user");
+  });
+
+  test("'Not decided yet' en el presupuesto deja Money sin datos", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await openEditor(page);
+    await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("Not decided yet").check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    const money = page.getByRole("button", { name: /Money/ });
+    await expect(money).toContainText("Needs info");
+  });
+
+  test("un presupuesto exacto que no cuadra con el tramo se rechaza", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await openEditor(page);
+    await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("Under €5k").check();
+    await page.getByLabel("Exact budget in euros (optional)").fill("40000");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("The exact budget does not match the chosen range.")).toBeVisible();
+  });
+});
+
+test.describe("decisiones pendientes en las preguntas base", () => {
+  test("'Not decided yet' responde la pregunta y no se vuelve a preguntar", async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+
+    await submitIdea(page, "Algo [jev:unknown=budget_band]");
+    await page.getByRole("group", { name: "How much can you invest to start?" }).getByLabel("Not decided yet").check();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
   });
 });

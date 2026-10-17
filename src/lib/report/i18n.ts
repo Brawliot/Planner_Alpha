@@ -25,6 +25,14 @@ export interface ReportTexts {
   save: string;
   saving: string;
   improveError: Record<"stale" | "invalid" | "failed", string>;
+  editData: string;
+  editTitle: string;
+  editHelp: string;
+  saveChanges: string;
+  cancel: string;
+  budgetExact: string;
+  topic: Record<"business" | "market" | "founder" | "resources" | "location" | "risk", string>;
+  editError: Record<"stale" | "invalid" | "inconsistent_budget" | "failed", string>;
   footer: Record<FooterState, string>;
 }
 
@@ -63,6 +71,26 @@ const ES: ReportTexts = {
     stale: "Estas preguntas ya no están pendientes. Recarga la página.",
     invalid: "Responde todas las preguntas.",
     failed: "No se han podido guardar tus respuestas. Inténtalo de nuevo.",
+  },
+  editData: "Editar datos",
+  editTitle: "Editar los datos del informe",
+  editHelp: "Cambia lo que no sea correcto. Lo que no toques se queda como está.",
+  saveChanges: "Guardar cambios",
+  cancel: "Cancelar",
+  budgetExact: "Presupuesto exacto en euros (opcional)",
+  topic: {
+    business: "Tu negocio",
+    market: "Tu mercado",
+    founder: "Tú",
+    resources: "Recursos y plazos",
+    location: "Ubicación",
+    risk: "Riesgos",
+  },
+  editError: {
+    stale: "Este informe ya no se puede editar. Recarga la página.",
+    invalid: "Hay un valor no válido. Revisa el formulario.",
+    inconsistent_budget: "El presupuesto exacto no cuadra con el tramo elegido.",
+    failed: "No se han podido guardar los cambios. Inténtalo de nuevo.",
   },
   footer: {
     all_good: "Pasar a planificación",
@@ -106,6 +134,26 @@ const EN: ReportTexts = {
     stale: "These questions are no longer pending. Reload the page.",
     invalid: "Answer all the questions.",
     failed: "Your answers could not be saved. Please try again.",
+  },
+  editData: "Edit data",
+  editTitle: "Edit the report data",
+  editHelp: "Change whatever is not right. Anything you don't touch stays as it is.",
+  saveChanges: "Save changes",
+  cancel: "Cancel",
+  budgetExact: "Exact budget in euros (optional)",
+  topic: {
+    business: "Your business",
+    market: "Your market",
+    founder: "You",
+    resources: "Resources and timing",
+    location: "Location",
+    risk: "Risks",
+  },
+  editError: {
+    stale: "This report can no longer be edited. Reload the page.",
+    invalid: "There is an invalid value. Please check the form.",
+    inconsistent_budget: "The exact budget does not match the chosen range.",
+    failed: "The changes could not be saved. Please try again.",
   },
   footer: {
     all_good: "Continue to planning",

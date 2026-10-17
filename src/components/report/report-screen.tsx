@@ -25,6 +25,9 @@ export function ReportScreen({
         <Link href="/" className={buttonStyles("secondary", "min-h-11")}>
           {t.startOver}
         </Link>
+        <Link href={`/informe/${reportId}/editar`} className={buttonStyles("secondary", "min-h-11")}>
+          {t.editData}
+        </Link>
         {/* Sin destino hasta el paso 13 (editar y aprobar). */}
         <Button disabled className="min-h-11">
           {t.footer[view.footer]}

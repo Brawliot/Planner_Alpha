@@ -110,6 +110,33 @@ export async function improveArea(
   redirect(`/informe/${report.id}?area=${encodeURIComponent(area)}`);
 }
 
+export type EditState = { error: "stale" | "invalid" | "inconsistent_budget" | "failed" | null };
+
+export async function saveEdits(id: string, _prev: EditState, formData: FormData): Promise<EditState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report || report.status !== "review") return { error: "stale" };
+
+  // El servidor compara con lo guardado: solo cuenta lo que ha cambiado de verdad.
+  const parsed = parseEdits(report.facts, (name) => formData.get(name));
+  if (!parsed.ok) return { error: parsed.error };
+  if (parsed.changes.length === 0) redirect(`/informe/${report.id}`);
+
+  try {
+    const edited = mergeFacts(report.facts, parsed.changes);
+    const facts = parsed.structural
+      ? await reanalyse(report.idea, edited)
+      : await refreshJevVerdicts(report.idea, edited, jevAreasAffectedBy(parsed.changes.map((c) => c.key)));
+    const narrative = await writeNarrative(report.idea, facts, report.narrative ?? null);
+    await updateOwnReport(user.id, report.id, "review", { facts, status: "review", narrative });
+  } catch (err) {
+    logError("guardar los cambios", err);
+    return { error: "failed" };
+  }
+  redirect(`/informe/${report.id}`);
+}
+
+
 
 async function classifyReport(userId: string, id: string, idea: string) {
   try {

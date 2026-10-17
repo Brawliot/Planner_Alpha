@@ -26,7 +26,8 @@ export function keysToInfer(facts: readonly Fact[]): QuestionKey[] {
   return QUESTION_KEYS.filter((key) => {
     if (CATALOG[key].mode !== "infer") return false;
     const fact = facts.find((f) => f.key === key);
-    return !fact || (fact.source.origin !== "gpt" && certaintyOf(fact) !== "known");
+    // Ni lo que ya infirió GPT ni lo que dijo el usuario (aunque sea "I don't know").
+    return !fact || (fact.source.origin === "jev" && certaintyOf(fact) !== "known");
   });
 }
 

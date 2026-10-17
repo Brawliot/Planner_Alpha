@@ -192,3 +192,13 @@ export async function refreshJevVerdicts(
   });
   return mergeFacts(facts, updates);
 }
+
+
+/**
+ * Tras un cambio estructural (otro sector, otra oferta...), las estimaciones de GPT y los veredictos
+ * de Jev se apoyaban en otro negocio: se descartan y se repite el análisis con lo que dijo el usuario.
+ */
+export async function reanalyse(idea: string, facts: Fact[]): Promise<Fact[]> {
+  const kept = facts.filter((fact) => fact.source.origin !== "gpt" && !fact.key.startsWith("verdict."));
+  return analyse(idea, kept);
+}

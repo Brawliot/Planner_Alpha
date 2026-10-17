@@ -17,6 +17,12 @@ export const IMPLAUSIBLE_MAX_NOUL = 0.5;
 
 /** Opción con la que las preguntas de Jev dicen que el texto no lo indica. */
 export const NOT_SPECIFIED = "Not specified";
+/** Respuesta del usuario a una decisión que aún no ha tomado (presupuesto, plazo, dedicación). */
+export const NOT_DECIDED = "Not decided yet";
+/** Respuesta del usuario para retirar una estimación nuestra sin poner otra. */
+export const DONT_KNOW = "I don't know";
+
+const UNKNOWN_VALUES: unknown[] = [NOT_SPECIFIED, NOT_DECIDED, DONT_KNOW];
 
 /**
  * known: lo dijo el usuario (con cita) o Jev lo interpreta de su texto con confianza alta.
@@ -27,7 +33,7 @@ export const NOT_SPECIFIED = "Not specified";
 export type Certainty = "known" | "estimated" | "unknown" | "discarded";
 
 export function certaintyOf({ value, source }: Fact): Certainty {
-  if (value === NOT_SPECIFIED) return "unknown";
+  if (UNKNOWN_VALUES.includes(value)) return "unknown";
 
   switch (source.origin) {
     case "user":

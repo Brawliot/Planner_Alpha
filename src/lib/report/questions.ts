@@ -1,5 +1,5 @@
 import type { JevQuestion } from "../jev.ts";
-import { certaintyOf, NOT_SPECIFIED } from "./certainty.ts";
+import { certaintyOf, NOT_DECIDED, NOT_SPECIFIED } from "./certainty.ts";
 import type { Fact } from "./facts.ts";
 
 type ChoiceQuestion = Extract<JevQuestion, { type: "choice" }>;
@@ -413,20 +413,27 @@ function askKeysOf(topic: Topic) {
   return ASK_KEYS.filter((key) => CATALOG[key].topic === topic);
 }
 
-/** Opciones para el usuario: todas menos "Not specified" (si responde, ya se sabe). */
+/** Decisiones que el usuario puede no haber tomado aún: admiten "Not decided yet". */
+export const UNDECIDED_KEYS: readonly QuestionKey[] = ["budget_band", "launch_timeline", "time_commitment"];
+
+/**
+ * Opciones para el usuario: todas menos "Not specified". En las decisiones pendientes, además,
+ * "Not decided yet": obligar a elegir convertiría en sabido algo que el usuario no ha decidido.
+ */
 export function answerOptions(key: QuestionKey) {
-  return Object.keys(CATALOG[key].jev.criteria).filter((option) => option !== NOT_SPECIFIED);
+  const options = Object.keys(CATALOG[key].jev.criteria).filter((option) => option !== NOT_SPECIFIED);
+  return UNDECIDED_KEYS.includes(key) ? [...options, NOT_DECIDED] : options;
 }
 
 export function promptFor(key: QuestionKey) {
   return CATALOG[key].prompt ?? key;
 }
 
-/** Preguntas "ask" cuyo dato no es SABIDO. Las "infer" que no se sepan quedan para GPT. */
 export function pendingQuestions(facts: readonly Fact[]): QuestionKey[] {
   return ASK_KEYS.filter((key) => {
     const fact = facts.find((f) => f.key === key);
-    return !fact || certaintyOf(fact) !== "known";
+    // Lo que respondió el usuario no se vuelve a preguntar, aunque sea "Not decided yet".
+    return !fact || (fact.source.origin !== "user" && certaintyOf(fact) !== "known");
   });
 }
 

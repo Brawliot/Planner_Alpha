@@ -149,7 +149,7 @@ export function figuresParser(ranges: readonly RangeKey[], rentLevel = false): z
 }
 
 /** El presupuesto exacto, si encaja con el tramo que ya sabemos (si lo sabemos). */
-function budgetMatchesBand(amount: number, facts: readonly Fact[]) {
+export function budgetMatchesBand(amount: number, facts: readonly Fact[]) {
   const band = usable(facts, "budget_band");
   const bounds = band ? BUDGET_BANDS[String(band.value)] : undefined;
   if (!bounds) return true;
