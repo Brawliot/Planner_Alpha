@@ -13,6 +13,7 @@ export const FIGURE_KEYS = {
   startupCost: "startup_cost_eur",
   fixedCosts: "monthly_fixed_costs_eur",
   rent: "monthly_rent_eur",
+  rentLevel: "rent_level",
 } as const;
 
 type FigureKey = (typeof FIGURE_KEYS)[keyof typeof FIGURE_KEYS];
@@ -65,7 +66,7 @@ export const AREAS = {
   },
   location: {
     title: "Location",
-    inputs: ["geographic_scope", FIGURE_KEYS.rent],
+    inputs: ["geographic_scope", FIGURE_KEYS.rent, FIGURE_KEYS.rentLevel],
     appliesWhen: [{ key: "offering_type", anyOf: ["Physical venue"] }],
   },
   regulation: {

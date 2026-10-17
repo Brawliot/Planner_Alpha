@@ -368,6 +368,10 @@ const DENTAL_EN = "A dental clinic with two chairs in Valencia";
 const DENTAL_ES = "Una clínica dental con dos sillones en Valencia";
 const BAKERY_EN = "A small neighbourhood bakery in Bilbao";
 const BAKERY_ES = "Una panadería pequeña de barrio en Bilbao";
+const GRANVIA_EN = "A small café on Gran Vía, the main shopping street of Madrid";
+const GRANVIA_ES = "Una cafetería pequeña en la Gran Vía, la principal calle comercial de Madrid";
+const RESIDENTIAL_EN = "A neighbourhood bakery on a quiet residential street on the outskirts of Bilbao";
+const RESIDENTIAL_ES = "Una panadería de barrio en una calle residencial tranquila de las afueras de Bilbao";
 
 export const NOUL_CASES: NoulCase[] = [
   ...noulPair("bar-rent", "plausible", "monthly_rent_eur", { min: 3000, max: 6000 }, BAR_EN, BAR_ES),
@@ -399,7 +403,13 @@ export const NOUL_CASES: NoulCase[] = [
   ...noulPair("bar-competition", "plausible", "competition", "Crowded market", BAR_EN, BAR_ES),
   ...noulPair("bar-regulation-absurd", "implausible", "regulatory_load", "None", BAR_EN, BAR_ES),
   ...noulPair("dental-team", "plausible", "team_requirement", "Specialized profiles required", DENTAL_EN, DENTAL_ES),
-  ...noulPair("saas-channel-absurd", "implausible", "acquisition_channel", "Foot traffic or location", SAAS_EN, SAAS_ES),
+   ...noulPair("saas-channel-absurd", "implausible", "acquisition_channel", "Foot traffic or location", SAAS_EN, SAAS_ES),
+
+  // Nivel de alquiler (paso 9c).
+  ...noulPair("granvia-prime", "plausible", "rent_level", "Prime location", GRANVIA_EN, GRANVIA_ES),
+  ...noulPair("residential-average", "plausible", "rent_level", "Average", RESIDENTIAL_EN, RESIDENTIAL_ES),
+  ...noulPair("granvia-below-absurd", "implausible", "rent_level", "Below average", GRANVIA_EN, GRANVIA_ES),
+  ...noulPair("residential-prime-absurd", "implausible", "rent_level", "Prime location", RESIDENTIAL_EN, RESIDENTIAL_ES),
 ];
 
 // La misma pregunta de plausibilidad que usa la app.
@@ -498,20 +508,4 @@ export const VERDICT_CASES: VerdictCase[] = [
     "A clothing brand",
     "Una marca de ropa"),
 
-  ...verdictPair("location-strong", "location", "Strong",
-    [["geographic_scope", "Hyper-local", "user"], ["monthly_rent_eur", { min: 800, max: 1200 }, "gpt"]],
-    "A neighbourhood bakery on a residential street in Bilbao",
-    "Una panadería de barrio en una calle residencial de Bilbao"),
-  ...verdictPair("location-watch", "location", "Watch",
-    [["geographic_scope", "Hyper-local", "user"], ["monthly_rent_eur", { min: 6000, max: 9000 }, "gpt"]],
-    "A small café on Gran Vía in Madrid",
-    "Una cafetería pequeña en la Gran Vía de Madrid"),
-  ...verdictPair("location-risk", "location", "Risk",
-    [["geographic_scope", "Hyper-local", "user"], ["monthly_rent_eur", { min: 15000, max: 25000 }, "gpt"]],
-    "A tiny second-hand bookshop on the most expensive shopping street in Madrid",
-    "Una librería de segunda mano diminuta en la calle comercial más cara de Madrid"),
-  ...verdictPair("location-ni", "location", "Not enough information",
-    [["geographic_scope", "Local", "user"]],
-    "A shop",
-    "Una tienda"),
 ];

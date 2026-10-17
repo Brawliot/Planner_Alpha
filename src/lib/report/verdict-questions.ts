@@ -13,7 +13,8 @@ type ChoiceQuestion = Extract<JevQuestion, { type: "choice" }>;
 
 export const NOT_ENOUGH_INFORMATION = "Not enough information";
 
-export const JEV_VERDICT_AREAS = ["concept", "market", "founder", "location"] as const satisfies readonly AreaKey[];
+// Location se decide en código con el nivel de alquiler: Jev no razona bien con cifras (calibración del 9b).
+export const JEV_VERDICT_AREAS = ["concept", "market", "founder"] as const satisfies readonly AreaKey[];
 export type JevVerdictArea = (typeof JEV_VERDICT_AREAS)[number];
 
 export function isJevVerdictArea(area: AreaKey): area is JevVerdictArea {
@@ -55,12 +56,6 @@ export const VERDICT_QUESTIONS: Record<JevVerdictArea, ChoiceQuestion> = {
     "One clear gap, such as no experience in the sector or a tight timeline for the dedication",
     "A clear mismatch, such as part-time dedication for a very short launch or no relevant skills for a demanding business",
   ),
-  location: verdictQuestion(
-    "location: whether the place and the rent fit this business",
-    "The place and the rent fit the business",
-    "The rent is high for this kind of business, or the fit of the place is doubtful",
-    "The rent or the place is clearly incompatible with the business",
-  ),
 };
 
 /** Sin estos datos no se le pregunta a Jev: el área queda en Needs info. */
@@ -68,7 +63,6 @@ export const VERDICT_CORE: Record<JevVerdictArea, readonly QuestionKey[]> = {
   concept: ["offering_type"],
   market: ["customer_segment"],
   founder: ["founder_experience", "time_commitment"],
-  location: ["geographic_scope"],
 };
 
 export const verdictKey = (area: JevVerdictArea) => `verdict.${area}`;

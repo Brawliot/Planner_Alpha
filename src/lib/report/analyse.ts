@@ -30,9 +30,9 @@ import {
   figuresInput,
   figuresParser,
   rangesToEstimate,
+  shouldEstimateRentLevel,
   shouldExtractBudget,
 } from "./figures";
-
 /**
  * Completa el análisis:
  * - GPT infiere las preguntas "infer" que faltan y estima las cifras (dos llamadas en paralelo);
@@ -93,13 +93,14 @@ async function inferDimensions(idea: string, facts: Fact[]): Promise<Fact[]> {
 
 async function estimateFigures(idea: string, facts: Fact[]): Promise<Fact[]> {
   const ranges = rangesToEstimate(facts);
-  if (ranges.length === 0 && !shouldExtractBudget(facts)) return [];
+  const rentLevel = shouldEstimateRentLevel(facts);
+  if (ranges.length === 0 && !rentLevel && !shouldExtractBudget(facts)) return [];
   const result = await callGpt({
     task: "infer",
     instructions: FIGURES_INSTRUCTIONS,
     input: figuresInput(idea, facts, ranges),
-    format: figuresFormat(ranges),
-    parse: figuresParser(ranges),
+    format: figuresFormat(ranges, rentLevel),
+    parse: figuresParser(ranges, rentLevel),
     effort: "low",
   });
   return figureFacts(result.data, ranges, result.model, idea, facts);

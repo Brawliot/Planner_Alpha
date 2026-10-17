@@ -50,6 +50,30 @@ describe("figuresFormat", () => {
   });
 });
 
+describe("nivel de alquiler", () => {
+  it("el esquema solo lo pide para locales físicos", () => {
+    assert.equal(Object.hasOwn(figuresFormat(["startup_cost_eur"]).schema.properties, "rent_level"), false);
+    const { schema } = figuresFormat(["startup_cost_eur"], true);
+    assert.ok(schema.required.includes("rent_level"));
+  });
+
+  it("crea el dato con origen GPT y omite 'Cannot estimate'", () => {
+    const base = { budget: { amount_eur: null, quote: "" }, ranges: {} };
+    const facts = figureFacts({ ...base, rent_level: { value: "Prime location", assumptions: ["Gran Vía"] } }, [], "gpt", IDEA, []);
+    assert.deepEqual(facts, [
+      { key: "rent_level", value: "Prime location", source: { origin: "gpt", model: "gpt", assumptions: ["Gran Vía"] } },
+    ]);
+    assert.deepEqual(figureFacts({ ...base, rent_level: { value: "Cannot estimate", assumptions: [] } }, [], "gpt", IDEA, []), []);
+  });
+
+  it("el parser rechaza un nivel inventado", () => {
+    const parser = figuresParser([], true);
+    const bad = parser.safeParse({ budget: { amount_eur: null, quote: "" }, ranges: {}, rent_level: { value: "Carísimo", assumptions: [] } });
+    assert.equal(bad.success, false);
+  });
+});
+
+
 describe("figuresParser", () => {
   const parser = figuresParser(["startup_cost_eur"]);
 

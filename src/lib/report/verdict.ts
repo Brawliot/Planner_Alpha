@@ -1,6 +1,7 @@
 import { buildAreas, FIGURE_KEYS, usable, type AreaKey } from "./areas.ts";
 import type { Fact } from "./facts.ts";
 import { moneyCheck } from "./money.ts";
+import { RENT_LEVELS } from "./figures.ts";
 import { CATALOG, type QuestionKey } from "./questions.ts";
 import { certaintyOf } from "./certainty.ts";
 import { isJevVerdictArea, missingCore, NOT_ENOUGH_INFORMATION, verdictKey } from "./verdict-questions.ts";
@@ -46,6 +47,12 @@ const UNVALIDATED_INVESTMENT_EUR = 50_000;
 const NICHE = option("competition", "Niche with no clear competitors");
 const FEW = option("competition", "Few competitors");
 const WEAK_DIFFERENTIATORS = [option("differentiator", "Price"), option("differentiator", "None identified")];
+
+function rentLevel(label: (typeof RENT_LEVELS)[number]) {
+  return label;
+}
+const ABOVE_AVERAGE_RENT = rentLevel("Above average");
+const PRIME_RENT = rentLevel("Prime location");
 
 const HOLDS_FUNDS = option("money_handling", "Holds or intermediates funds");
 const CRITICAL_REGULATION = option("regulatory_load", "Critical or multi-jurisdiction");
@@ -105,6 +112,21 @@ const RULES: Partial<Record<AreaKey, (facts: readonly Fact[]) => Decision>> = {
       ? { verdict: "watch", reason: "competition.crowded_differentiated" }
       : { verdict: "risk", reason: "competition.crowded_undifferentiated" };
   },
+
+    location(facts) {
+    const level = valueOf(facts, FIGURE_KEYS.rentLevel);
+    if (!level) return needsInfo([FIGURE_KEYS.rentLevel]);
+    if (level === PRIME_RENT) {
+      // Una zona prime puede ser lo que el negocio busca; el riesgo es tenerla con el dinero justo.
+      const coverage = moneyCheck(facts).coverage;
+      return coverage === "short" || coverage === "tight"
+        ? { verdict: "risk", reason: "location.prime_tight_money" }
+        : { verdict: "watch", reason: "location.prime" };
+    }
+    if (level === ABOVE_AVERAGE_RENT) return { verdict: "watch", reason: "location.above_average" };
+    return { verdict: "strong", reason: "location.fits" };
+  },
+
 
   regulation(facts) {
     if (valueOf(facts, "money_handling") === HOLDS_FUNDS) return { verdict: "risk", reason: "regulation.holds_funds" };

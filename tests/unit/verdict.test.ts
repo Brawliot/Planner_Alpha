@@ -112,6 +112,37 @@ describe("Competition", () => {
   });
 });
 
+describe("Location", () => {
+  const venue = known("offering_type", "Physical venue");
+
+  it("sin nivel de alquiler: needs_info", () => {
+    const v = verdictOf("location", [venue]);
+    assert.equal(v.verdict, "needs_info");
+    assert.equal(v.decidedBy, "code");
+    assert.deepEqual(v.missing, ["rent_level"]);
+  });
+
+  it("alquiler normal: strong; por encima de la media: watch", () => {
+    assert.equal(verdictOf("location", [venue, estimated("rent_level", "Average")]).verdict, "strong");
+    assert.equal(verdictOf("location", [venue, estimated("rent_level", "Above average")]).verdict, "watch");
+  });
+
+  it("zona prime: watch si el dinero cubre, risk si va justo o no llega", () => {
+    assert.equal(
+      verdictOf("location", [venue, estimated("rent_level", "Prime location"), budget(200000), range("startup_cost_eur", 50000, 80000)]).reason,
+      "location.prime",
+    );
+    assert.equal(
+      verdictOf("location", [venue, estimated("rent_level", "Prime location"), budget(30000), range("startup_cost_eur", 50000, 80000)]).verdict,
+      "risk",
+    );
+  });
+
+  it("un nivel de alquiler descartado por Jev no cuenta", () => {
+    assert.equal(verdictOf("location", [venue, estimated("rent_level", "Prime location", 0.1)]).verdict, "needs_info");
+  });
+});
+
 describe("áreas que aparecen según los datos", () => {
   it("Regulation: custodiar fondos es risk; regulación pesada, watch", () => {
     assert.equal(verdictOf("regulation", [known("money_handling", "Holds or intermediates funds")]).verdict, "risk");
