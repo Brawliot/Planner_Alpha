@@ -309,7 +309,8 @@ test.describe("pantalla del informe", () => {
   test("un área estimada muestra sus supuestos en el panel", async ({ page }) => {
     await submitIdea(page, "Una app de facturación");
     await page.getByRole("button", { name: /Money/ }).click();
-    await expect(page.getByText("estimated", { exact: true })).toBeVisible();
+    // Hay una etiqueta del área y otra por cada dato estimado: basta con que se vea alguna.
+    await expect(page.getByText("estimated", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Assumptions", { exact: true })).toBeVisible();
   });
 
