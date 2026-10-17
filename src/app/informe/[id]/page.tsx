@@ -8,12 +8,14 @@ import { answerQuestions, retryAnalysis, retryClassification } from "@/app/actio
 import { PageContainer } from "@/components/ui/page-container";
 import { QuestionsForm } from "@/components/report/questions-form";
 import { RetryForm } from "@/components/report/retry-form";
+import { ReportScreen } from "@/components/report/report-screen";
+import { reportView } from "@/lib/report/view";
 
 export const metadata: Metadata = { title: "Tu informe" };
 
 export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <PageContainer size="md">
+    <PageContainer size="lg">
       {/* Sin generateStaticParams, params es dato de la petición: va dentro de Suspense (cacheComponents). */}
       <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando...</p>}>
         {params.then(({ id }) => (
@@ -29,6 +31,11 @@ async function ReportContent({ id }: { id: string }) {
   const report = await getOwnReport(user.id, id);
   // Si no existe o es de otro usuario, la misma respuesta: no se revela que exista.
   if (!report) notFound();
+
+  // Con el análisis terminado, el informe. Antes, la idea y el paso en curso (preguntas o reintentar).
+  if (report.status === "review" || report.status === "approved") {
+    return <ReportScreen view={reportView(report.idea, report.facts, report.narrative ?? null)} />;
+  }
 
   return (
     <>

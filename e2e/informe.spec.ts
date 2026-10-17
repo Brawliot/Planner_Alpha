@@ -190,7 +190,7 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
 
   test("lo que Jev no sabe lo infiere GPT y Jev puntúa su plausibilidad", async ({ page }) => {
     await submitIdea(page, "Un bar [jev:unknown=competition,regulatory_load]");
-    await expect(page.getByText("Estamos preparando tu informe.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     // La inferencia no se muestra antes del informe.
     await expect(page.getByText("Niche with no clear competitors")).toHaveCount(0);
 
@@ -264,5 +264,39 @@ test.describe("análisis: GPT infiere y Jev valida", () => {
     const report = await getReport(reportIdFrom(page.url()));
     expect(report.status).toBe("review");
     expect(Object.values(report.narrative?.areas ?? {}).every((s) => s.source === "template")).toBe(true);
+  });
+});
+
+
+test.describe("pantalla del informe", () => {
+  test.beforeEach(async ({ page, request }) => {
+    const email = uniqueEmail();
+    await createUser(request, email);
+    await login(page, email);
+  });
+
+  test("muestra cada área con su veredicto y su frase", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+    const concept = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Concept/ }) });
+    await expect(concept.getByText("Strong", { exact: true })).toBeVisible();
+    await expect(concept.getByText("Fake assumption")).toBeVisible();
+    await expect(page.getByText("Indicative estimate only. It is not financial or legal advice.")).toBeVisible();
+  });
+
+  test("no envía al navegador datos internos", async ({ page }) => {
+    await submitIdea(page, "Una app de facturación");
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
+    const html = await page.content();
+    for (const internal of ["jev-1.13.0", "confidence", "plausibility", "gpt-fake"]) {
+      expect(html).not.toContain(internal);
+    }
+  });
+
+  test("si falta un dato imprescindible, el pie pide completar datos", async ({ page }) => {
+    await submitIdea(page, "Una app [jev:unknown=competition] [gpt:cannot]");
+    const competition = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /Competition/ }) });
+    await expect(competition.getByText("Needs info", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add data to evaluate" })).toBeDisabled();
   });
 });
