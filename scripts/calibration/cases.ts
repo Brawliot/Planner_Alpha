@@ -3,7 +3,7 @@
  * nunca un modelo: si no, mediríamos a Jev contra otra IA.
  * Cada caso va en inglés y en español para medir si el idioma cambia el acierto.
  */
-import { CATALOG_JEV_QUESTIONS } from "../../src/lib/report/questions.ts";
+import { CATALOG_JEV_QUESTIONS, LIKELY_JEV_QUESTIONS } from "../../src/lib/report/questions.ts";
 
 export type Lang = "en" | "es";
 
@@ -446,3 +446,77 @@ export const NOUL_CASES: NoulCase[] = [
 
 // La misma pregunta de plausibilidad que usa la app.
 export { PLAUSIBILITY_QUESTION } from "../../src/lib/report/plausibility.ts";
+
+
+// ---- Preguntas "probable" (paso D1a): el dato no está escrito, pero se deduce del tipo de negocio.
+// Revisa las etiquetas: "Can't tell" cuando de verdad no se puede deducir.
+
+export const LIKELY_QUESTIONS = LIKELY_JEV_QUESTIONS;
+
+export const LIKELY_CASES: ChoiceCase[] = [
+  // Bar de tapas: casi todo se deduce.
+  ...choicePair("lk-bar-customer", "customer_segment", "Consumers",
+    "A tapas bar in Malasaña, Madrid", "Un bar de tapas en Malasaña, Madrid"),
+  ...choicePair("lk-bar-revenue", "revenue_model", "One-time sale",
+    "A tapas bar in Malasaña, Madrid", "Un bar de tapas en Malasaña, Madrid"),
+  ...choicePair("lk-bar-channel", "acquisition_channel", "Foot traffic or location",
+    "A tapas bar in Malasaña, Madrid", "Un bar de tapas en Malasaña, Madrid"),
+  ...choicePair("lk-bar-regulation", "regulatory_load", "Heavy (health, finance, food)",
+    "A tapas bar in Malasaña, Madrid", "Un bar de tapas en Malasaña, Madrid"),
+  ...choicePair("lk-bar-capital", "capital_intensity", "High (inventory, equipment, premises or R&D)",
+    "A tapas bar in Malasaña, Madrid", "Un bar de tapas en Malasaña, Madrid"),
+  ...choicePair("lk-bar-scope", "geographic_scope", "Hyper-local",
+    "A neighbourhood tapas bar in Malasaña, Madrid", "Un bar de tapas de barrio en Malasaña, Madrid"),
+  ...choicePair("lk-bar-stage", "validation_stage", "Idea only",
+    "I want to open a tapas bar in Madrid", "Quiero abrir un bar de tapas en Madrid"),
+
+  // SaaS de facturación.
+  ...choicePair("lk-saas-customer", "customer_segment", "Small businesses (1-50)",
+    "Invoicing software for small companies", "Un software de facturación para empresas pequeñas"),
+  ...choicePair("lk-saas-revenue", "revenue_model", "Subscription",
+    "A SaaS tool for invoicing", "Una herramienta SaaS de facturación"),
+  ...choicePair("lk-saas-channel", "acquisition_channel", "Online self-service",
+    "A SaaS tool for invoicing", "Una herramienta SaaS de facturación"),
+  ...choicePair("lk-saas-capital", "capital_intensity", "Low (digital, near-zero marginal cost)",
+    "A SaaS tool for invoicing", "Una herramienta SaaS de facturación"),
+  ...choicePair("lk-saas-offering", "offering_type", "Software",
+    "A tool so that freelancers can make their invoices", "Una herramienta para que los autónomos hagan sus facturas"),
+
+  // Otros negocios.
+  ...choicePair("lk-gym-revenue", "revenue_model", "Subscription",
+    "A neighbourhood gym", "Un gimnasio de barrio"),
+  ...choicePair("lk-storage-revenue", "revenue_model", "Transaction commission",
+    "A platform where people rent their spare storage rooms to others", "Una plataforma para que particulares alquilen sus trasteros a otros"),
+  ...choicePair("lk-pharmacy-regulation", "regulatory_load", "Heavy (health, finance, food)",
+    "Opening a pharmacy", "Abrir una farmacia"),
+  ...choicePair("lk-hotel-team", "team_requirement", "Large team",
+    "A hotel with 60 rooms", "Un hotel de 60 habitaciones"),
+  ...choicePair("lk-newsletter-team", "team_requirement", "Feasible solo",
+    "A paid newsletter about personal finance", "Una newsletter de pago sobre finanzas personales"),
+  ...choicePair("lk-search-competition", "competition", "Dominated by large players",
+    "A new general web search engine", "Un nuevo buscador web generalista"),
+  ...choicePair("lk-bar-competition", "competition", "Crowded market",
+    "Another tapas bar in the centre of Madrid", "Otro bar de tapas en el centro de Madrid"),
+  ...choicePair("lk-drug-revenue-time", "time_to_revenue", "More than 12 months",
+    "Developing a new drug", "Desarrollar un fármaco nuevo"),
+  ...choicePair("lk-youtube-dependency", "third_party_dependency", "Depends on a platform",
+    "A cooking channel on YouTube", "Un canal de cocina en YouTube"),
+  ...choicePair("lk-shop-money", "money_handling", "Collects through a payment provider",
+    "An online clothing shop", "Una tienda online de ropa"),
+  ...choicePair("lk-bakery-sector", "sector", "Hospitality/Food service",
+    "A place where people come for coffee and pastries", "Un sitio donde la gente venga a tomar café y bollería"),
+
+  // Los que rompen: el verbo dice "abrir", pero el negocio ya existe.
+  ...choicePair("lk-salon-second", "validation_stage", "Growing",
+    "I want to open a second location of my hair salon", "Quiero abrir un segundo local de mi peluquería"),
+  ...choicePair("lk-clients-expand", "validation_stage", "Generating revenue",
+    "I already have paying clients and want to open my own studio", "Ya tengo clientes que me pagan y quiero abrir mi propio estudio"),
+
+  // No se puede deducir.
+  ...choicePair("lk-online-customer", "customer_segment", "Can't tell",
+    "An online business", "Un negocio online"),
+  ...choicePair("lk-friends-revenue", "revenue_model", "Can't tell",
+    "A business with my friends", "Un negocio con mis amigos"),
+  ...choicePair("lk-project-sector", "sector", "Can't tell",
+    "A new project", "Un proyecto nuevo"),
+];

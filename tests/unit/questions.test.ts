@@ -104,6 +104,20 @@ describe("parseAnswers", () => {
   });
 });
 
+describe("preguntas 'probable'", () => {
+  it("existen solo para las deducibles, sin 'Not specified' y con 'Can't tell'", async () => {
+    const { LIKELY_JEV_QUESTIONS, LIKELY_KEYS } = await import("../../src/lib/report/questions.ts");
+    assert.ok(LIKELY_KEYS.includes("customer_segment"));
+    assert.equal(LIKELY_KEYS.includes("differentiator"), false);
+    assert.equal(LIKELY_KEYS.includes("budget_band"), false);
+    const customer = LIKELY_JEV_QUESTIONS.customer_segment;
+    assert.equal(Object.hasOwn(customer.criteria, NOT_SPECIFIED), false);
+    assert.ok(Object.hasOwn(customer.criteria, "Can't tell"));
+    assert.equal(customer.instructions.includes("Choose an option only if"), false);
+  });
+});
+
+
 describe("nextStatus", () => {
   it("pasa a analysis cuando no quedan preguntas 'ask', aunque falten 'infer'", () => {
     assert.equal(nextStatus(classified(["competition", "regulatory_load"])), "analysis");

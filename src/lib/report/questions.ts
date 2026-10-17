@@ -1,5 +1,5 @@
 import type { JevQuestion } from "../jev.ts";
-import { certaintyOf, NOT_DECIDED, NOT_SPECIFIED } from "./certainty.ts";
+import { CANT_TELL, certaintyOf, NOT_DECIDED, NOT_SPECIFIED } from "./certainty.ts";
 import type { Fact } from "./facts.ts";
 
 type ChoiceQuestion = Extract<JevQuestion, { type: "choice" }>;
@@ -25,6 +25,8 @@ interface CatalogEntry {
   mode: "ask" | "infer";
   /** Cómo se le pregunta al usuario (null en las que no se preguntan). */
   prompt: string | null;
+  /** Se puede deducir del tipo de negocio aunque el texto no lo diga (pregunta "probable"). */
+  likely: boolean;
   jev: ChoiceQuestion;
 }
 
@@ -37,6 +39,7 @@ export const CATALOG = {
     topic: "business",
     mode: "ask",
     prompt: "What sector is your business in?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: "What is the business sector?",
@@ -64,6 +67,7 @@ export const CATALOG = {
     topic: "business",
     mode: "ask",
     prompt: "What do you offer?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: `What does the business offer? ${ONLY_IF_SUPPORTED}`,
@@ -83,6 +87,7 @@ export const CATALOG = {
     topic: "business",
     mode: "ask",
     prompt: "How will you make money?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How does the business make money? ${ONLY_IF_SUPPORTED}`,
@@ -104,6 +109,7 @@ export const CATALOG = {
     topic: "market",
     mode: "ask",
     prompt: "Who are your customers?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: `Who is the customer? ${ONLY_IF_SUPPORTED}`,
@@ -124,6 +130,7 @@ export const CATALOG = {
     topic: "market",
     mode: "ask",
     prompt: "Where will your business operate?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: `What is the geographic scope of the business? ${ONLY_IF_SUPPORTED}`,
@@ -142,6 +149,7 @@ export const CATALOG = {
     topic: "market",
     mode: "ask",
     prompt: "What sets you apart?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `What sets the business apart from alternatives? ${ONLY_IF_SUPPORTED}`,
@@ -162,6 +170,7 @@ export const CATALOG = {
     topic: "founder",
     mode: "ask",
     prompt: "How much experience do you have in this sector?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `How much experience does the founder (the user) have in this business's sector? ${ONLY_IF_SUPPORTED}`,
@@ -178,6 +187,7 @@ export const CATALOG = {
     topic: "founder",
     mode: "ask",
     prompt: "What are your main skills?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `What can the founder (the user) do themselves? ${ONLY_IF_SUPPORTED}`,
@@ -196,6 +206,7 @@ export const CATALOG = {
     topic: "founder",
     mode: "ask",
     prompt: "How much time can you dedicate?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `How much time will the founder (the user) dedicate to the business? ${ONLY_IF_SUPPORTED}`,
@@ -212,6 +223,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "ask",
     prompt: "How much can you invest to start?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `How much money is available to start the business? ${ONLY_IF_SUPPORTED}`,
@@ -230,6 +242,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "ask",
     prompt: "How far along is your idea?",
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How validated is the business? ${ONLY_IF_SUPPORTED}`,
@@ -248,6 +261,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "ask",
     prompt: "When do you want to launch?",
+    likely: false,
     jev: {
       type: "choice",
       instructions: `When does the user plan to launch the business? ${ONLY_IF_SUPPORTED}`,
@@ -265,6 +279,7 @@ export const CATALOG = {
     topic: "market",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How will the business get customers? ${ONLY_IF_SUPPORTED}`,
@@ -283,6 +298,7 @@ export const CATALOG = {
     topic: "market",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `What is the competition like? ${ONLY_IF_SUPPORTED}`,
@@ -299,6 +315,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How much capital does the business need? ${ONLY_IF_SUPPORTED}`,
@@ -314,6 +331,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `What team does the business need? ${ONLY_IF_SUPPORTED}`,
@@ -330,6 +348,7 @@ export const CATALOG = {
     topic: "resources",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How long until the first revenue? ${ONLY_IF_SUPPORTED}`,
@@ -346,6 +365,7 @@ export const CATALOG = {
     topic: "risk",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How regulated is the business? ${ONLY_IF_SUPPORTED}`,
@@ -363,6 +383,7 @@ export const CATALOG = {
     topic: "risk",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `How much does the business depend on third parties? ${ONLY_IF_SUPPORTED}`,
@@ -380,6 +401,7 @@ export const CATALOG = {
     topic: "risk",
     mode: "infer",
     prompt: null,
+    likely: true,
     jev: {
       type: "choice",
       instructions: `Does the business handle other people's money? ${ONLY_IF_SUPPORTED}`,
@@ -396,10 +418,36 @@ export const CATALOG = {
 export type QuestionKey = keyof typeof CATALOG;
 export const QUESTION_KEYS = Object.keys(CATALOG) as QuestionKey[];
 
+const LIKELY_INSTRUCTION =
+  `What is most likely for this specific business, given its description? Choose "${CANT_TELL}" ` +
+  "if it cannot be reasonably deduced from the type of business.";
+
+/**
+ * Pregunta "probable": deduce lo que el texto no dice pero se sigue del tipo de negocio.
+ * Mismas opciones, sin "Not specified" (tiene que decidir) y con "Can't tell" (si no hay base).
+ * Su respuesta nunca es "sabida": como mucho, estimada.
+ */
+function likelyQuestion(key: QuestionKey): ChoiceQuestion {
+  const { instructions, criteria } = CATALOG[key].jev;
+  const options = Object.entries(criteria as Record<string, string>).filter(([option]) => option !== NOT_SPECIFIED);
+  return {
+    type: "choice",
+    instructions: `${instructions.replace(ONLY_IF_SUPPORTED, "").trim()} ${LIKELY_INSTRUCTION}`,
+    criteria: { ...Object.fromEntries(options), [CANT_TELL]: "It cannot be reasonably deduced" },
+  };
+}
+
 /** Todas las preguntas del catálogo en el formato de Jev (la calibración las mide todas). */
 export const CATALOG_JEV_QUESTIONS = Object.fromEntries(
   QUESTION_KEYS.map((key) => [key, CATALOG[key].jev]),
 ) as { [K in QuestionKey]: (typeof CATALOG)[K]["jev"] };
+
+/** Dimensiones que se pueden deducir y su pregunta "probable" (calibrada aparte de la de "dicho"). */
+export const LIKELY_KEYS = QUESTION_KEYS.filter((key) => CATALOG[key].likely);
+export const LIKELY_JEV_QUESTIONS = Object.fromEntries(
+  LIKELY_KEYS.map((key) => [key, likelyQuestion(key)]),
+) as Record<QuestionKey, ChoiceQuestion>;
+
 
 // ---- Preguntas al usuario: un tema por pantalla, solo las que Jev no sabe.
 

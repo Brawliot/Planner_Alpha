@@ -11,6 +11,8 @@ import { buildJevState } from "../src/lib/report/facts.ts";
 import {
   CHOICE_CASES,
   CHOICE_QUESTIONS,
+  LIKELY_CASES,
+  LIKELY_QUESTIONS,
   NOUL_CASES,
   PLAUSIBILITY_QUESTION,
   type NoulCase,
@@ -85,6 +87,15 @@ function choiceTasks(): ChoiceTask[] {
       state: buildJevState(c.text, []),
       jev: CHOICE_QUESTIONS[c.question],
     })),
+    // Preguntas "probable": se miden aparte (su umbral decide lo estimado, no lo sabido).
+    ...LIKELY_CASES.map((c) => ({
+      id: c.id,
+      lang: c.lang,
+      question: `likely.${c.question}`,
+      expected: c.expected,
+      state: buildJevState(c.text, []),
+      jev: LIKELY_QUESTIONS[c.question],
+    })),
   ];
 }
 
@@ -151,7 +162,16 @@ async function main() {
   console.log(`Acierto  en: ${pct(byLang("en"))}  es: ${pct(byLang("es"))}`);
   console.table(accuracyByBand(choiceScored(firstChoice)).map((b) => ({ ...b, accuracy: pct(b.accuracy) })));
 
-  const known = minScoreFor(choiceScored(firstChoice), TARGET_PRECISION);
+  // "Dicho" decide lo sabido; "probable" decide lo estimado: cada uno con su umbral.
+  const isLikely = (r: ChoiceRun) => r.question.startsWith("likely.");
+  const likelyFirst = firstChoice.filter(isLikely);
+  const likely = minScoreFor(choiceScored(likelyFirst), TARGET_PRECISION);
+  const known = minScoreFor(choiceScored(firstChoice.filter((r) => !isLikely(r))), TARGET_PRECISION);
+  console.log(
+    likely
+      ? `LIKELY_MIN_CONFIDENCE ≈ ${likely.threshold.toFixed(3)} (acierto ${pct(likely.precision)}, cubre ${pct(likely.coverage)} de los casos "probable")`
+      : `Ningún umbral de "probable" llega al ${pct(TARGET_PRECISION)}: no hay que estimar solo con la pregunta "probable".`,
+  );
   console.log(
     known
       ? `KNOWN_MIN_CONFIDENCE ≈ ${known.threshold.toFixed(3)} (acierto ${pct(known.precision)}, cubre ${pct(known.coverage)} de los casos)`

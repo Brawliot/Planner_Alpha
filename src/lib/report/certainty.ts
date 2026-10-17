@@ -21,8 +21,10 @@ export const NOT_SPECIFIED = "Not specified";
 export const NOT_DECIDED = "Not decided yet";
 /** Respuesta del usuario para retirar una estimación nuestra sin poner otra. */
 export const DONT_KNOW = "I don't know";
+/** Respuesta de Jev a "¿qué es lo más probable?" cuando no se puede deducir. */
+export const CANT_TELL = "Can't tell";
 
-const UNKNOWN_VALUES: unknown[] = [NOT_SPECIFIED, NOT_DECIDED, DONT_KNOW];
+const UNKNOWN_VALUES: unknown[] = [NOT_SPECIFIED, NOT_DECIDED, DONT_KNOW, CANT_TELL];
 
 /**
  * known: lo dijo el usuario (con cita) o Jev lo interpreta de su texto con confianza alta.

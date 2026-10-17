@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CHOICE_CASES, CHOICE_QUESTIONS, NOUL_CASES } from "../../scripts/calibration/cases.ts";
+import { CHOICE_CASES, CHOICE_QUESTIONS, LIKELY_CASES, LIKELY_QUESTIONS, NOUL_CASES } from "../../scripts/calibration/cases.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize } from "../../scripts/calibration/metrics.ts";
 
 describe("casos de calibración", () => {
@@ -27,6 +27,15 @@ describe("casos de calibración", () => {
       assert.ok(count >= 3, `${key}: solo ${count} casos`);
     }
   });
+
+    it("cada respuesta esperada de 'probable' es una opción real, y nunca 'Not specified'", () => {
+    for (const item of LIKELY_CASES) {
+      assert.ok(Object.hasOwn(LIKELY_QUESTIONS, item.question), `${item.id}: ${item.question} no es deducible`);
+      assert.ok(Object.hasOwn(LIKELY_QUESTIONS[item.question].criteria, item.expected), `${item.id}: ${item.expected}`);
+      assert.notEqual(item.expected, "Not specified", item.id);
+    }
+  });
+
 
 
   it("hay casos suficientes de cada etiqueta de plausibilidad", () => {
