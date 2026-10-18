@@ -14,7 +14,7 @@ const known = (key: string, value: string, confidence = 0.95): Fact => ({
 const FACTS: Fact[] = [
   known("sector", "Hospitality/Food service"),
   known("offering_type", "Physical venue"),
-  known("competition", "Saturated market"),
+  known("competition", "Crowded market"),
 ];
 
 const fp = (facts: Fact[]) => planFingerprint(facts, areaVerdicts(facts));
