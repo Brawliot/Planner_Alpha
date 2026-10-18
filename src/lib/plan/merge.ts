@@ -23,8 +23,9 @@ export function mergeTasks(current: readonly Task[], fresh: readonly Task[], dis
   const currentById = new Map(current.map((task) => [task.id, task]));
 
   const unarchived = (task: Task): Task => {
-    const { archived: _archived, ...rest } = task;
-    return rest;
+    const copy = { ...task };
+    delete copy.archived;
+    return copy;
   };
 
   const updated = fresh
