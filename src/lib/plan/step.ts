@@ -9,7 +9,26 @@ import { z } from "zod";
 export const ACTORS = ["user", "ai", "third_party"] as const;
 export type Actor = (typeof ACTORS)[number];
 
-export const THIRD_PARTIES = ["advisor", "public_body", "supplier", "bank", "other"] as const;
+export const THIRD_PARTIES = [
+  "advisor",
+  "lawyer",
+  "designer",
+  "developer",
+  "public_body",
+  "supplier",
+  "bank",
+  "other",
+] as const;
+export type ThirdParty = (typeof THIRD_PARTIES)[number];
+/** Terceros que el usuario puede "tener" (pregunta "¿con quién cuentas?"). */
+export const PROFESSIONALS = ["advisor", "lawyer", "designer", "developer"] as const satisfies readonly ThirdParty[];
+
+/** Habilidades que puede pedir un paso (pregunta "¿qué sabes hacer?"). */
+export const SKILLS = ["design", "social_media", "accounting", "programming", "sales", "trade"] as const;
+export type Skill = (typeof SKILLS)[number];
+
+/** Quién fijó el actor: la configuración (recalculable) o el usuario a mano (nunca se pisa). Ausente = config. */
+export const ACTOR_SETTERS = ["config", "user"] as const;
 export const AI_CAPABILITIES = ["draft_text", "checklist", "comparison_table", "research_summary"] as const;
 
 export const STEP_STATUSES = ["todo", "ai_draft", "requested", "received", "done", "skipped"] as const;
@@ -59,6 +78,8 @@ export const stepSchema = z
     /** Días de espera al tercero. */
     wait: range.optional(),
     aiCapability: z.enum(AI_CAPABILITIES).optional(),
+    skill: z.enum(SKILLS).optional(),
+    actorSetBy: z.enum(ACTOR_SETTERS).optional(),
     /** Euros. */
     cost: range.optional(),
     status: z.enum(STEP_STATUSES),

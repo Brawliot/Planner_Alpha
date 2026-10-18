@@ -13,6 +13,12 @@ export const TASK_KINDS = ["research", "decision", "check", "action"] as const;
 export const VALIDATION_MODES = ["per_step", "together"] as const;
 /** catalog: esqueleto del código. ai: sugerida por la IA (se muestra "Sugerida por IA" y se puede quitar). */
 export const TASK_ORIGINS = ["catalog", "ai"] as const;
+/** Hitos que el usuario puede tener ya hechos (pregunta "¿qué tienes ya hecho?"). */
+export const MILESTONES = ["legal_entity", "business_bank_account", "premises", "website", "brand"] as const;
+/** Nivel 1 = lo justo; 3 = a fondo / completo. */
+export const LEVELS = [1, 2, 3] as const;
+export type Level = (typeof LEVELS)[number];
+const level = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 
 export const taskSchema = z
   .object({
@@ -30,6 +36,15 @@ export const taskSchema = z
     /** Cómo valida el usuario lo que haga la IA: borrador a borrador o todos a la vez. */
     validation: z.enum(VALIDATION_MODES),
     origin: z.enum(TASK_ORIGINS),
+    milestone: z.enum(MILESTONES).optional(),
+    /** Entra si el nivel de validación elegido es >= este. */
+    validationLevel: level.optional(),
+    /** En fase Lanzar: si supera el nivel de lanzamiento elegido, pasa a Operar. */
+    launchLevel: level.optional(),
+    /** Solo entra si la configuración coincide (un "no lo sé" nunca coincide). */
+    appliesWhen: z.object({ employed: z.boolean().optional(), hasNetwork: z.boolean().optional() }).optional(),
+    /** Palanca a la que pertenece: solo entra si es la elegida para su línea. */
+    lever: z.string().min(1).optional(),
     steps: z.array(stepSchema).min(1),
   })
   .superRefine((task, ctx) => {
