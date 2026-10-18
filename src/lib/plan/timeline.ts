@@ -134,8 +134,10 @@ export function buildTimeline(input: {
       to: daysBetween(input.startDate, period.to) + 1,
     }))
     .sort((a, b) => a.from - b.from);
-  const fast = run(input.tasks, origin, input.weeklyHours.max, "min", blocked);
-  const slow = run(input.tasks, origin, input.weeklyHours.min, "max", blocked);
+  // Las archivadas no se planifican; quien dependa de ellas no espera (sus ids ya no existen aquí).
+  const active = input.tasks.filter((task) => task.archived === undefined);
+  const fast = run(active, origin, input.weeklyHours.max, "min", blocked);
+  const slow = run(active, origin, input.weeklyHours.min, "max", blocked);
 
   const tasks = [...fast.keys()].map((taskId) => {
     const a = fast.get(taskId)!;

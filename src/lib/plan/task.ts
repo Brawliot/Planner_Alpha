@@ -45,6 +45,8 @@ export const taskSchema = z
     appliesWhen: z.object({ employed: z.boolean().optional(), hasNetwork: z.boolean().optional() }).optional(),
     /** Palanca a la que pertenece: solo entra si es la elegida para su línea. */
     lever: z.string().min(1).optional(),
+    /** Ya no aplica según el informe, pero se empezó: visible, fuera del timeline, no bloquea. */
+    archived: z.literal("no_longer_needed").optional(),
     steps: z.array(stepSchema).min(1),
   })
   .superRefine((task, ctx) => {
@@ -83,7 +85,7 @@ export function pendingDependencies(task: Task, tasks: readonly Task[]): string[
   const byId = new Map(tasks.map((t) => [t.id, t]));
   return task.dependsOn.filter((id) => {
     const dependency = byId.get(id);
-    return dependency !== undefined && !isTaskResolved(dependency);
+    return dependency !== undefined && dependency.archived === undefined && !isTaskResolved(dependency);
   });
 }
 
