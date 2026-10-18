@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Step } from "../../src/lib/plan/step.ts";
 import type { Range, Task } from "../../src/lib/plan/task.ts";
-import { addDays, buildTimeline, daysBetween, weeklyHoursOf, weeksOf } from "../../src/lib/plan/timeline.ts";
+import {
+  addDays,
+  buildTimeline,
+  daysBetween,
+  deadlineStatus,
+  weeklyHoursOf,
+  weeksOf,
+} from "../../src/lib/plan/timeline.ts";
 
 const fixed = (n: number): Range => ({ min: n, max: n });
 
@@ -103,5 +110,50 @@ describe("fechas", () => {
   it("cuenta días y suma días en UTC", () => {
     assert.equal(daysBetween("2026-11-03", "2026-11-17"), 14);
     assert.equal(addDays("2026-11-03", 14.9), "2026-11-17");
+  });
+});
+
+
+describe("periodos sin disponibilidad", () => {
+  const withBreak = (unavailable: { from: string; to: string }[], tasks: Task[]) =>
+    buildTimeline({ tasks, startDate: "2026-11-03", today: "2026-11-03", weeklyHours: ONE_HOUR_A_DAY, unavailable });
+
+  it("una tarea a medias se pausa durante el periodo y sigue a la vuelta", () => {
+    // 7 días de trabajo; libres del día 2 al 8 (ambos incluidos): 2 antes + 5 después.
+    const t = withBreak([{ from: "2026-11-05", to: "2026-11-11" }], [task("a", step(fixed(7)))]);
+    assert.deepEqual(of(t, "a"), { taskId: "a", start: fixed(0), end: fixed(14) });
+  });
+
+  it("si tocaba empezar en el periodo, empieza al volver", () => {
+    const t = withBreak([{ from: "2026-11-03", to: "2026-11-09" }], [task("a", step(fixed(7)))]);
+    assert.deepEqual(of(t, "a").start, fixed(7));
+    assert.deepEqual(of(t, "a").end, fixed(14));
+  });
+
+  it("periodos solapados o desordenados se saltan en cadena", () => {
+    const t = withBreak(
+      [
+        { from: "2026-11-06", to: "2026-11-09" },
+        { from: "2026-11-03", to: "2026-11-07" },
+      ],
+      [task("a", step(fixed(7)))],
+    );
+    assert.deepEqual(of(t, "a").start, fixed(7));
+  });
+});
+
+describe("deadlineStatus", () => {
+  const t = timeline([task("a", step({ min: 7, max: 14 }))]);
+
+  it("a tiempo, en riesgo o tarde", () => {
+    assert.deepEqual(t.end, { min: 7, max: 14 });
+    assert.equal(deadlineStatus(t, "2026-11-03", "2026-11-20"), "on_track");
+    assert.equal(deadlineStatus(t, "2026-11-03", "2026-11-12"), "at_risk");
+    assert.equal(deadlineStatus(t, "2026-11-03", "2026-11-05"), "late");
+  });
+
+  it("terminar el mismo día límite es llegar", () => {
+    // Fin a los 14 días = final del día 2026-11-16.
+    assert.equal(deadlineStatus(t, "2026-11-03", "2026-11-16"), "on_track");
   });
 });
