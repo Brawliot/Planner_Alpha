@@ -26,6 +26,7 @@ const task = (id: string, lineId: string, status: Step["status"] = "todo"): Task
   dependsOn: [],
   basis: [],
   validation: "per_step",
+  origin: "catalog",
   steps: [step(status)],
 });
 

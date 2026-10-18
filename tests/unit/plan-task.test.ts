@@ -50,6 +50,7 @@ function task(id: string, steps: Step[], extra: Partial<Task> = {}): Task {
     dependsOn: [],
     basis: [],
     validation: "per_step",
+    origin: "catalog",
     steps,
     ...extra,
   };

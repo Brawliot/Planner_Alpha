@@ -11,6 +11,8 @@ import { stepSchema, type Step } from "./step.ts";
 export const PHASES = ["validate", "prepare", "launch", "operate"] as const;
 export const TASK_KINDS = ["research", "decision", "check", "action"] as const;
 export const VALIDATION_MODES = ["per_step", "together"] as const;
+/** catalog: esqueleto del código. ai: sugerida por la IA (se muestra "Sugerida por IA" y se puede quitar). */
+export const TASK_ORIGINS = ["catalog", "ai"] as const;
 
 export const taskSchema = z
   .object({
@@ -27,6 +29,7 @@ export const taskSchema = z
     unlocks: z.string().min(1).optional(),
     /** Cómo valida el usuario lo que haga la IA: borrador a borrador o todos a la vez. */
     validation: z.enum(VALIDATION_MODES),
+    origin: z.enum(TASK_ORIGINS),
     steps: z.array(stepSchema).min(1),
   })
   .superRefine((task, ctx) => {
