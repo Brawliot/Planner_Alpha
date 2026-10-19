@@ -108,7 +108,8 @@ describe("lectura de respuestas", () => {
   });
 
   it("genérica: se descarta", () => {
-    assert.deepEqual(readReview([TASK], answersFor({ "specific.t1": noul(0.4) }))[0].reason, "generic");
+    // Por debajo de SPECIFIC_MIN_NOUL (0,30): genérica.
+    assert.deepEqual(readReview([TASK], answersFor({ "specific.t1": noul(0.2) }))[0].reason, "generic");
   });
 
   it("muy dudoso o sin respuesta: se descarta la tarea entera", () => {
