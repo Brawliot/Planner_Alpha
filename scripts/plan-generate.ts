@@ -48,6 +48,8 @@ interface CallLog {
   ok: boolean;
   /** Notas de Jev (noul) por pregunta. */
   scores?: Record<string, number | null>;
+  /** Lo que devolvió GPT tal cual (para ver por qué se rechaza un borrador). */
+  data?: unknown;
 }
 
 function traced(calls: CallLog[]): GenerateDeps {
@@ -63,6 +65,7 @@ function traced(calls: CallLog[]): GenerateDeps {
           ms: Date.now() - start,
           tokens: usage ? usage.input_tokens + usage.output_tokens : null,
           ok: true,
+          data: result.data,
         });
         return result;
       } catch (error) {
@@ -192,6 +195,7 @@ async function runExample(name: string, example: Example) {
     const generated = plan.tasks.filter((t) => t.origin === "ai");
     const targets = generated.flatMap((task) => task.steps.filter(canDraft).map((step) => ({ task, step }))).slice(0, MAX_DRAFTS);
     for (const { task, step } of targets) {
+      const from = calls.length;
       const result = await stepDraft(deps.gpt, {
         idea: example.idea,
         facts: example.facts,
@@ -202,9 +206,19 @@ async function runExample(name: string, example: Example) {
         notes: null,
       });
       const draft = result.status === "draft" ? readDraft(result.step) : null;
+      const rejected =
+        result.status === "kept"
+          ? `Motivo: **${result.reason ?? "?"}**\n\n` +
+            calls
+              .slice(from)
+              .filter((c) => c.kind === "gpt")
+              .map((c, i) => `Intento ${i + 1}:\n\n\`\`\`json\n${JSON.stringify(c.data, null, 2)}\n\`\`\`\n`)
+              .join("\n")
+          : "";
       drafts.push(
         `### ${task.title} → ${step.text} (${step.aiCapability})\n\nResultado: **${result.status}**\n\n` +
           (draft ? "```\n" + renderDraft(draft, "es") + "\n```\n" : "") +
+          rejected +
           "\n- [ ] Me ahorra trabajo\n",
       );
       if (result.status === "unavailable") break;

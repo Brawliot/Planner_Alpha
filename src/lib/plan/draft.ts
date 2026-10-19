@@ -154,10 +154,13 @@ export const rawDraftParser = z.object({
 });
 export type RawDraft = z.infer<typeof rawDraftParser>;
 
-/** Revisa el borrador de GPT. null si no tiene la forma, cifras inventadas o fuentes que no existen. */
-export function reviewDraft(raw: RawDraft, ctx: DraftContext): Draft | null {
+export type DraftRejection = "shape" | "sources" | "template" | "placeholder" | "numbers";
+type Review = { draft: Draft } | { reason: DraftRejection };
+
+/** Revisa el borrador de GPT: el borrador, o el motivo por el que no vale. */
+export function reviewDraftWithReason(raw: RawDraft, ctx: DraftContext): Review {
   const capability = ctx.step.aiCapability;
-  if (!capability) return null;
+  if (!capability) return { reason: "shape" };
   const keys = new Set(citableKeys(ctx.facts));
   const answerIds = new Set(ctx.answers.filter((a) => a.answer !== null).map((a) => a.id));
   const hasNotes = ctx.notes !== null;
@@ -174,11 +177,11 @@ export function reviewDraft(raw: RawDraft, ctx: DraftContext): Draft | null {
   let candidate: unknown;
   if (capability === "comparison_table") {
     const rows = (raw.rows ?? []).map((r) => ({ cells: r.cells, source: source(r.source) }));
-    if (rows.some((r) => r.source === "invalid")) return null;
+    if (rows.some((r) => r.source === "invalid")) return { reason: "sources" };
     candidate = { capability, template: raw.template, columns: raw.columns, rows };
   } else if (capability === "research_summary") {
     const points = (raw.points ?? []).map((p) => ({ text: p.text, source: source(p.source) }));
-    if (points.some((p) => p.source === "invalid")) return null;
+    if (points.some((p) => p.source === "invalid")) return { reason: "sources" };
     candidate = { capability, template: raw.template, points };
   } else if (capability === "checklist") {
     candidate = { capability, items: raw.items };
@@ -187,26 +190,34 @@ export function reviewDraft(raw: RawDraft, ctx: DraftContext): Draft | null {
   }
 
   const parsed = draftSchema.safeParse(candidate);
-  if (!parsed.success) return null;
+  if (!parsed.success) return { reason: "shape" };
   const draft = parsed.data;
 
   // Contenido: cada fila o punto con su fuente. Plantilla (solo sin notas): vacía y sin fuentes.
   if (draft.capability === "comparison_table") {
-    if (draft.template && hasNotes) return null;
-    if (draft.rows.some((r) => r.cells.length !== draft.columns.length)) return null;
-    if (draft.template && draft.rows.some((r) => r.source !== null || r.cells.slice(1).some((c) => c.length > 0))) return null;
-    if (!draft.template && draft.rows.some((r) => r.source === null)) return null;
+    if (draft.template && hasNotes) return { reason: "template" };
+    if (draft.rows.some((r) => r.cells.length !== draft.columns.length)) return { reason: "shape" };
+    if (draft.template && draft.rows.some((r) => r.source !== null || r.cells.slice(1).some((c) => c.length > 0))) {
+      return { reason: "template" };
+    }
+    if (!draft.template && draft.rows.some((r) => r.source === null)) return { reason: "sources" };
   }
   if (draft.capability === "research_summary") {
-    if (draft.template && hasNotes) return null;
-    if (draft.points.some((p) => (p.source === null) !== draft.template)) return null;
+    if (draft.template && hasNotes) return { reason: "template" };
+    if (draft.points.some((p) => (p.source === null) !== draft.template)) return { reason: "sources" };
   }
   if (draft.capability === "draft_text" || draft.capability === "checklist") {
-    if (draftTexts(draft).some((text) => PLACEHOLDER.test(text))) return null;
+    if (draftTexts(draft).some((text) => PLACEHOLDER.test(text))) return { reason: "placeholder" };
   }
 
   const allowed = allowedNumbers(draftInput(ctx));
-  return draftTexts(draft).every((text) => numbersAreAllowed(text, allowed)) ? draft : null;
+  return draftTexts(draft).every((text) => numbersAreAllowed(text, allowed)) ? { draft } : { reason: "numbers" };
+}
+
+/** Revisa el borrador de GPT. null si no vale (el motivo, con reviewDraftWithReason). */
+export function reviewDraft(raw: RawDraft, ctx: DraftContext): Draft | null {
+  const review = reviewDraftWithReason(raw, ctx);
+  return "draft" in review ? review.draft : null;
 }
 
 function draftTexts(draft: Draft): string[] {
@@ -256,7 +267,7 @@ export function renderDraft(draft: Draft, language: Language): string {
 
 export type DraftOutcome =
   | { status: "draft"; step: Step }
-  | { status: "kept" }
+  | { status: "kept"; reason?: DraftRejection }
   | { status: "unavailable" }
   | { status: "not_allowed" };
 
@@ -267,6 +278,7 @@ export async function stepDraft(
 ): Promise<DraftOutcome> {
   const capability = ctx.step.aiCapability;
   if (!canDraft(ctx.step) || !capability) return { status: "not_allowed" };
+  let reason: DraftRejection | undefined;
   try {
     for (let call = 0; call < MAX_DRAFT_CALLS; call++) {
       const { data } = await gpt({
@@ -277,8 +289,12 @@ export async function stepDraft(
         parse: rawDraftParser,
         effort: "low",
       });
-      const draft = reviewDraft(data, ctx);
-      if (!draft) continue;
+      const review = reviewDraftWithReason(data, ctx);
+      if (!("draft" in review)) {
+        reason = review.reason;
+        continue;
+      }
+      const draft = review.draft;
       return {
         status: "draft",
         step: {
@@ -293,7 +309,7 @@ export async function stepDraft(
     console.error(`draft: ${error instanceof Error ? error.name : "error"} en el paso ${ctx.step.id}`);
     return { status: "unavailable" };
   }
-  return { status: "kept" };
+  return { status: "kept", reason };
 }
 
 /** El usuario corrige el borrador: lo suyo no se revisa por cifras, solo la forma. */

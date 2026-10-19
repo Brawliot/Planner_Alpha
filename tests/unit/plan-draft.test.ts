@@ -173,7 +173,7 @@ describe("stepDraft, editar y validar", () => {
   it("si falla la revisión dos veces, el paso se queda como estaba", async () => {
     const invented = { ...TABLE, rows: [{ cells: ["X", "99 euros"], source: { kind: "notes", ref: "" } }] };
     const { gpt, calls } = gptReturning([invented, invented]);
-    assert.deepEqual(await stepDraft(gpt, ctx(step("comparison_table"))), { status: "kept" });
+    assert.deepEqual(await stepDraft(gpt, ctx(step("comparison_table"))), { status: "kept", reason: "numbers" });
     assert.equal(calls.length, 2);
   });
 
