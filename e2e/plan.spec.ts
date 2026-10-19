@@ -100,6 +100,27 @@ test.describe("plan", () => {
     await expect(page.getByRole("heading", { name: /Personalized task/ })).toHaveCount(0);
   });
 
+  test("'Ahora' muestra lo que se puede empezar; un paso se marca como hecho y se reabre", async ({ page }) => {
+    await createPlanFor(page);
+    const now = page.getByRole("region", { name: "Now" });
+    await expect(now).toBeVisible();
+
+    const nextStep = now.getByText(/^Next: /).first();
+    const stepText = (await nextStep.textContent())!.replace(/^Next: /, "").trim();
+    await now.getByRole("button", { name: "Done" }).first().click();
+    await page.waitForLoadState("networkidle");
+
+    // El paso aparece hecho en su tarea, con el botón de reabrir.
+    const step = page.getByRole("listitem").filter({ hasText: stepText }).filter({ has: page.getByRole("button", { name: "Reopen" }) });
+    await page.locator("summary", { hasText: "Steps" }).first().click();
+    await expect(step.first()).toBeVisible();
+
+    await step.first().getByRole("button", { name: "Reopen" }).click();
+    await page.waitForLoadState("networkidle");
+    await page.locator("summary", { hasText: "Steps" }).first().click();
+    await expect(page.getByRole("listitem").filter({ hasText: stepText }).getByRole("button", { name: "Done" }).first()).toBeVisible();
+  });
+
   test("otro usuario no puede ver el plan", async ({ page, browser, request }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);

@@ -8,8 +8,18 @@ import { stateLabel } from "./engine.ts";
 import type { Department } from "./line.ts";
 import type { Mold } from "./mold.ts";
 import type { MoneyStatus, PlanState } from "./orchestrator.ts";
-import type { Actor } from "./step.ts";
-import { PHASES, type Range } from "./task.ts";
+import { stepActions } from "./progress.ts";
+import type { Actor, StepStatus, ThirdParty } from "./step.ts";
+import {
+  PHASES,
+  isStepResolved,
+  isTaskResolved,
+  pendingDependencies,
+  taskOutOfOrder,
+  taskStatus,
+  type Range,
+  type Task,
+} from "./task.ts";
 import { addDays, weeksOf, type DeadlineStatus } from "./timeline.ts";
 
 /**
@@ -17,30 +27,53 @@ import { addDays, weeksOf, type DeadlineStatus } from "./timeline.ts";
  * nunca datos internos (log, huella, orígenes de los datos).
  */
 
+type Phase = (typeof PHASES)[number];
+
 export interface PlanStepView {
+  id: string;
   text: string;
   actor: Actor;
+  status: StepStatus;
+  /** Botones que se ofrecen (transiciones válidas). */
+  actions: StepStatus[];
   effort: Range;
   wait: Range | null;
   cost: Range | null;
 }
 
-export interface PlanTaskView {
+export interface DoneTaskView {
   id: string;
   title: string;
   department: Department | null;
+  personalized: boolean;
+  steps: PlanStepView[];
+}
+
+export interface PlanTaskView extends DoneTaskView {
   weeks: { from: number; to: number };
   dates: { from: string; to: string };
   estimated: boolean;
-  steps: PlanStepView[];
-  /** La personalizó la IA ("Personalizada"). */
-  personalized: boolean;
+  /** Tareas que van antes (títulos). */
+  after: string[];
+  /** Las que aún no están hechas (bloqueo blando: se avisa, no se impide). */
+  blockedBy: string[];
+  /** Se avanzó aunque había algo pendiente antes. */
+  outOfOrder: boolean;
   /** Qué botón de IA se ofrece; null si ninguno (ya empezada). */
   generate: "generate" | "regenerate" | null;
   /** Preguntas previas pendientes de esta tarea. */
   questions: { id: string; text: string; options: string[] }[];
-    /** Molde de la tarea (para responder sus preguntas previas). */
+  /** Molde de la tarea (para responder sus preguntas previas). */
   mold: string | null;
+}
+
+export interface NowItem {
+  taskId: string;
+  title: string;
+  /** Siguiente paso que puedes hacer, o null si solo queda esperar. */
+  step: PlanStepView | null;
+  /** A quién se espera, si solo queda esperar. */
+  waitingFor: ThirdParty | null;
 }
 
 export interface PlanView {
@@ -49,7 +82,8 @@ export interface PlanView {
   money: MoneyStatus | null;
   deadline: DeadlineStatus | null;
   decisions: { label: string; options: string[]; chosen: string }[];
-  phases: { phase: (typeof PHASES)[number]; tasks: PlanTaskView[] }[];
+  now: NowItem[];
+  phases: { phase: Phase; tasks: PlanTaskView[]; done: DoneTaskView[] }[];
   form: {
     startDate: string;
     hours: HoursOption;
@@ -57,6 +91,21 @@ export interface PlanView {
     professionals: PlanConfig["professionals"];
     validationLevel: PlanConfig["validationLevel"];
     launchLevel: PlanConfig["launchLevel"];
+  };
+}
+
+export const NOW_SIZE = 3;
+
+function stepView(step: Task["steps"][number]): PlanStepView {
+  return {
+    id: step.id,
+    text: step.text,
+    actor: step.actor,
+    status: step.status,
+    actions: stepActions(step.actor, step.status),
+    effort: step.effort,
+    wait: step.wait ?? null,
+    cost: step.cost ?? null,
   };
 }
 
@@ -68,39 +117,59 @@ export function planView(input: {
   language: Language;
 }): PlanView {
   const { state, config, catalog, facts, language } = input;
+  const tasks = state.tasks.filter((t) => t.archived === undefined);
   const schedule = new Map(state.timeline.tasks.map((s) => [s.taskId, s]));
   const departmentOf = new Map(state.lines.map((line) => [line.id, line.department]));
+  const titleOf = new Map(tasks.map((t) => [t.id, t.title]));
   const moldTitle = (id: string) => catalog.find((m) => m.id === id)?.title[language] ?? id;
+  const titles = (ids: readonly string[]) => ids.flatMap((id) => (titleOf.has(id) ? [titleOf.get(id)!] : []));
 
-  const tasks = state.tasks.flatMap((task): (PlanTaskView & { phase: (typeof PHASES)[number]; start: number })[] => {
-    const s = schedule.get(task.id);
-    if (!s || task.archived !== undefined) return [];
-    return [
-      {
-        id: task.id,
-        title: task.title,
-        department: departmentOf.get(task.lineId) ?? null,
-        weeks: weeksOf(s),
-        dates: { from: addDays(config.startDate, s.start.min), to: addDays(config.startDate, s.end.max) },
-        estimated: taskCertainty(task, facts) === "estimated",
-        steps: task.steps.map((step) => ({
-          text: step.text,
-          actor: step.actor,
-          effort: step.effort,
-          wait: step.wait ?? null,
-          cost: step.cost ?? null,
-        })),
-        personalized: task.origin === "ai",
-        generate: canGenerate(task) ? "generate" : canRegenerate(task) ? "regenerate" : null,
-        questions: state.pendingQuestions
-          .filter((q) => task.mold !== undefined && q.mold === task.mold)
-          .map((q) => ({ id: q.id, text: q.text, options: q.options })),
-        mold: task.mold ?? null,
-        phase: task.phase,
-        start: s.start.min,
-      },
-    ];
+  const base = (task: Task): DoneTaskView => ({
+    id: task.id,
+    title: task.title,
+    department: departmentOf.get(task.lineId) ?? null,
+    personalized: task.origin === "ai",
+    steps: task.steps.map(stepView),
   });
+
+  const pending: (PlanTaskView & { phase: Phase; start: number })[] = [];
+  const done: (DoneTaskView & { phase: Phase })[] = [];
+  for (const task of tasks) {
+    const s = schedule.get(task.id);
+    if (isTaskResolved(task) || !s) {
+      done.push({ ...base(task), phase: task.phase });
+      continue;
+    }
+    pending.push({
+      ...base(task),
+      weeks: weeksOf(s),
+      dates: { from: addDays(config.startDate, s.start.min), to: addDays(config.startDate, s.end.max) },
+      estimated: taskCertainty(task, facts) === "estimated",
+      after: titles(task.dependsOn),
+      blockedBy: titles(pendingDependencies(task, tasks)),
+      outOfOrder: taskOutOfOrder(task, tasks),
+      generate: canGenerate(task) ? "generate" : canRegenerate(task) ? "regenerate" : null,
+      questions: state.pendingQuestions
+        .filter((q) => task.mold !== undefined && q.mold === task.mold)
+        .map((q) => ({ id: q.id, text: q.text, options: q.options })),
+      mold: task.mold ?? null,
+      phase: task.phase,
+      start: s.start.min,
+    });
+  }
+
+  // "Ahora": lo que se puede empezar ya (sin nada pendiente antes), en el orden del timeline.
+  const now = pending
+    .filter((t) => t.blockedBy.length === 0)
+    .sort((a, b) => a.start - b.start)
+    .slice(0, NOW_SIZE)
+    .map((view): NowItem => {
+      const task = tasks.find((t) => t.id === view.id)!;
+      const open = task.steps.filter((s) => !isStepResolved(s));
+      const next = open.find((s) => s.status !== "requested") ?? null;
+      const waiting = taskStatus(task, tasks) === "waiting" ? (open[0]?.thirdParty ?? "other") : null;
+      return { taskId: task.id, title: task.title, step: next ? stepView(next) : null, waitingFor: next ? null : waiting };
+    });
 
   const opening = state.opening
     ? (() => {
@@ -112,6 +181,13 @@ export function planView(input: {
       })()
     : null;
 
+  const strip = <T extends { phase?: unknown; start?: unknown }>(item: T) => {
+    const copy = { ...item };
+    delete copy.phase;
+    delete copy.start;
+    return copy;
+  };
+
   return {
     language,
     opening,
@@ -122,18 +198,15 @@ export function planView(input: {
       options: d.options.map(moldTitle),
       chosen: moldTitle(d.chosen),
     })),
+    now,
     phases: PHASES.map((phase) => ({
       phase,
-      tasks: tasks
+      tasks: pending
         .filter((t) => t.phase === phase)
         .sort((a, b) => a.start - b.start)
-        .map((t) => {
-          const task: PlanTaskView & { phase?: unknown; start?: unknown } = { ...t };
-          delete task.phase;
-          delete task.start;
-          return task as PlanTaskView;
-        }),
-    })).filter((group) => group.tasks.length > 0),
+        .map((t) => strip(t) as PlanTaskView),
+      done: done.filter((t) => t.phase === phase).map((t) => strip(t) as DoneTaskView),
+    })).filter((group) => group.tasks.length > 0 || group.done.length > 0),
     form: {
       startDate: config.startDate,
       hours: hoursOptionOf(config.weeklyHours) ?? "10-20",

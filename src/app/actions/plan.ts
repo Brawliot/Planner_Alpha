@@ -14,6 +14,7 @@ import { toStored } from "@/lib/plan/stored";
 import { answerPending, applyGeneration, generateTask } from "@/lib/plan/generate";
 import { liveDeps } from "@/lib/plan/live";
 import { parseReplies } from "@/lib/plan/replies-form";
+import { setStepStatus } from "@/lib/plan/progress";
 
 export type PlanFormState = { error: string | null };
 export type GenerateError = "stale" | "unavailable" | "kept" | "not_allowed" | "invalid";
@@ -173,6 +174,39 @@ export async function answerAndGenerateAction(
   // Misma página con ancla: sin refresh, el navegador solo haría scroll y no pediría el plan nuevo.
   refresh();
   redirect(`/informe/${loaded.report.id}/plan#tarea-${encodeURIComponent(target)}`);
+}
+
+export type ProgressState = { error: "stale" | "invalid" | "failed" | null };
+
+/** Marca un paso (hecho, saltar, pedido, recibido, reabrir). El servidor vuelve a validar la transición. */
+export async function markStepAction(
+  reportId: string,
+  taskId: string,
+  stepId: string,
+  _prev: ProgressState,
+  formData: FormData,
+): Promise<ProgressState> {
+  const loaded = await loadOwnPlan(reportId);
+  if (!loaded || Number(formData.get("version")) !== loaded.existing.version) return { error: "stale" };
+  const { user, report, existing } = loaded;
+
+  try {
+    const input = planInput(report);
+    const date = today();
+    const rebuild = (stored: typeof existing.stored) =>
+      rebuildPlan({ report: input, config: existing.config, catalog: MOLDS, stored, today: date });
+    // Se marca sobre el plan tal como se ve (con las tareas personalizadas en su sitio).
+    const next = setStepStatus(toStored(rebuild(existing.stored)), taskId, stepId, formData.get("to"));
+    if (!next) return { error: "invalid" };
+    if (!(await updateOwnPlan(user.id, existing.id, existing.version, { stored: toStored(rebuild(next)) }))) {
+      return { error: "stale" };
+    }
+  } catch (err) {
+    logError("marcar el paso", err);
+    return { error: "failed" };
+  }
+  refresh();
+  redirect(`/informe/${report.id}/plan#tarea-${encodeURIComponent(taskId)}`);
 }
 
 function logError(action: string, err: unknown) {

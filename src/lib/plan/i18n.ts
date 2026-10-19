@@ -48,6 +48,18 @@ export interface PlanTexts {
   otherLabel: string;
   answer: string;
   generateError: Record<"stale" | "unavailable" | "kept" | "not_allowed" | "invalid", string>;
+  now: string;
+  nowEmpty: string;
+  nextStep: string;
+  waitingFor: string;
+  thirdParty: Record<"advisor" | "lawyer" | "designer" | "developer" | "public_body" | "supplier" | "bank" | "other", string>;
+  after: string;
+  blockedBy: string;
+  outOfOrder: string;
+  doneGroup: string;
+  status: Record<"todo" | "ai_draft" | "requested" | "received" | "done" | "skipped", string>;
+  action: Record<"done" | "skipped" | "requested" | "received" | "todo", string>;
+  progressError: Record<"stale" | "invalid" | "failed", string>;
 }
 
 export const PLAN_TEXTS: Record<Language, PlanTexts> = {
@@ -114,6 +126,31 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       not_allowed: "Esta tarea ya no se puede personalizar.",
       invalid: "Responde a todas las preguntas.",
     },
+    now: "Ahora",
+    nowEmpty: "No hay nada que puedas empezar ahora.",
+    nextStep: "Siguiente",
+    waitingFor: "Esperando a",
+    thirdParty: {
+      advisor: "tu gestor o asesor",
+      lawyer: "tu abogado",
+      designer: "tu diseñador",
+      developer: "tu programador",
+      public_body: "la administración",
+      supplier: "tu proveedor",
+      bank: "el banco",
+      other: "un tercero",
+    },
+    after: "Después de",
+    blockedBy: "Antes conviene",
+    outOfOrder: "Fuera de orden",
+    doneGroup: "Hechas",
+    status: { todo: "Pendiente", ai_draft: "Borrador", requested: "Pedido", received: "Recibido", done: "Hecho", skipped: "Saltado" },
+    action: { done: "Hecho", skipped: "Saltar", requested: "Pedido", received: "Recibido", todo: "Reabrir" },
+    progressError: {
+      stale: "Este plan ha cambiado. Recarga la página.",
+      invalid: "Ese cambio ya no se puede hacer. Recarga la página.",
+      failed: "No se ha podido guardar. Inténtalo de nuevo.",
+    },
   },
   en: {
     title: "Your plan",
@@ -177,6 +214,31 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       kept: "We couldn't personalize this task; it stays as it was.",
       not_allowed: "This task can no longer be personalized.",
       invalid: "Answer every question.",
+    },
+    now: "Now",
+    nowEmpty: "There is nothing you can start right now.",
+    nextStep: "Next",
+    waitingFor: "Waiting for",
+    thirdParty: {
+      advisor: "your accountant or advisor",
+      lawyer: "your lawyer",
+      designer: "your designer",
+      developer: "your developer",
+      public_body: "the authorities",
+      supplier: "your supplier",
+      bank: "the bank",
+      other: "a third party",
+    },
+    after: "After",
+    blockedBy: "Better first",
+    outOfOrder: "Out of order",
+    doneGroup: "Done",
+    status: { todo: "To do", ai_draft: "Draft", requested: "Requested", received: "Received", done: "Done", skipped: "Skipped" },
+    action: { done: "Done", skipped: "Skip", requested: "Requested", received: "Received", todo: "Reopen" },
+    progressError: {
+      stale: "This plan has changed. Reload the page.",
+      invalid: "That change is no longer possible. Reload the page.",
+      failed: "It could not be saved. Try again.",
     },
   },
 };
