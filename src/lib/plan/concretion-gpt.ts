@@ -37,6 +37,9 @@ export const CONCRETION_INSTRUCTIONS = [
   "user_text in quotes.",
   "Every step must say which step of mold_task it makes concrete in mold_step. Together, the tasks must cover",
   "every step of mold_task.",
+  "Steps that make concrete a mold step with prepared_by_ai true are done by an AI that only prepares content",
+  "inside the app for the user to review: write them as what it prepares (draft, write, list, compare the notes),",
+  "never as a decision (choose, decide, set) nor as an action in the outside world (publish, send, sign, buy, hire).",
   "Do not repeat tasks listed in other_tasks.",
   `Only if may_ask is true, and only if something the user already knows or prefers is missing and would change`,
   `the tasks, return up to ${MAX_QUESTIONS} short questions and no tasks. Never ask about what is in facts,`,
@@ -106,10 +109,11 @@ export function concretionInput(ctx: ConcretionContext) {
       title: ctx.mold.title[ctx.language],
       outcome: ctx.mold.outcome[ctx.language],
       line_goal: ctx.lineGoal,
-      steps: stepsAt(ctx.mold, ctx.config).map((step) => ({
+      steps: stepsAt(ctx.mold, ctx.config).map((step, index) => ({
         id: step.id,
         text: step.text[ctx.language],
         done_when: step.doneWhen[ctx.language],
+        prepared_by_ai: buildStep(step, index, ctx.config, ctx.language).actor === "ai",
       })),
     },
     other_tasks: ctx.otherTasks,
@@ -182,9 +186,21 @@ export const concretionParser = z.object({
 export type RawConcretion = z.infer<typeof concretionParser>;
 export type ConcretionResult =
   | { ok: true; tasks: Task[] }
-  | { ok: false; reason: "count" | "citations" | "numbers" | "mold_step" | "coverage" | "invalid" };
+  | { ok: false; reason: "count" | "citations" | "numbers" | "mold_step" | "coverage" | "ai_action" | "invalid" };
 
 const share = (range: Range, n: number): Range => ({ min: range.min / n, max: range.max / n });
+
+/** Verbos de decidir o de actuar fuera de la app: un paso de la IA nunca empieza así. */
+const AI_FORBIDDEN_VERBS = new Set([
+  "elige", "decide", "fija", "publica", "envía", "envia", "firma", "compra", "contrata", "abre", "paga", "cierra", "anuncia", "anúncialo",
+  "choose", "decide", "set", "publish", "send", "sign", "buy", "hire", "open", "pay", "close", "announce",
+]);
+
+/** El paso de la IA describe una decisión o una acción fuera de la app (mira la primera palabra). */
+export function aiStepActsOrDecides(text: string) {
+  const first = text.trim().split(/\s+/)[0]?.toLowerCase().replace(/[^\p{L}]/gu, "") ?? "";
+  return AI_FORBIDDEN_VERBS.has(first);
+}
 
 /** Revisa lo que devuelve GPT y lo convierte en tareas del plan. Todo o nada. */
 export function buildConcretion(raw: RawConcretion, ctx: ConcretionContext): ConcretionResult {
@@ -248,6 +264,9 @@ export function buildConcretion(raw: RawConcretion, ctx: ConcretionContext): Con
     };
   });
 
+  if (tasks.some((task) => task.steps.some((step) => step.actor === "ai" && aiStepActsOrDecides(step.text)))) {
+    return { ok: false, reason: "ai_action" };
+  }
   return tasks.every((task) => taskSchema.safeParse(task).success) ? { ok: true, tasks } : { ok: false, reason: "invalid" };
 }
 
