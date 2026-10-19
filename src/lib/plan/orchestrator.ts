@@ -3,6 +3,7 @@ import type { PlanConfig } from "./config.ts";
 import { buildSkeleton, type Decision } from "./engine.ts";
 import type { PlanInput } from "./input.ts";
 import { lineIssues, type Line } from "./line.ts";
+import type { PlanAnswer } from "./answers.ts";
 import { applyConcretions } from "./concretion.ts";
 import { mergeTasks } from "./merge.ts";
 import { moldGets, type Mold } from "./mold.ts";
@@ -22,6 +23,8 @@ export interface StoredPlan {
   dismissed: string[];
   /** Huella del informe con la que se calculó. */
   fingerprint: string;
+  /** "Lo que nos has contado" (preguntas previas de "Generar"). */
+  answers?: PlanAnswer[];
 }
 
 export type MoneyStatus = "fits" | "at_risk" | "over";
@@ -46,6 +49,7 @@ export interface PlanState {
   reportChanged: boolean;
   fingerprint: string;
   dismissed: string[];
+  answers: PlanAnswer[];
   /** Solo para el log del servidor; nunca se muestra al usuario. */
   issues: string[];
 }
@@ -130,6 +134,7 @@ export function rebuildPlan(input: {
     reportChanged: input.stored !== null && input.stored.fingerprint !== report.fingerprint,
     fingerprint: report.fingerprint,
     dismissed: stored.dismissed,
+    answers: input.stored?.answers ?? [],
     issues: [...skeleton.issues, ...lineIssues(lines, tasks)],
   };
 }

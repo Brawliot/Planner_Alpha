@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   CONCRETION_INSTRUCTIONS,
+  readGeneration,
   buildConcretion,
   concretionFormat,
   concretionInput,
@@ -65,6 +66,8 @@ const CTX: ConcretionContext = {
   otherTasks: ["Define tu oferta y tus precios"],
   config: defaultConfig("2026-10-19", { min: 10, max: 20 }),
   language: "es",
+  answers: [{ id: "a1", mold: "fit_out", question: "¿Cuántas personas sentadas?", answer: "Entre 15 y 25 personas" }],
+  mayAsk: true,
 };
 
 const step = (moldStep: string, text: string, afterPrevious = false) => ({
@@ -75,6 +78,7 @@ const step = (moldStep: string, text: string, afterPrevious = false) => ({
 });
 
 const VALID: RawConcretion = {
+  questions: [],
   tasks: [
     {
       title: "Define el local para 20 plazas",
@@ -95,7 +99,7 @@ const VALID: RawConcretion = {
   ],
 };
 
-const withTasks = (tasks: RawConcretion["tasks"]): RawConcretion => ({ tasks });
+const withTasks = (tasks: RawConcretion["tasks"]): RawConcretion => ({ questions: [], tasks });
 
 describe("entrada y formato", () => {
   it("las instrucciones nunca llevan texto del usuario", () => {
@@ -167,5 +171,41 @@ describe("buildConcretion", () => {
     const invented = withTasks([{ ...VALID.tasks[0], steps: [step("visit", "Visita")] }, VALID.tasks[1]]);
     assert.deepEqual(buildConcretion(invented, CTX), { ok: false, reason: "mold_step" });
     assert.deepEqual(buildConcretion(withTasks([VALID.tasks[0]]), CTX), { ok: false, reason: "coverage" });
+  });
+});
+
+
+describe("preguntas previas", () => {
+  const ask = (questions: RawConcretion["questions"]): RawConcretion => ({ questions, tasks: [] });
+  const Q = { text: "¿Tienes ya una zona en mente?", options: ["Sí, cerca del mercado", "Aún no he mirado"] };
+
+  it("si puede preguntar, devuelve las preguntas con ids que siguen a las respuestas guardadas", () => {
+    const result = readGeneration(ask([Q]), CTX);
+    assert.ok(result.ok && "questions" in result);
+    assert.deepEqual(result.questions, [{ id: "a2", mold: "find_premises", text: Q.text, options: Q.options }]);
+  });
+
+  it("sin permiso para preguntar, o preguntas y tareas a la vez: se rechaza", () => {
+    assert.deepEqual(readGeneration(ask([Q]), { ...CTX, mayAsk: false }), { ok: false, reason: "questions" });
+    assert.deepEqual(readGeneration({ ...VALID, questions: [Q] }, CTX), { ok: false, reason: "mixed" });
+  });
+
+  it("más de 3, menos de 2 opciones, más de 4 u opciones repetidas: se rechaza", () => {
+    assert.deepEqual(readGeneration(ask([Q, Q, Q, Q]), CTX), { ok: false, reason: "questions" });
+    assert.deepEqual(readGeneration(ask([{ ...Q, options: ["Sí"] }]), CTX), { ok: false, reason: "questions" });
+    assert.deepEqual(readGeneration(ask([{ ...Q, options: ["a", "b", "c", "d", "e"] }]), CTX), { ok: false, reason: "questions" });
+    assert.deepEqual(readGeneration(ask([{ ...Q, options: ["Sí", "Sí"] }]), CTX), { ok: false, reason: "questions" });
+  });
+
+  it("sin preguntas, revisa las tareas como siempre", () => {
+    assert.ok(readGeneration(VALID, CTX).ok);
+  });
+
+  it("las tareas pueden citar tus respuestas y usar sus cifras", () => {
+    const fromAnswer = withTasks([
+      { ...VALID.tasks[0], title: "Local para 15 a 25 personas", quotes: ["Entre 15 y 25 personas"] },
+      VALID.tasks[1],
+    ]);
+    assert.ok(buildConcretion(fromAnswer, CTX).ok);
   });
 });
