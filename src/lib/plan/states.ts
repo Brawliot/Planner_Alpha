@@ -1,4 +1,5 @@
 import { FIGURE_KEYS, usable } from "../report/areas.ts";
+import { RENT_LEVELS } from "../report/figures.ts";
 import { moneyCheck } from "../report/money.ts";
 import type { Fact } from "../report/facts.ts";
 import type { Language } from "../report/narrative.ts";
@@ -102,6 +103,7 @@ const VALIDATION_STATES: Record<string, BusinessState[]> = {
   ],
 };
 const NO_DIFFERENTIATOR = option("differentiator", "None identified");
+const AFFORDABLE_RENT: readonly string[] = [RENT_LEVELS[0], RENT_LEVELS[1]];
 
 /** Lo que marca el usuario en "¿qué tienes ya hecho?". */
 export const MILESTONE_STATES: Record<(typeof MILESTONES)[number], BusinessState> = {
@@ -167,6 +169,10 @@ export function currentStates(input: {
   if (money.coverage === "covers" && !money.estimated && money.budget) {
     add("funding_covered", { kind: "report", key: money.budget.basis === "stated" ? FIGURE_KEYS.budget : "budget_band" });
   }
+
+  // Alquiler de la zona medio o bajo, y sabido: el local que busques te encaja.
+  const rent = knownValue(input.facts, FIGURE_KEYS.rentLevel);
+  if (rent !== null && AFFORDABLE_RENT.includes(rent)) add("premises_cost_fit", { kind: "report", key: FIGURE_KEYS.rentLevel });
 
   for (const milestone of input.config.done) add(MILESTONE_STATES[milestone], { kind: "milestone", milestone });
   for (const { state, taskId } of input.achieved) add(state, { kind: "plan", taskId });

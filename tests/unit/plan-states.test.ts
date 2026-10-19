@@ -89,6 +89,12 @@ describe("estados del plan", () => {
     assert.equal(states([budget, guessed]).has("funding_covered"), false);
   });
 
+  it("alquiler sabido medio o bajo: el local encaja; caro o estimado, no", () => {
+    assert.equal(states([known("rent_level", "Average")]).has("premises_cost_fit"), true);
+    assert.equal(states([known("rent_level", "Prime location")]).has("premises_cost_fit"), false);
+    assert.equal(states([estimated("rent_level", "Average")]).has("premises_cost_fit"), false);
+  });
+
   it("lo que precede por fuerza también es verdad", () => {
     const result = states([], ["premises"]);
     assert.deepEqual(result.get("premises_signed"), { kind: "milestone", milestone: "premises" });

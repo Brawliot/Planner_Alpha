@@ -4,6 +4,7 @@ import { MOLDS } from "../../src/lib/plan/catalog.ts";
 import { defaultConfig } from "../../src/lib/plan/config.ts";
 import { findCycle } from "../../src/lib/plan/graph.ts";
 import { moldGets, moldIssues } from "../../src/lib/plan/mold.ts";
+import { buildSkeleton } from "../../src/lib/plan/engine.ts";
 import { rebuildPlan } from "../../src/lib/plan/orchestrator.ts";
 import { BUSINESS_STATES, type StateId } from "../../src/lib/plan/states.ts";
 import { FIGURE_KEYS } from "../../src/lib/report/areas.ts";
@@ -16,20 +17,19 @@ const FACT_STATES = [...Object.keys(CATALOG), ...Object.values(FIGURE_KEYS)].map
 const ALL_STATES: StateId[] = [...BUSINESS_STATES, ...FACT_STATES];
 
 /** Sin molde genérico todavía. Se vacía tanda a tanda; el test falla si algo de aquí ya está cubierto. */
-const PENDING = new Set<StateId>([
-  "channel_fit",
-  "runway_covered",
-  "premises_cost_fit",
-  "roles_defined",
-  "team_hired",
-  "dependency_mitigated",
-  "time_secured",
-  "founder_gap_covered",
-  ...FACT_STATES.filter(
+const PENDING = new Set<StateId>(
+  FACT_STATES.filter(
     (state) =>
-      !["fact:competition", "fact:differentiator", "fact:startup_cost_eur", "fact:monthly_fixed_costs_eur"].includes(state),
+      ![
+        "fact:competition",
+        "fact:differentiator",
+        "fact:startup_cost_eur",
+        "fact:monthly_fixed_costs_eur",
+        "fact:acquisition_channel",
+        "fact:rent_level",
+      ].includes(state),
   ),
-]);
+);
 
 const generic = (state: StateId) =>
   MOLDS.some((mold) => mold.when === undefined && mold.validationLevel === undefined && moldGets(mold).includes(state));
@@ -133,11 +133,52 @@ describe("de punta a punta: la cafetería de Ana", () => {
     before("interview_customers", "demand_test");
     before("find_premises", "fit_out");
     before("find_premises", "hospitality_licenses");
+    before("rent_research", "find_premises");
     before("fit_out", "first_customers");
     before("hospitality_licenses", "first_customers");
     before("suppliers", "first_customers");
     assert.ok(task("find_premises").lineId.startsWith("base:operations"), "el local va en Operaciones");
     assert.ok(task("hospitality_licenses").dependsOn.includes("register_business"));
     assert.ok(task("first_customers").dependsOn.includes("offer_pricing"));
+  });
+});
+
+
+describe("caminos específicos de la tanda 2", () => {
+  const known = (key: string, value: string): Fact => ({
+    key,
+    value,
+    source: { origin: "jev", model: CALIBRATED_JEV_MODEL, confidence: 0.95, from: "user" },
+  });
+  const red = (area: "regulation" | "market", reason: string) => ({
+    area,
+    verdict: "risk" as const,
+    reason,
+    missing: [],
+    gaps: [],
+    estimated: false,
+  });
+  const skeleton = (facts: Fact[], verdicts: ReturnType<typeof red>[]) =>
+    buildSkeleton({
+      facts,
+      verdicts,
+      config: { ...defaultConfig("2026-10-19", { min: 10, max: 20 }), launchLevel: 1 },
+      catalog: MOLDS,
+      achieved: [],
+      language: "es",
+    });
+
+  it("custodiar dinero: proveedor regulado o licencia, con el proveedor como provisional", () => {
+    const plan = skeleton([known("money_handling", "Holds or intermediates funds")], [red("regulation", "regulation.holds_funds")]);
+    const decision = plan.decisions.find((d) => d.state === "licenses_granted");
+    assert.deepEqual(decision?.options, ["payment_provider", "payment_license"]);
+    assert.equal(decision?.chosen, "payment_provider");
+  });
+
+  it("vender a la administración gana al canal genérico", () => {
+    const plan = skeleton([known("customer_segment", "Public sector")], [red("market", "market.risk")]);
+    const ids = plan.tasks.map((t) => t.id);
+    assert.ok(ids.includes("public_sector_sales"));
+    assert.ok(!ids.includes("choose_channel"));
   });
 });
