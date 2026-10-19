@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
             "test:unit": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/unit/**/*.test.ts\"",
-    "calibrate:jev": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/calibrate-jev.ts"
+    "calibrate:jev": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/calibrate-jev.ts",
+    "plan:demo": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/plan-demo.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
