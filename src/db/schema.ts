@@ -10,6 +10,8 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import type { Fact } from "../lib/report/facts";
+import type { PlanConfig } from "../lib/plan/config";
+import type { StoredPlan } from "../lib/plan/orchestrator";
 import type { StoredNarrative } from "../lib/report/narrative";
 
 export const user = pgTable("user", {
@@ -116,6 +118,36 @@ export const report = pgTable(
       .notNull(),
   },
   (table) => [index("report_userId_idx").on(table.userId)],
+);
+
+export const plan = pgTable(
+  "plan",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    // Un plan por informe; si se borra el informe, se borra su plan.
+    reportId: text("report_id")
+      .notNull()
+      .unique()
+      .references(() => report.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    config: jsonb("config").$type<PlanConfig>().notNull(),
+    // Líneas, tareas, descartes, respuestas y preguntas pendientes. Lo calculado no se guarda.
+    stored: jsonb("stored").$type<StoredPlan>().notNull(),
+    // Pantalla del onboarding donde se quedó; null cuando ya lo terminó.
+    onboardingStep: text("onboarding_step"),
+    // Sube en cada cambio: una pestaña antigua o un doble envío no pisan lo más nuevo.
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("plan_userId_idx").on(table.userId)],
 );
 
 
