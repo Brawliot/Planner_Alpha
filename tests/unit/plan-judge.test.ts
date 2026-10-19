@@ -5,6 +5,7 @@ import { COST_BAND_KEYS, EFFORT_BAND_KEYS, WAIT_BAND_KEYS } from "../../src/lib/
 import {
   COMPLEXITY_QUESTION,
   judgeState,
+  nearMass,
   readComplexity,
   readReview,
   reviewQuestions,
@@ -80,19 +81,44 @@ describe("lectura de respuestas", () => {
     assert.equal(readComplexity(null), null);
   });
 
-  it("todo seguro y específica: pasa con sus tramos", () => {
+  it("todo seguro y específica: pasa con los rangos de sus tramos", () => {
     const [review] = readReview([TASK], answersFor());
     assert.equal(review.ok, true);
-    assert.deepEqual(review.steps.s1.third_party, { effort: "under_1h", cost: "100_500", wait: "1_4w" });
-    assert.deepEqual(review.steps.s2.user, { effort: "4_8h", cost: "free" });
+    assert.deepEqual(review.steps.s1.third_party, {
+      effort: { min: 0.25, max: 1 },
+      cost: { min: 100, max: 500 },
+      wait: { min: 7, max: 28 },
+      widened: false,
+    });
+    assert.deepEqual(review.steps.s2.user, { effort: { min: 4, max: 8 }, cost: { min: 0, max: 0 }, widened: false });
+  });
+
+  it("dudoso entre vecinos: se amplía al tramo y sus vecinos, sin descartar", () => {
+    const doubtful: JevAnswer = {
+      type: "choice",
+      choice: "1_4w",
+      probabilities: { under_1w: 0.3, "1_4w": 0.4, "1_3m": 0.3 },
+      confidence: 0.4,
+    };
+    assert.equal(nearMass(doubtful, ["under_1w", "1_4w", "1_3m", "3_6m"]), 1);
+    const [review] = readReview([TASK], answersFor({ "wait.t1.s1.third_party": doubtful }));
+    assert.equal(review.ok, true);
+    assert.deepEqual(review.steps.s1.third_party?.wait, { min: 1, max: 90 });
+    assert.equal(review.steps.s1.third_party?.widened, true);
   });
 
   it("genérica: se descarta", () => {
     assert.deepEqual(readReview([TASK], answersFor({ "specific.t1": noul(0.4) }))[0].reason, "generic");
   });
 
-  it("un solo tramo dudoso o que falta: se descarta la tarea entera", () => {
-    assert.equal(readReview([TASK], answersFor({ "wait.t1.s1.third_party": choice("1_4w", 0.7) }))[0].reason, "unsure_band");
+  it("muy dudoso o sin respuesta: se descarta la tarea entera", () => {
+    const scattered: JevAnswer = {
+      type: "choice",
+      choice: "1_4w",
+      probabilities: { "1_4w": 0.3, "3_6m": 0.7 },
+      confidence: 0.3,
+    };
+    assert.equal(readReview([TASK], answersFor({ "wait.t1.s1.third_party": scattered }))[0].reason, "unsure_band");
     assert.equal(readReview([TASK], answersFor({ "cost.t1.s2.user": null }))[0].reason, "unsure_band");
   });
 });

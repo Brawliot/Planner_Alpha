@@ -9,7 +9,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { callJev, type JevQuestion, type JevState } from "../src/lib/jev.ts";
 import { COST_BAND_KEYS, EFFORT_BAND_KEYS, WAIT_BAND_KEYS } from "../src/lib/plan/bands.ts";
-import { COMPLEXITY_QUESTION, judgeState, reviewQuestions, type DraftTask } from "../src/lib/plan/judge.ts";
+import { COMPLEXITY_QUESTION, judgeState, nearMass, reviewQuestions, type DraftTask } from "../src/lib/plan/judge.ts";
 import { accuracyByBand, agreement, minScoreFor, summarize, type Scored } from "./calibration/metrics.ts";
 import { BAND_CASES, COMPLEXITY_CASES, SPECIFIC_CASES, type SpecificLabel } from "./calibration/plan-cases.ts";
 
@@ -40,6 +40,8 @@ interface ChoiceRun {
   reversed: boolean;
   choice: string | null;
   confidence: number | null;
+  /** Probabilidad del tramo elegido más sus vecinos (solo tramos). */
+  mass: number | null;
   correct: boolean;
   exact: boolean;
 }
@@ -129,10 +131,11 @@ async function runChoice(item: ChoiceItem, run: number, reversed: boolean): Prom
     const answer = result.answers.q;
     const choice = answer?.type === "choice" ? answer.choice : null;
     const confidence = answer?.type === "choice" ? answer.confidence : null;
-    return { ...row, choice, confidence, correct: isCorrect(item, choice), exact: choice === item.expected };
+    const mass = item.order ? nearMass(answer ?? null, item.order) : null;
+    return { ...row, choice, confidence, mass, correct: isCorrect(item, choice), exact: choice === item.expected };
   } catch {
     failures++;
-    return { ...row, choice: null, confidence: null, correct: false, exact: false };
+    return { ...row, choice: null, confidence: null, mass: null, correct: false, exact: false };
   }
 }
 
@@ -183,12 +186,26 @@ async function main() {
       };
     }),
   );
-  const confidence = minScoreFor(scored, TARGET_PRECISION);
-  console.log(
-    confidence
-      ? `PLAN_MIN_CONFIDENCE ≈ ${confidence.threshold.toFixed(3)} (acierto ${pct(confidence.precision)}, cubre ${pct(confidence.coverage)})`
-      : "Ningún umbral llega al acierto exigido: no hay que fiarse de Jev para complejidad y tramos.",
-  );
+  const propose = (name: string, rows: Scored[]) => {
+    const found = minScoreFor(rows, TARGET_PRECISION);
+    console.log(
+      found
+        ? `${name} ≈ ${found.threshold.toFixed(3)} (acierto ${pct(found.precision)}, cubre ${pct(found.coverage)})`
+        : `${name}: ningún umbral llega al acierto exigido.`,
+    );
+    return found;
+  };
+  const bandRows = first.filter((r) => r.kind !== "complexity");
+  const confidence = {
+    complexity: propose(
+      "COMPLEXITY_MIN_CONFIDENCE",
+      first.filter((r) => r.kind === "complexity").map((r) => ({ score: r.confidence ?? 0, correct: r.correct })),
+    ),
+    // Tramo exacto: la confianza tiene que acertar el tramo justo.
+    exact: propose("BAND_EXACT_CONFIDENCE", bandRows.map((r) => ({ score: r.confidence ?? 0, correct: r.exact }))),
+    // Tramo ampliado: el tramo elegido y sus vecinos tienen que contener el correcto (±1).
+    mass: propose("BAND_MIN_MASS", bandRows.map((r) => ({ score: r.mass ?? 0, correct: r.correct }))),
+  };
   const failed = first.filter((r) => !r.correct);
   if (failed.length) {
     console.log("Fallos (revisa también si la etiqueta era correcta):");

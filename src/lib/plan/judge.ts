@@ -4,23 +4,32 @@ import {
   COST_BAND_KEYS,
   EFFORT_BAND_KEYS,
   WAIT_BAND_KEYS,
+  costOf,
+  effortOf,
+  waitOf,
   type CostBand,
   type EffortBand,
   type WaitBand,
 } from "./bands.ts";
 import { COMPLEXITIES, type Complexity } from "./complexity.ts";
 import type { Actor } from "./step.ts";
+import type { Range } from "./task.ts";
 
 /**
  * Jev como juez del generador: no escribe nada, elige entre opciones cerradas o puntúa.
  * - Antes de GPT: la complejidad de la tarea para este negocio (cuántas tareas puede generar).
  * - Después: si cada tarea generada es específica y el tramo de horas, euros y espera de cada paso.
  * Instrucciones fijas en inglés; el texto de GPT y del usuario va siempre en el state.
- * Umbrales PROVISIONALES (los del informe) hasta calibrar con npm run calibrate:jev.
+ * Tramo: seguro → ese tramo; dudoso entre vecinos → el tramo y sus vecinos (rango ancho); muy dudoso → se descarta.
  */
 
-export const PLAN_MIN_CONFIDENCE = 0.85;
-export const SPECIFIC_MIN_NOUL = 0.7;
+/** Calibrado el 2026-10-19 (jev-1.13.0, npm run calibrate:plan): los fallos de complejidad no pasaron de 0,66. */
+export const COMPLEXITY_MIN_CONFIDENCE = 0.68;
+/** Calibrado el 2026-10-19: lo genérico no pasó de 0,21; 0,30 deja margen. */
+export const SPECIFIC_MIN_NOUL = 0.3;
+/** PROVISIONALES hasta recalibrar: confianza para el tramo exacto y probabilidad del tramo con sus vecinos. */
+export const BAND_EXACT_CONFIDENCE = 0.85;
+export const BAND_MIN_MASS = 0.85;
 
 /** Tarea generada tal como la juzga Jev: ids del código, textos de GPT. */
 export interface DraftStep {
@@ -36,11 +45,14 @@ export interface DraftTask {
   steps: readonly DraftStep[];
 }
 
+/** Cifras ya convertidas a rangos (siempre estimadas). */
 export interface StepFigures {
-  effort: EffortBand;
-  cost: CostBand;
+  effort: Range;
+  cost: Range;
   /** Solo si lo hace un tercero. */
-  wait?: WaitBand;
+  wait?: Range;
+  /** Algún tramo era dudoso y se amplió a sus vecinos. */
+  widened: boolean;
 }
 
 export interface TaskReview {
@@ -74,7 +86,8 @@ export const COMPLEXITY_QUESTION = {
 
 /** null si Jev no está seguro: complexity.ts la trata como baja. */
 export function readComplexity(answer: JevAnswer | null): Complexity | null {
-  return readChoice(answer, COMPLEXITIES);
+  if (answer?.type !== "choice" || answer.confidence < COMPLEXITY_MIN_CONFIDENCE) return null;
+  return (COMPLEXITIES as readonly string[]).includes(answer.choice) ? (answer.choice as Complexity) : null;
 }
 
 // ---- Después de GPT: especificidad y tramos
@@ -160,15 +173,20 @@ export function readReview(tasks: readonly DraftTask[], answers: Answers): TaskR
     for (const step of task.steps) {
       steps[step.id] = {};
       for (const actor of step.actors) {
-        const effort = readChoice(answers[key("effort", task.id, step.id, actor)] ?? null, EFFORT_BAND_KEYS);
-        const cost = readChoice(answers[key("cost", task.id, step.id, actor)] ?? null, COST_BAND_KEYS);
+        const effort = readBand(answers[key("effort", task.id, step.id, actor)] ?? null, EFFORT_BAND_KEYS, effortOf);
+        const cost = readBand(answers[key("cost", task.id, step.id, actor)] ?? null, COST_BAND_KEYS, costOf);
         const wait =
-          actor === "third_party" ? readChoice(answers[key("wait", task.id, step.id, actor)] ?? null, WAIT_BAND_KEYS) : undefined;
+          actor === "third_party" ? readBand(answers[key("wait", task.id, step.id, actor)] ?? null, WAIT_BAND_KEYS, waitOf) : undefined;
         if (effort === null || cost === null || wait === null) {
           unsure = true;
           continue;
         }
-        steps[step.id][actor] = { effort, cost, ...(wait ? { wait } : {}) };
+        steps[step.id][actor] = {
+          effort: effort.range,
+          cost: cost.range,
+          ...(wait ? { wait: wait.range } : {}),
+          widened: effort.widened || cost.widened || Boolean(wait?.widened),
+        };
       }
     }
     const specific = readNoul(answers[key("specific", task.id)] ?? null, SPECIFIC_MIN_NOUL);
@@ -180,10 +198,30 @@ export function readReview(tasks: readonly DraftTask[], answers: Answers): TaskR
 
 // ---- Lectura estricta
 
-/** Opción válida y con confianza suficiente; si no, null (no se sabe). */
-function readChoice<K extends string>(answer: JevAnswer | null, keys: readonly K[]): K | null {
-  if (answer?.type !== "choice" || answer.confidence < PLAN_MIN_CONFIDENCE) return null;
-  return (keys as readonly string[]).includes(answer.choice) ? (answer.choice as K) : null;
+/** Probabilidad del tramo elegido más la de sus vecinos (null si la opción no es un tramo). */
+export function nearMass(answer: JevAnswer | null, keys: readonly string[]): number | null {
+  if (answer?.type !== "choice") return null;
+  const index = keys.indexOf(answer.choice);
+  if (index < 0) return null;
+  return keys.slice(Math.max(0, index - 1), index + 2).reduce((sum, k) => sum + (answer.probabilities[k] ?? 0), 0);
+}
+
+/** Seguro: su tramo. Dudoso entre vecinos: el tramo y sus vecinos juntos. Muy dudoso o inválido: null. */
+function readBand<K extends string>(
+  answer: JevAnswer | null,
+  keys: readonly K[],
+  rangeOf: (band: K) => Range,
+): { range: Range; widened: boolean } | null {
+  const mass = nearMass(answer, keys);
+  if (answer?.type !== "choice" || mass === null) return null;
+  const index = keys.indexOf(answer.choice as K);
+  if (answer.confidence >= BAND_EXACT_CONFIDENCE) return { range: rangeOf(keys[index]), widened: false };
+  if (mass < BAND_MIN_MASS) return null;
+  const near = keys.slice(Math.max(0, index - 1), index + 2).map(rangeOf);
+  return {
+    range: { min: Math.min(...near.map((r) => r.min)), max: Math.max(...near.map((r) => r.max)) },
+    widened: true,
+  };
 }
 
 function readNoul(answer: JevAnswer | null, min: number) {
