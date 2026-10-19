@@ -18,6 +18,11 @@ async function approvedReport(page: Page, idea = "Una app de facturación") {
   return page.url();
 }
 
+/** Abre todos los desplegables (pasos y "Done (n)") para poder pulsar lo que hay dentro. */
+async function openAllDetails(page: Page) {
+  await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
+}
+
 /** Abre "Adjust" cuando la página ya ha cargado del todo y comprueba que se ve el formulario. */
 async function openAdjust(page: Page) {
   await page.waitForLoadState("networkidle");
@@ -104,21 +109,18 @@ test.describe("plan", () => {
     await createPlanFor(page);
     const now = page.getByRole("region", { name: "Now" });
     await expect(now).toBeVisible();
+    const reopen = page.getByRole("button", { name: "Reopen", includeHidden: true });
+    await expect(reopen).toHaveCount(0);
 
-    const nextStep = now.getByText(/^Next: /).first();
-    const stepText = (await nextStep.textContent())!.replace(/^Next: /, "").trim();
     await now.getByRole("button", { name: "Done" }).first().click();
     await page.waitForLoadState("networkidle");
+    // El paso hecho tiene "Reopen", en su tarea o en "Done (n)" si la tarea terminó.
+    await expect(reopen).toHaveCount(1);
 
-    // El paso aparece hecho en su tarea, con el botón de reabrir.
-    const step = page.getByRole("listitem").filter({ hasText: stepText }).filter({ has: page.getByRole("button", { name: "Reopen" }) });
-    await page.locator("summary", { hasText: "Steps" }).first().click();
-    await expect(step.first()).toBeVisible();
-
-    await step.first().getByRole("button", { name: "Reopen" }).click();
+    await openAllDetails(page);
+    await reopen.first().click();
     await page.waitForLoadState("networkidle");
-    await page.locator("summary", { hasText: "Steps" }).first().click();
-    await expect(page.getByRole("listitem").filter({ hasText: stepText }).getByRole("button", { name: "Done" }).first()).toBeVisible();
+    await expect(reopen).toHaveCount(0);
   });
 
   test("otro usuario no puede ver el plan", async ({ page, browser, request }) => {
