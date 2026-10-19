@@ -14,7 +14,16 @@ export const VALIDATION_MODES = ["per_step", "together"] as const;
 /** catalog: esqueleto del código. ai: sugerida por la IA (se muestra "Sugerida por IA" y se puede quitar). */
 export const TASK_ORIGINS = ["catalog", "ai"] as const;
 /** Hitos que el usuario puede tener ya hechos (pregunta "¿qué tienes ya hecho?"). */
-export const MILESTONES = ["legal_entity", "business_bank_account", "premises", "website", "brand"] as const;
+export const MILESTONES = [
+  "legal_entity",
+  "business_bank_account",
+  "premises",
+  "website",
+  "brand",
+  "suppliers",
+  "licenses",
+  "funding",
+] as const;
 /** Nivel 1 = lo justo; 3 = a fondo / completo. */
 export const LEVELS = [1, 2, 3] as const;
 export type Level = (typeof LEVELS)[number];
