@@ -94,7 +94,8 @@ describe("buildSkeleton: encadenado", () => {
 
     assert.equal(taskOf(plan, "cost").lineId, "risk:money");
     assert.equal(taskOf(plan, "register").lineId, "base:legal");
-    assert.deepEqual(plan.lines.map((l) => l.id), ["risk:money", "base:legal", "base:sales"]);
+    // Las líneas base siguen el orden fijo de DEPARTMENTS (ventas antes que legal).
+    assert.deepEqual(plan.lines.map((l) => l.id), ["risk:money", "base:sales", "base:legal"]);
     assert.equal(plan.lines[0].department, "finance");
     assert.equal(plan.lines[0].goal, "Financiación cubierta");
   });
