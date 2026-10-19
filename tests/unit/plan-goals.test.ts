@@ -85,7 +85,13 @@ describe("meta de lanzamiento", () => {
       known("regulatory_load", "Heavy (health, finance, food)"),
       known("acquisition_channel", "Foot traffic or location"),
     ];
-    assert.deepEqual(launchGoal(facts, 1), ["first_customers", "legal_entity_ready", "premises_ready", "licenses_granted"]);
+    assert.deepEqual(launchGoal(facts, 1), [
+      "first_customers",
+      "legal_entity_ready",
+      "premises_ready",
+      "licenses_granted",
+      "suppliers_chosen",
+    ]);
   });
 
   it("SaaS, nivel 1: clientes, alta, producto y web; sin local", () => {

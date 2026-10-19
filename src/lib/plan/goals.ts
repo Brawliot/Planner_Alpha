@@ -101,6 +101,14 @@ export const LAUNCH_REQUIREMENTS: readonly LaunchRequirement[] = [
       ],
     },
   },
+  {
+    state: "suppliers_chosen",
+    from: 1,
+    when: {
+      key: "offering_type",
+      anyOf: [option("offering_type", "Physical venue"), option("offering_type", "Physical product")],
+    },
+  },
   { state: "bank_account_ready", from: 2 },
   { state: "brand_ready", from: 2 },
   { state: "website_ready", from: 3 },

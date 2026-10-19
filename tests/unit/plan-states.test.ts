@@ -80,6 +80,23 @@ describe("estados del plan", () => {
     assert.deepEqual(result.get("mvp_ready"), { kind: "report", key: "validation_stage" });
   });
 
+  it("si el presupuesto cubre el arranque sin estimaciones, la financiación ya está", () => {
+    const budget: Fact = { key: "budget_eur", value: 20000, source: { origin: "user", quote: "20000" } };
+    const startup: Fact = { key: "startup_cost_eur", value: { min: 12000, max: 16000 }, source: { origin: "user", quote: "x" } };
+    assert.equal(states([budget, startup]).has("funding_covered"), true);
+
+    const guessed: Fact = { ...startup, source: estimated("startup_cost_eur", "x").source };
+    assert.equal(states([budget, guessed]).has("funding_covered"), false);
+  });
+
+  it("lo que precede por fuerza también es verdad", () => {
+    const result = states([], ["premises"]);
+    assert.deepEqual(result.get("premises_signed"), { kind: "milestone", milestone: "premises" });
+    const chain = currentStates({ facts: [], config: config(), achieved: [{ state: "price_tested", taskId: "t" }] });
+    assert.equal(chain.has("demand_tested"), true);
+    assert.equal(chain.has("problem_confirmed"), true);
+  });
+
   it("todo hito tiene estado y todo estado de negocio tiene texto en los dos idiomas", () => {
     for (const milestone of MILESTONES) assert.ok(BUSINESS_STATES.includes(MILESTONE_STATES[milestone]));
     for (const state of BUSINESS_STATES) {

@@ -1,4 +1,5 @@
 import { FIGURE_KEYS, usable } from "../report/areas.ts";
+import { moneyCheck } from "../report/money.ts";
 import type { Fact } from "../report/facts.ts";
 import type { Language } from "../report/narrative.ts";
 import type { QuestionKey } from "../report/questions.ts";
@@ -25,6 +26,7 @@ export const BUSINESS_STATES = [
   "funding_covered",
   "runway_covered",
   "premises_cost_fit",
+  "premises_signed",
   "premises_ready",
   "licenses_identified",
   "licenses_granted",
@@ -33,6 +35,7 @@ export const BUSINESS_STATES = [
   "website_ready",
   "brand_ready",
   "suppliers_chosen",
+  "offer_defined",
   "roles_defined",
   "team_hired",
   "dependency_mitigated",
@@ -61,6 +64,7 @@ export const BUSINESS_STATE_LABELS: Record<BusinessState, Record<Language, strin
   funding_covered: { en: "Funding covered", es: "Financiación cubierta" },
   runway_covered: { en: "Runway covered", es: "Margen hasta ingresar cubierto" },
   premises_cost_fit: { en: "Premises cost fits", es: "Coste del local ajustado" },
+  premises_signed: { en: "Premises signed", es: "Local firmado" },
   premises_ready: { en: "Premises ready", es: "Local listo" },
   licenses_identified: { en: "Licenses identified", es: "Licencias identificadas" },
   licenses_granted: { en: "Licenses granted", es: "Licencias concedidas" },
@@ -69,6 +73,7 @@ export const BUSINESS_STATE_LABELS: Record<BusinessState, Record<Language, strin
   website_ready: { en: "Website ready", es: "Web lista" },
   brand_ready: { en: "Brand ready", es: "Marca lista" },
   suppliers_chosen: { en: "Suppliers chosen", es: "Proveedores elegidos" },
+  offer_defined: { en: "Offer and prices defined", es: "Oferta y precios definidos" },
   roles_defined: { en: "Roles defined", es: "Puestos definidos" },
   team_hired: { en: "Team hired", es: "Equipo contratado" },
   dependency_mitigated: { en: "Dependency mitigated", es: "Dependencia reducida" },
@@ -110,6 +115,15 @@ export const MILESTONE_STATES: Record<(typeof MILESTONES)[number], BusinessState
   funding: "funding_covered",
 };
 
+/** Si es verdad lo primero, también lo segundo: lo que lo precede por fuerza. */
+const IMPLIED: readonly (readonly [BusinessState, BusinessState])[] = [
+  ["premises_ready", "premises_signed"],
+  ["licenses_granted", "licenses_identified"],
+  ["price_tested", "demand_tested"],
+  ["demand_tested", "problem_confirmed"],
+  ["first_customers", "offer_defined"],
+];
+
 export type StateOrigin =
   | { kind: "report"; key: string }
   | { kind: "milestone"; milestone: (typeof MILESTONES)[number] }
@@ -148,7 +162,24 @@ export function currentStates(input: {
     add("differentiator_defined", { kind: "report", key: "differentiator" });
   }
 
+  // El presupuesto cubre el arranque y nada es estimado: la financiación ya está.
+  const money = moneyCheck(input.facts);
+  if (money.coverage === "covers" && !money.estimated && money.budget) {
+    add("funding_covered", { kind: "report", key: money.budget.basis === "stated" ? FIGURE_KEYS.budget : "budget_band" });
+  }
+
   for (const milestone of input.config.done) add(MILESTONE_STATES[milestone], { kind: "milestone", milestone });
   for (const { state, taskId } of input.achieved) add(state, { kind: "plan", taskId });
+
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const [state, implied] of IMPLIED) {
+      const origin = states.get(state);
+      if (origin && !states.has(implied)) {
+        states.set(implied, origin);
+        changed = true;
+      }
+    }
+  }
   return states;
 }
