@@ -18,6 +18,13 @@ async function approvedReport(page: Page) {
   return page.url();
 }
 
+/** Abre "Adjust" cuando la página ya ha cargado del todo y comprueba que se ve el formulario. */
+async function openAdjust(page: Page) {
+  await page.waitForLoadState("networkidle");
+  await page.locator("summary", { hasText: "Adjust" }).click();
+  await expect(page.getByLabel("Hours per week")).toBeVisible();
+}
+
 test.describe("plan", () => {
   test.beforeEach(async ({ page, request }) => {
     const email = uniqueEmail();
@@ -42,13 +49,13 @@ test.describe("plan", () => {
     await page.getByRole("button", { name: "Create my plan" }).click();
     await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
 
-    await page.getByText("Adjust").click();
+    await openAdjust(page);
     await page.getByLabel("Hours per week").selectOption("5-10");
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForLoadState("networkidle");
 
     await page.reload();
-    await page.getByText("Adjust").click();
+    await openAdjust(page);
     await expect(page.getByLabel("Hours per week")).toHaveValue("5-10");
   });
 
@@ -72,8 +79,10 @@ test.describe("plan", () => {
     const email = uniqueEmail();
     await createUser(request, email);
     await login(otherPage, email);
-    const response = await otherPage.goto(`${reportUrl}/plan`);
-    expect(response?.status()).toBe(404);
+    await otherPage.goto(`${reportUrl}/plan`);
+    // Con Suspense el estado HTTP ya salió como 200: se comprueba lo que se ve, como en el informe.
+    await expect(otherPage.getByRole("heading", { name: "Página no encontrada" })).toBeVisible();
+    await expect(otherPage.getByRole("heading", { name: "Your plan" })).toHaveCount(0);
     await other.close();
   });
 });
