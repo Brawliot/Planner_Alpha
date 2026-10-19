@@ -118,6 +118,27 @@ describe("buildSkeleton: encadenado", () => {
     assert.equal(taskOf(plan, "map").lineId, "risk:competition");
   });
 
+  it("abrir es lo último: los primeros clientes esperan a todo lo que pide el lanzamiento", () => {
+    const premises = mold("premises", ["premises_ready"], { department: "operations" });
+    const supply = mold("supply", ["suppliers_chosen"], { department: "operations" });
+    const plan = build([...BASE, premises, supply], { facts: [known("offering_type", "Physical venue")] });
+    assert.deepEqual(plan.issues, []);
+    assert.deepEqual(new Set(taskOf(plan, "sell").dependsOn), new Set(["register", "premises", "supply"]));
+  });
+
+  it("un requisito de otro departamento va a su línea base; del mismo, se queda", () => {
+    const identify = mold("identify", ["licenses_identified"], { department: "legal" });
+    const licenses = mold("licenses", ["licenses_granted"], {
+      department: "legal",
+      needs: ["premises_signed", "legal_entity_ready"],
+    });
+    const sign = mold("sign", ["premises_signed"], { department: "operations" });
+    const plan = build([...BASE, identify, licenses, sign], { verdicts: [red("regulation", "regulation.heavy")] });
+    assert.equal(taskOf(plan, "licenses").lineId, "risk:regulation");
+    assert.equal(taskOf(plan, "register").lineId, "risk:regulation");
+    assert.equal(taskOf(plan, "sign").lineId, "base:operations");
+  });
+
   it("los estimados generan una línea para confirmarlos", () => {
     const research = mold("research", [], { unlocks: "competition", department: "sales" });
     const plan = build([...BASE, research], { facts: [estimated("competition", "Crowded market")] });

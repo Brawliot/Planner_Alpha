@@ -133,6 +133,10 @@ describe("de punta a punta: la cafetería de Ana", () => {
     before("interview_customers", "demand_test");
     before("find_premises", "fit_out");
     before("find_premises", "hospitality_licenses");
+    before("fit_out", "first_customers");
+    before("hospitality_licenses", "first_customers");
+    before("suppliers", "first_customers");
+    assert.ok(task("find_premises").lineId.startsWith("base:operations"), "el local va en Operaciones");
     assert.ok(task("hospitality_licenses").dependsOn.includes("register_business"));
     assert.ok(task("first_customers").dependsOn.includes("offer_pricing"));
   });

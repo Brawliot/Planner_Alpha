@@ -213,7 +213,11 @@ export function buildSkeleton(input: {
     return { mold: [...best].sort((a, b) => effortMax(a) - effortMax(b))[0], tied: best };
   };
 
-  const achieve = (state: StateId, lineId: string | null) => {
+  /**
+   * direct: el estado es objetivo de la línea (la tarea es suya sea del departamento que sea).
+   * Si es un requisito, se queda en la línea solo si es de su mismo departamento; si no, va a su base.
+   */
+  const achieve = (state: StateId, lineId: string | null, direct: boolean) => {
     if (satisfied.has(state) || provider.has(state)) return;
     const candidates = applicable.filter((mold) => moldGets(mold).includes(state));
     if (candidates.length === 0) {
@@ -224,11 +228,14 @@ export function buildSkeleton(input: {
     for (const got of moldGets(mold)) if (!provider.has(got)) provider.set(got, mold.id);
     if (tied) decisions.push({ state, options: tied.map((m) => m.id), chosen: mold.id });
     if (owner.has(mold.id)) return;
-    owner.set(mold.id, lineId);
-    for (const need of mold.needs) achieve(need, lineId);
+    const sameDepartment = lineId !== null && lineDepartment.get(lineId) === mold.department;
+    const assigned = direct || sameDepartment ? lineId : null;
+    owner.set(mold.id, assigned);
+    for (const need of mold.needs) achieve(need, assigned, false);
   };
 
   const reportLines = reportLineSources(facts, input.verdicts);
+  const lineDepartment = new Map(reportLines.map((line) => [line.id, AREA_DEPARTMENT[line.area]]));
   const goals = new Map<string, StateId[]>();
   for (const line of reportLines) {
     const goal = lineGoal(line.source, facts);
@@ -237,10 +244,10 @@ export function buildSkeleton(input: {
       continue;
     }
     goals.set(line.id, goal);
-    for (const state of goal) achieve(state, line.id);
+    for (const state of goal) achieve(state, line.id, true);
   }
   const launch = launchGoal(facts, config.launchLevel);
-  for (const state of launch) achieve(state, null);
+  for (const state of launch) achieve(state, null, true);
 
   const lineOf = (moldId: string) => owner.get(moldId) ?? `base:${byId.get(moldId)!.department}`;
   const decideId = (state: StateId) => `decide:${state}`;
@@ -255,6 +262,13 @@ export function buildSkeleton(input: {
     }
     const decision = decisionOf.get(id);
     if (decision) dependsOn.add(decision);
+    // Abrir es lo último: los primeros clientes esperan a todo lo demás que pide el lanzamiento.
+    if (moldGets(mold).includes("first_customers")) {
+      for (const state of launch) {
+        const from = provider.get(state);
+        if (state !== "first_customers" && !satisfied.has(state) && from && from !== id) dependsOn.add(from);
+      }
+    }
     return buildTask(mold, lineOf(id), [...dependsOn], config, language);
   });
 
