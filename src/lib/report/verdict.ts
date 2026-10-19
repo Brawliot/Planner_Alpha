@@ -201,7 +201,13 @@ export function areaVerdicts(facts: readonly Fact[]): AreaVerdict[] {
       reason: decision.reason,
       missing,
       // El presupuesto exacto es opcional si se sabe el tramo: no queda "por concretar".
-      gaps: view.missing.filter((key) => key !== FIGURE_KEYS.budget && !missing.includes(key)),
+      gaps: view.missing.filter(
+        (key) =>
+          key !== FIGURE_KEYS.budget &&
+          // Con la cifra exacta, el tramo ya no falta.
+          !(key === "budget_band" && usable(facts, FIGURE_KEYS.budget) !== null) &&
+          !missing.includes(key),
+      ),
       estimated: view.estimated || (view.area === "money" && moneyCheck(facts).estimated),
     };
   });

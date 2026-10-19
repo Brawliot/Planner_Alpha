@@ -66,6 +66,13 @@ describe("Money", () => {
     assert.ok(v.gaps.includes("monthly_fixed_costs_eur"));
     assert.equal(v.gaps.includes("budget_eur"), false, "el exacto es opcional");
   });
+
+  it("con la cifra exacta, el tramo de presupuesto no queda por concretar", () => {
+    const v = verdictOf("money", [budget(10000), range("startup_cost_eur", 20000, 30000)]);
+    assert.equal(v.gaps.includes("budget_band"), false);
+    const onlyBand = verdictOf("money", [known("budget_band", "€20k-€50k"), range("startup_cost_eur", 20000, 30000)]);
+    assert.equal(onlyBand.gaps.includes("budget_band"), false);
+  });
 });
 
 describe("Validation", () => {
