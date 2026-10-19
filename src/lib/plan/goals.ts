@@ -76,6 +76,8 @@ interface LaunchRequirement {
 export const LAUNCH_REQUIREMENTS: readonly LaunchRequirement[] = [
   { state: "first_customers", from: 1 },
   { state: "legal_entity_ready", from: 1 },
+  // Para cobrar hay que poder facturar.
+  { state: "accounting_ready", from: 1 },
   { state: "premises_ready", from: 1, when: { key: "offering_type", anyOf: [option("offering_type", "Physical venue")] } },
   {
     state: "mvp_ready",

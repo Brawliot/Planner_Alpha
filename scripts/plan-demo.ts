@@ -118,7 +118,13 @@ console.log(
 console.log(
   `Fin estimado: semana ${range(endWeeks, "")}(${addDays(config.startDate, plan.timeline.end.min)} – ${addDays(config.startDate, plan.timeline.end.max)})`,
 );
-if (config.deadline) console.log(`Fecha límite ${config.deadline}: ${plan.deadline}`);
+if (plan.opening) {
+  const weeks = { min: Math.ceil(plan.opening.min / 7), max: Math.ceil(plan.opening.max / 7) };
+  console.log(
+    `Abres: semana ${range(weeks, "")}(${addDays(config.startDate, plan.opening.min)} – ${addDays(config.startDate, plan.opening.max)})`,
+  );
+}
+if (config.deadline) console.log(`Fecha límite ${config.deadline} (comparada con la apertura): ${plan.deadline}`);
 const money = plan.money;
 console.log(
   `Coste del plan: ${range(money.cost, "€")}` +

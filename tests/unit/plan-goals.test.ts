@@ -96,6 +96,7 @@ describe("meta de lanzamiento", () => {
     assert.deepEqual(launchGoal(facts, 1), [
       "first_customers",
       "legal_entity_ready",
+      "accounting_ready",
       "premises_ready",
       "licenses_granted",
       "suppliers_chosen",
@@ -104,7 +105,13 @@ describe("meta de lanzamiento", () => {
 
   it("SaaS, nivel 1: clientes, alta, producto y web; sin local", () => {
     const facts = [known("offering_type", "Software"), known("acquisition_channel", "Online self-service")];
-    assert.deepEqual(launchGoal(facts, 1), ["first_customers", "legal_entity_ready", "mvp_ready", "website_ready"]);
+    assert.deepEqual(launchGoal(facts, 1), [
+      "first_customers",
+      "legal_entity_ready",
+      "accounting_ready",
+      "mvp_ready",
+      "website_ready",
+    ]);
   });
 
   it("los niveles suben lo que se pide, sin repetir la web", () => {
@@ -112,6 +119,7 @@ describe("meta de lanzamiento", () => {
     assert.deepEqual(launchGoal(facts, 2), [
       "first_customers",
       "legal_entity_ready",
+      "accounting_ready",
       "website_ready",
       "bank_account_ready",
       "brand_ready",

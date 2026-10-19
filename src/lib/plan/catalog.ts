@@ -535,6 +535,38 @@ export const MOLDS: readonly Mold[] = [
     ],
   },
   {
+    id: "accounting",
+    department: "finance",
+    phase: "prepare",
+    kind: "action",
+    title: t("Organise your invoicing and taxes", "Organiza tu facturación y tus impuestos"),
+    outcome: t("You can invoice and you know your tax dates", "Puedes facturar y conoces tus plazos de impuestos"),
+    needs: ["legal_entity_ready"],
+    gets: ["accounting_ready"],
+    steps: [
+      s(
+        "who",
+        t("Choose who keeps your accounts: an advisor or an app", "Elige quién lleva tus cuentas: una gestoría o un programa"),
+        t("You have chosen", "Has elegido"),
+        { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "comparison_table" } },
+      ),
+      s(
+        "invoice",
+        t("Set up your invoices", "Prepara tus facturas"),
+        t("You can issue a correct invoice", "Puedes emitir una factura correcta"),
+        { user: { effort: "1_4h" }, third_party: { effort: "under_1h", wait: "under_1w", cost: "under_100", thirdParty: "advisor" } },
+        { dependsOn: ["who"] },
+      ),
+      s(
+        "dates",
+        t("Put your quarterly tax dates in your calendar", "Apunta en tu calendario las fechas de tus declaraciones trimestrales"),
+        t("The dates are in your calendar", "Las fechas están en tu calendario"),
+        { user: { effort: "under_1h" } },
+        { dependsOn: ["who"] },
+      ),
+    ],
+  },
+  {
     id: "find_premises",
     department: "operations",
     phase: "prepare",

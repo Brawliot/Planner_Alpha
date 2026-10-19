@@ -4,7 +4,7 @@ import { buildSkeleton, type Decision } from "./engine.ts";
 import type { PlanInput } from "./input.ts";
 import { lineIssues, type Line } from "./line.ts";
 import { mergeTasks } from "./merge.ts";
-import type { Mold } from "./mold.ts";
+import { moldGets, type Mold } from "./mold.ts";
 import { isTaskResolved, taskTotals, type Range, type Task } from "./task.ts";
 import { buildTimeline, deadlineStatus, type DeadlineStatus, type Timeline } from "./timeline.ts";
 
@@ -30,7 +30,9 @@ export interface PlanState {
   tasks: Task[];
   decisions: Decision[];
   timeline: Timeline;
-  /** null si no hay fecha límite. */
+  /** Días hasta abrir (rápido y lento): fin de la tarea de primeros clientes; null si ya no está pendiente. */
+  opening: Range | null;
+  /** Se compara con el día que abres, no con el fin del plan. null si no hay fecha límite. */
   deadline: DeadlineStatus | null;
   money: {
     /** Coste de ejecución del plan (profesionales, tasas…), siempre estimado. */
@@ -107,12 +109,19 @@ export function rebuildPlan(input: {
     unavailable: config.unavailable,
   });
 
+  // Abrir = terminar la tarea que consigue los primeros clientes (lo que pasa a Operar va después).
+  const openingIds = new Set(input.catalog.filter((mold) => moldGets(mold).includes("first_customers")).map((m) => m.id));
+  const opening = timeline.tasks.find((schedule) => openingIds.has(schedule.taskId))?.end ?? null;
+
   return {
     lines,
     tasks,
     decisions: skeleton.decisions,
     timeline,
-    deadline: config.deadline ? deadlineStatus(timeline, config.startDate, config.deadline) : null,
+    opening,
+    deadline: config.deadline
+      ? deadlineStatus({ ...timeline, end: opening ?? timeline.end }, config.startDate, config.deadline)
+      : null,
     money: moneyOf(report, tasks),
     reportChanged: input.stored !== null && input.stored.fingerprint !== report.fingerprint,
     fingerprint: report.fingerprint,

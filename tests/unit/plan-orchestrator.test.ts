@@ -43,7 +43,8 @@ const register = mold("register", ["legal_entity_ready"], {
 const sell = mold("sell", ["first_customers"], { department: "sales", needs: ["legal_entity_ready"] });
 const cost = mold("cost", [], { department: "finance", unlocks: ["startup_cost_eur"] });
 const loan = mold("loan", ["funding_covered"], { department: "finance", needs: ["fact:startup_cost_eur"] });
-const CATALOG = [register, sell, cost, loan];
+const accounting = mold("accounting", ["accounting_ready"], { department: "legal" });
+const CATALOG = [register, accounting, sell, cost, loan];
 
 const shortMoney: AreaVerdict = { area: "money", verdict: "risk", reason: "money.short", missing: [], gaps: [], estimated: false };
 const config = (changes: Partial<PlanConfig> = {}): PlanConfig => ({
@@ -72,8 +73,8 @@ const finish = (task: Task): Task => ({ ...task, steps: task.steps.map((s) => ({
 describe("rebuildPlan", () => {
   it("primer cálculo: plan completo, con fechas y sin problemas", () => {
     const plan = rebuild();
-    assert.deepEqual(new Set(plan.tasks.map((t) => t.id)), new Set(["cost", "loan", "register", "sell"]));
-    assert.equal(plan.timeline.tasks.length, 4);
+    assert.deepEqual(new Set(plan.tasks.map((t) => t.id)), new Set(["cost", "loan", "register", "accounting", "sell"]));
+    assert.equal(plan.timeline.tasks.length, 5);
     assert.equal(plan.reportChanged, false);
     assert.deepEqual(plan.issues, []);
   });
@@ -100,7 +101,9 @@ describe("rebuildPlan", () => {
   });
 
   it("fecha límite: sin ella no hay aviso; con una lejana, a tiempo", () => {
-    assert.equal(rebuild().deadline, null);
+    const plan = rebuild();
+    assert.deepEqual(plan.opening, plan.timeline.tasks.find((t) => t.taskId === "sell")!.end);
+    assert.equal(plan.deadline, null);
     assert.equal(rebuild({ config: config({ deadline: "2027-12-31" }) }).deadline, "on_track");
   });
 });

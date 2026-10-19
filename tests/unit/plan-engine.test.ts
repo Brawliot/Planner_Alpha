@@ -67,7 +67,9 @@ const cut = mold("cut", ["funding_covered"], {
   steps: [step("s", { options: { user: { effort: "1_3d" } } })],
   fit: [{ when: { employed: true }, reason: text("keeps job") }],
 });
-const BASE = [register, sell];
+// En el catálogo real la facturación es de Finanzas; aquí Legal, para no cambiar las líneas esperadas.
+const accounting = mold("accounting", ["accounting_ready"], { department: "legal" });
+const BASE = [register, accounting, sell];
 
 const build = (catalog: Mold[], options: { facts?: Fact[]; verdicts?: AreaVerdict[]; config?: PlanConfig } = {}) =>
   buildSkeleton({
@@ -86,9 +88,9 @@ describe("buildSkeleton: encadenado", () => {
   it("de un rojo y la meta de lanzamiento a tareas ordenadas con sus dependencias", () => {
     const plan = build([...BASE, cost, loan], { verdicts: [red("money", "money.short")] });
     assert.deepEqual(plan.issues, []);
-    assert.deepEqual(new Set(ids(plan)), new Set(["cost", "loan", "register", "sell"]));
+    assert.deepEqual(new Set(ids(plan)), new Set(["cost", "loan", "register", "accounting", "sell"]));
     assert.deepEqual(taskOf(plan, "loan").dependsOn, ["cost"]);
-    assert.deepEqual(taskOf(plan, "sell").dependsOn, ["register"]);
+    assert.deepEqual(new Set(taskOf(plan, "sell").dependsOn), new Set(["register", "accounting"]));
     assert.ok(ids(plan).indexOf("cost") < ids(plan).indexOf("loan"));
     assert.ok(ids(plan).indexOf("register") < ids(plan).indexOf("sell"));
 
@@ -102,9 +104,9 @@ describe("buildSkeleton: encadenado", () => {
 
   it("lo que ya es verdad no genera tareas ni dependencias", () => {
     const plan = build(BASE, { config: config({ done: ["legal_entity"] }) });
-    assert.deepEqual(ids(plan), ["sell"]);
-    assert.deepEqual(taskOf(plan, "sell").dependsOn, []);
-    assert.deepEqual(plan.lines.map((l) => l.id), ["base:sales"]);
+    assert.deepEqual(ids(plan), ["accounting", "sell"]);
+    assert.deepEqual(taskOf(plan, "sell").dependsOn, ["accounting"]);
+    assert.deepEqual(plan.lines.map((l) => l.id), ["base:sales", "base:legal"]);
   });
 
   it("un molde que piden dos líneas entra una vez, en la más prioritaria", () => {
@@ -123,7 +125,7 @@ describe("buildSkeleton: encadenado", () => {
     const supply = mold("supply", ["suppliers_chosen"], { department: "operations" });
     const plan = build([...BASE, premises, supply], { facts: [known("offering_type", "Physical venue")] });
     assert.deepEqual(plan.issues, []);
-    assert.deepEqual(new Set(taskOf(plan, "sell").dependsOn), new Set(["register", "premises", "supply"]));
+    assert.deepEqual(new Set(taskOf(plan, "sell").dependsOn), new Set(["register", "accounting", "premises", "supply"]));
   });
 
   it("un requisito de otro departamento va a su línea base; del mismo, se queda", () => {
