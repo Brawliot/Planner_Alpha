@@ -142,11 +142,6 @@ export function moldIssues(mold: Mold): string[] {
     const actors = actorsOf(step);
     if (actors.length === 0) at(`step ${step.id} has no actor`);
     if (!actors.includes(step.suggestedActor)) at(`step ${step.id} suggests an actor without figures`);
-    // Un paso de un nivel no puede depender de otro de nivel superior: se quedaría sin él.
-    for (const id of step.dependsOn ?? []) {
-      const dependency = mold.steps.find((s) => s.id === id);
-      if (dependency && (dependency.level ?? 1) > (step.level ?? 1)) at(`step ${step.id} depends on a higher level`);
-    }
   }
   return issues;
 }

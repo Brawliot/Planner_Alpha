@@ -144,7 +144,6 @@ describe("moldIssues", () => {
       "step dependency cycle",
       "step c suggests an actor without figures",
       "step d has no actor",
-      "step a depends on a higher level",
     ]) {
       assert.ok(issues.includes(`website: ${expected}`), `falta: ${expected}`);
     }
