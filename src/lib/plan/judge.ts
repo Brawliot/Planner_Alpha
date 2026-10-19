@@ -49,8 +49,14 @@ export function specificityQuestions(tasks: readonly DraftTask[]): Record<string
 
 // ---- Calidad de las preguntas previas
 
-/** PROVISIONAL hasta calibrar con npm run calibrate:plan. */
-export const QUESTION_MIN_NOUL = 0.5;
+/**
+ * Calibrado el 2026-10-19 (jev-1.13.0): las buenas puntúan 0,56-0,86; las malas, 0,16-0,70, salvo
+ * una que decide otra tarea pendiente ("¿cocinarás o solo bebidas?", 0,82-0,87). Ningún umbral llega
+ * al 100 %: con 0,72 se filtran todas las demás y pasan ~11 de 16 buenas (acierto ~85 %).
+ * Hueco aceptado: Jev no siempre ve que otra tarea decidirá la respuesta. Daño bajo: una pregunta
+ * no mete nada en el plan y siempre se puede contestar "Aún no lo sé". La instrucción de GPT lo refuerza.
+ */
+export const QUESTION_MIN_NOUL = 0.72;
 
 /** Lo que Jev ve para juzgar preguntas: las propuestas, las tareas pendientes y lo ya respondido. */
 export interface QuestionTarget {
