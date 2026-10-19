@@ -37,7 +37,7 @@ export interface ReportTexts {
   continueAnyway: string;
   approved: string;
   reopen: string;
-  contradictionsTitle: string;
+  plan: string; contradictionsTitle: string;
   contradiction: Record<ContradictionId, string>;
   includesEstimate: string;
   approveError: Record<"stale" | "contradictions" | "failed", string>;
@@ -107,7 +107,8 @@ const ES: ReportTexts = {
   },
   continueAnyway: "Continuar igualmente",
   approved: "Aprobado · listo para planificar",
-  reopen: "Reabrir",
+    reopen: "Reabrir",
+  plan: "Mi plan",
   contradictionsTitle: "Hay datos que se contradicen",
   contradiction: {
     online_with_premises: "El negocio es solo online, pero tiene local o alquiler.",
@@ -216,7 +217,8 @@ const EN: ReportTexts = {
   },
   continueAnyway: "Continue anyway",
   approved: "Approved · ready to plan",
-  reopen: "Reopen",
+    reopen: "Reopen",
+  plan: "My plan",
   contradictionsTitle: "Some data contradict each other",
   contradiction: {
     online_with_premises: "The business is online only, but it has premises or rent.",

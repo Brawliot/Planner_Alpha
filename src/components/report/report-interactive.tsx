@@ -199,11 +199,16 @@ function Footer({
         {startOver}
 
         {view.approved ? (
-          <form action={reopenAction}>
-            <Button type="submit" variant="secondary" disabled={reopening} className="min-h-11 w-full">
-              {t.reopen}
-            </Button>
-          </form>
+          <>
+            <form action={reopenAction}>
+              <Button type="submit" variant="secondary" disabled={reopening} className="min-h-11 w-full">
+                {t.reopen}
+              </Button>
+            </form>
+            <Link href={`/informe/${reportId}/plan`} className={buttonStyles("primary", "min-h-11")}>
+              {t.plan}
+            </Link>
+          </>
         ) : (
           <>
             <Link href={`/informe/${reportId}/editar`} className={buttonStyles("secondary", "min-h-11")}>
