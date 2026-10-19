@@ -47,6 +47,42 @@ export function specificityQuestions(tasks: readonly DraftTask[]): Record<string
   );
 }
 
+// ---- Calidad de las preguntas previas
+
+/** PROVISIONAL hasta calibrar con npm run calibrate:plan. */
+export const QUESTION_MIN_NOUL = 0.5;
+
+/** Lo que Jev ve para juzgar preguntas: las propuestas, las tareas pendientes y lo ya respondido. */
+export interface QuestionTarget {
+  questions: readonly { id: string; text: string; options: readonly string[] }[];
+  other_tasks: readonly string[];
+  previous_answers: readonly { question: string; answer: string }[];
+}
+
+const questionKey = (id: string) => `question.${id}`;
+
+/** Una pregunta por propuesta (en target.questions). */
+export function questionQualityQuestions(questions: readonly { id: string }[]): Record<string, JevQuestion> {
+  return Object.fromEntries(
+    questions.map((q) => [
+      questionKey(q.id),
+      {
+        type: "noul",
+        instructions:
+          `Is question ${q.id} in target.questions a good question to ask this user before planning? ` +
+          "Good means: it asks something the user already knows or prefers, the answer would change the tasks, " +
+          "and it is not already answered in the state or in target.previous_answers, nor decided by a task in " +
+          "target.other_tasks.",
+      } satisfies JevQuestion,
+    ]),
+  );
+}
+
+export function isGoodQuestion(id: string, answers: Record<string, JevAnswer | null>) {
+  const answer = answers[questionKey(id)] ?? null;
+  return answer?.type === "noul" && answer.noul >= QUESTION_MIN_NOUL;
+}
+
 /** Específica solo con respuesta válida y por encima del umbral; si no, se trata como genérica. */
 export function isSpecific(taskId: string, answers: Record<string, JevAnswer | null>) {
   const answer = answers[key(taskId)] ?? null;
