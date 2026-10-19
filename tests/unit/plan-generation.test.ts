@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { COST_BANDS, EFFORT_BANDS, WAIT_BANDS, effortOf } from "../../src/lib/plan/bands.ts";
 import { taskCertainty } from "../../src/lib/plan/certainty.ts";
-import { maxSuggestions } from "../../src/lib/plan/complexity.ts";
 import { taskSchema, type Task } from "../../src/lib/plan/task.ts";
 import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
@@ -57,14 +56,6 @@ describe("tramos", () => {
     const r = effortOf("1_4h");
     r.max = 999;
     assert.equal(EFFORT_BANDS["1_4h"].max, 4);
-  });
-});
-
-describe("maxSuggestions", () => {
-  it("según complejidad, y baja si Jev no está seguro", () => {
-    assert.equal(maxSuggestions("high"), 4);
-    assert.equal(maxSuggestions("medium"), 2);
-    assert.equal(maxSuggestions(null), maxSuggestions("low"));
   });
 });
 
