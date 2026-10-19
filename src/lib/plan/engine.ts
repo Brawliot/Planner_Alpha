@@ -143,6 +143,7 @@ function buildTask(mold: Mold, lineId: string, dependsOn: string[], config: Plan
     basis: [...new Set((mold.when?.facts ?? []).map((condition) => condition.key))],
     validation: "per_step",
     origin: "catalog",
+    mold: mold.id,
     steps: stepsAt(mold, config).map((step, index) => buildStep(step, index, config, language)),
     ...(mold.unlocks && mold.unlocks.length > 0 ? { unlocks: [...mold.unlocks] } : {}),
     ...(mold.validationLevel ? { validationLevel: mold.validationLevel } : {}),

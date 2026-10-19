@@ -3,6 +3,7 @@ import type { PlanConfig } from "./config.ts";
 import { buildSkeleton, type Decision } from "./engine.ts";
 import type { PlanInput } from "./input.ts";
 import { lineIssues, type Line } from "./line.ts";
+import { applyConcretions } from "./concretion.ts";
 import { mergeTasks } from "./merge.ts";
 import { moldGets, type Mold } from "./mold.ts";
 import { isTaskResolved, taskTotals, type Range, type Task } from "./task.ts";
@@ -88,10 +89,13 @@ export function rebuildPlan(input: {
   // Lo terminado se queda como está aunque el decisor ya no lo pida (su dato ya es verdad gracias a ello).
   const finished = stored.tasks.filter(isFinished);
   const finishedIds = new Set(finished.map((task) => task.id));
+  const dismissed = new Set(stored.dismissed);
+  // Las generadas por la IA ocupan el sitio de su molde antes de mezclar.
+  const fresh = applyConcretions(skeleton.tasks, stored.tasks, dismissed);
   const merged = mergeTasks(
     stored.tasks.filter((task) => !finishedIds.has(task.id)),
-    skeleton.tasks.filter((task) => !finishedIds.has(task.id)),
-    new Set(stored.dismissed),
+    fresh.filter((task) => !finishedIds.has(task.id)),
+    dismissed,
   );
   const tasks = [...finished, ...merged];
 

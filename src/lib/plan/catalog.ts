@@ -573,7 +573,7 @@ export const MOLDS: readonly Mold[] = [
     kind: "action",
     title: t("Find and sign your premises", "Busca y firma tu local"),
     outcome: t("A signed premises that allows your activity", "Un local firmado que admite tu actividad"),
-    needs: ["funding_covered", "premises_cost_fit"],
+    needs: ["funding_covered", "premises_cost_fit", "offer_defined"],
     gets: ["premises_signed"],
     steps: [
       s(

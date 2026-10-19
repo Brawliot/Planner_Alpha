@@ -77,9 +77,18 @@ describe("mergeTasks", () => {
     assert.equal(merged[0].steps[0].status, "done");
   });
 
-  it("las sugeridas por IA se conservan mientras su línea exista", () => {
-    const current = [task("ai1", { origin: "ai" }), task("ai2", { origin: "ai", lineId: "gone" })];
-    assert.deepEqual(ids(mergeTasks(current, [task("x")], NONE)), ["x", "ai1"]);
+  it("las sugeridas por IA siguen la regla de todas: fuera del plan, se quitan o se archivan", () => {
+    const current = [task("ai1", { origin: "ai" }), task("ai2", { origin: "ai" }, { status: "done" })];
+    assert.deepEqual(ids(mergeTasks(current, [task("x")], NONE)), ["x", "ai2(archived)"]);
+  });
+
+  it("lo protegido conserva lo suyo, pero su sitio en el plan lo decide el código", () => {
+    const current = [task("a", { title: "mío", lineId: "old", dependsOn: ["gone"] }, { status: "done" })];
+    const [merged] = mergeTasks(current, [task("a", { title: "nuevo", lineId: "line", dependsOn: ["b"] })], NONE);
+    assert.equal(merged.title, "mío");
+    assert.equal(merged.steps[0].status, "done");
+    assert.equal(merged.lineId, "line");
+    assert.deepEqual(merged.dependsOn, ["b"]);
   });
 
   it("lo descartado no vuelve", () => {

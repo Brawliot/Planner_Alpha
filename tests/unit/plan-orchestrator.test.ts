@@ -132,3 +132,35 @@ describe("aviso de dinero", () => {
     assert.deepEqual(money.cost, { min: 500, max: 2000 });
   });
 });
+
+
+describe("tareas generadas por la IA", () => {
+  const generated = (plan: ReturnType<typeof rebuild>, id: string, dependsOn: string[] = []): Task => ({
+    ...plan.tasks.find((t) => t.id === "register")!,
+    id,
+    title: id,
+    origin: "ai",
+    mold: "register",
+    dependsOn,
+  });
+
+  it("sustituyen al molde y quien lo esperaba las espera a todas", () => {
+    const first = rebuild();
+    const tasks = [...first.tasks, generated(first, "register-1"), generated(first, "register-2", ["register-1"])];
+    const plan = rebuild({ stored: store(first, tasks) });
+    const ids = plan.tasks.map((t) => t.id);
+    assert.ok(!ids.includes("register"));
+    assert.ok(ids.includes("register-1") && ids.includes("register-2"));
+    const sell = plan.tasks.find((t) => t.id === "sell")!;
+    assert.ok(sell.dependsOn.includes("register-1") && sell.dependsOn.includes("register-2"));
+    assert.deepEqual(plan.issues, []);
+  });
+
+  it("si las quitas todas, vuelve el molde", () => {
+    const first = rebuild();
+    const stored = { ...store(first, [...first.tasks, generated(first, "register-1")]), dismissed: ["register-1"] };
+    const plan = rebuild({ stored });
+    assert.ok(plan.tasks.some((t) => t.id === "register"));
+    assert.ok(!plan.tasks.some((t) => t.id === "register-1"));
+  });
+});
