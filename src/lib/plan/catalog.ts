@@ -67,7 +67,7 @@ export const MOLDS: readonly Mold[] = [
     steps: [
       s(
         "format",
-        t("Choose a test: pre-sale, pop-up or booking page", "Elige una prueba: preventa, puesto temporal o página de reservas"),
+        t("Choose a test: pre-sale, pilot or booking page", "Elige una prueba: preventa, prueba piloto o página de reservas"),
         t("You have chosen the test and its goal", "Has elegido la prueba y su objetivo"),
         { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "comparison_table" } },
       ),
@@ -185,8 +185,8 @@ export const MOLDS: readonly Mold[] = [
     department: "legal",
     phase: "validate",
     kind: "research",
-    title: t("Find out which licences you need", "Averigua qué licencias necesitas"),
-    outcome: t("A list of licences with their deadlines", "Una lista de licencias con sus plazos"),
+    title: t("Find out your legal requirements", "Averigua qué requisitos legales tienes"),
+    outcome: t("A list of licences, permits and obligations with their deadlines", "Una lista de licencias, permisos y obligaciones con sus plazos"),
     needs: [],
     gets: ["licenses_identified"],
     steps: [
@@ -395,21 +395,21 @@ export const MOLDS: readonly Mold[] = [
     department: "legal",
     phase: "prepare",
     kind: "action",
-    title: t("Apply for your licences", "Pide las licencias de tu actividad"),
-    outcome: t("All licences granted", "Todas las licencias concedidas"),
+    title: t("Meet the legal requirements of your activity", "Cumple los requisitos legales de tu actividad"),
+    outcome: t("Licences, permits and data protection in order", "Licencias, permisos y protección de datos en regla"),
     needs: ["licenses_identified", "legal_entity_ready"],
     gets: ["licenses_granted"],
     steps: [
       s(
         "documents",
-        t("Gather the documents for each licence", "Reúne los documentos de cada licencia"),
+        t("Gather what each requirement asks for", "Reúne lo que pide cada requisito"),
         t("You have every document", "Tienes todos los documentos"),
         { user: { effort: "4_8h" }, ai: { effort: "under_1h", capability: "checklist" } },
       ),
       s(
         "submit",
         t("Submit the applications", "Presenta las solicitudes"),
-        t("Every licence is granted", "Todas las licencias están concedidas"),
+        t("Every requirement is met", "Todos los requisitos están cumplidos"),
         {
           user: { effort: "1_4h", cost: "under_100" },
           third_party: { effort: "1_4h", wait: "1_3m", cost: "100_500", thirdParty: "advisor" },

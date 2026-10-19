@@ -329,6 +329,7 @@ export function buildSkeleton(input: {
     lines,
     tasks: ordered(tasks, key),
     decisions: decisions.map((d) => ({ ...d, taskId: decideId(d.state) })),
-    issues,
+    // Dos líneas pueden pedir lo mismo: cada problema una sola vez.
+    issues: [...new Set(issues)],
   };
 }

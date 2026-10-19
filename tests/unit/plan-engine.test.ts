@@ -216,6 +216,19 @@ describe("buildSkeleton: tareas y problemas", () => {
     assert.deepEqual(plan.tasks, []);
   });
 
+  it("un problema que piden dos líneas aparece una sola vez", () => {
+    const gap = (area: AreaVerdict["area"]): AreaVerdict => ({
+      area,
+      verdict: "strong",
+      reason: `${area}.strong`,
+      missing: [],
+      gaps: ["geographic_scope"],
+      estimated: false,
+    });
+    const plan = build(BASE, { verdicts: [gap("market"), gap("location")] });
+    assert.equal(plan.issues.filter((issue) => issue === "unreachable fact:geographic_scope").length, 1);
+  });
+
   it("un rojo sin objetivo aparece en issues", () => {
     const plan = build(BASE, { verdicts: [red("concept", "concept.invented")] });
     assert.ok(plan.issues.includes("no goal for risk:concept"));
