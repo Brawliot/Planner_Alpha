@@ -1,19 +1,25 @@
 import type { GptRequest } from "../gpt.ts";
 import type { JevAnswer, JevQuestions, JevState } from "../jev.ts";
 import { usable } from "../report/areas.ts";
-import type { Fact } from "../report/facts.ts";
+import { isQuoteOf, type Fact } from "../report/facts.ts";
 import type { Language } from "../report/narrative.ts";
-import { answersFromReplies, type DraftQuestion, type Reply } from "./answers.ts";
-import { canGenerate } from "./concretion.ts";
+import { answersFromReplies, type DraftQuestion, type PlanAnswer, type Reply } from "./answers.ts";
+import { canGenerate, canRegenerate } from "./concretion.ts";
 import {
   CONCRETION_INSTRUCTIONS,
+  DEPARTMENT_QUESTIONS_INSTRUCTIONS,
+  QUESTIONS_FORMAT,
   concretionFormat,
   concretionInput,
   concretionParser,
+  departmentQuestionsInput,
+  questionsParser,
   readGeneration,
+  reviewQuestions,
   type ConcretionContext,
 } from "./concretion-gpt.ts";
 import type { PlanConfig } from "./config.ts";
+import type { Department } from "./line.ts";
 import { isGoodQuestion, isSpecific, judgeState, questionQualityQuestions, specificityQuestions } from "./judge.ts";
 import { isTaskProtected } from "./merge.ts";
 import type { Mold } from "./mold.ts";
@@ -42,6 +48,8 @@ export interface GenerateInput {
   /** El plan recalculado ahora (rebuildPlan). */
   plan: PlanState;
   taskId: string;
+  /** false en "Generar departamento": ya se preguntó para todo el departamento. */
+  allowQuestions?: boolean;
 }
 
 export type GenerateOutcome =
@@ -67,13 +75,14 @@ export async function generateTask(deps: GenerateDeps, input: GenerateInput): Pr
   const { plan } = input;
   const moldTask = plan.tasks.find((t) => t.id === input.taskId);
   const mold = moldTask && input.catalog.find((m) => m.id === moldTask.mold);
-  if (!moldTask || !mold || !canGenerate(moldTask)) return { status: "not_allowed" };
+  if (!moldTask || !mold || !(canGenerate(moldTask) || canRegenerate(moldTask))) return { status: "not_allowed" };
+  const allowQuestions = input.allowQuestions ?? true;
 
   // 33A: las preguntas pendientes se vuelven a mostrar sin llamar a nadie.
   const pending = plan.pendingQuestions.filter((q) => q.mold === mold.id);
-  if (pending.length > 0) return { status: "questions", mold: mold.id, questions: pending };
+  if (allowQuestions && pending.length > 0) return { status: "questions", mold: mold.id, questions: pending };
 
-  const otherTasks = plan.tasks.filter((t) => t.id !== moldTask.id && t.archived === undefined).map((t) => t.title);
+  const otherTasks = plan.tasks.filter((t) => t.mold !== mold.id && t.archived === undefined).map((t) => t.title);
   const base: Omit<ConcretionContext, "mayAsk"> = {
     idea: input.idea,
     facts: input.facts,
@@ -86,7 +95,7 @@ export async function generateTask(deps: GenerateDeps, input: GenerateInput): Pr
     answers: plan.answers,
   };
   // 31A: si ya se preguntó por este molde, no se vuelve a preguntar.
-  let mayAsk = !plan.answers.some((a) => a.mold === mold.id);
+  let mayAsk = allowQuestions && !plan.answers.some((a) => a.mold === mold.id);
   let reason = "unknown";
 
   try {
@@ -181,4 +190,87 @@ export function answerPending(
     answers: [...(stored.answers ?? []), ...answers],
     pendingQuestions: (stored.pendingQuestions ?? []).filter((q) => q.mold !== mold),
   };
+}
+
+
+/** Tareas generadas que se apoyan en algo que ha cambiado, y si se pueden regenerar (no empezadas). */
+export function outdatedGenerated(
+  tasks: readonly Task[],
+  facts: readonly Fact[],
+  idea: string,
+  answers: readonly PlanAnswer[],
+): { taskId: string; canRegenerate: boolean }[] {
+  const texts = [idea, ...answers.flatMap((a) => (a.answer === null ? [] : [a.answer]))];
+  return tasks
+    .filter((task) => task.origin === "ai" && task.archived === undefined)
+    .filter((task) => {
+      const values = task.citedValues ?? {};
+      const factChanged = task.basis.some((key) => {
+        const now = usable(facts, key);
+        return now === null || JSON.stringify(now.value) !== JSON.stringify(values[key]);
+      });
+      const quoteGone = (task.quotes ?? []).some((quote) => !isQuoteOf(quote, texts));
+      return factChanged || quoteGone;
+    })
+    .map((task) => ({ taskId: task.id, canRegenerate: canRegenerate(task) }));
+}
+
+export type DepartmentOutcome =
+  | { status: "questions"; mold: string; questions: DraftQuestion[] }
+  | { status: "done"; results: { taskId: string; outcome: GenerateOutcome }[] }
+  | { status: "unavailable" };
+
+/**
+ * "Generar" de un departamento: una ronda de como mucho 3 preguntas para todo el departamento
+ * (una vez) y después cada tarea sin tocar, sin más preguntas. Si GPT o Jev caen, para ahí.
+ */
+export async function generateDepartment(
+  deps: GenerateDeps,
+  input: Omit<GenerateInput, "taskId" | "allowQuestions"> & { department: Department },
+): Promise<DepartmentOutcome> {
+  const { plan } = input;
+  const key = `dept:${input.department}`;
+  const lines = new Set(plan.lines.filter((l) => l.department === input.department).map((l) => l.id));
+  const targets = plan.tasks.filter((t) => lines.has(t.lineId) && canGenerate(t));
+  if (targets.length === 0) return { status: "done", results: [] };
+
+  const pending = plan.pendingQuestions.filter((q) => q.mold === key);
+  if (pending.length > 0) return { status: "questions", mold: key, questions: pending };
+
+  if (!plan.answers.some((a) => a.mold === key)) {
+    const molds = targets.flatMap((t) => input.catalog.filter((m) => m.id === t.mold));
+    const otherTasks = plan.tasks.filter((t) => !targets.includes(t) && t.archived === undefined).map((t) => t.title);
+    try {
+      const { data } = await deps.gpt({
+        task: "write",
+        instructions: DEPARTMENT_QUESTIONS_INSTRUCTIONS,
+        input: departmentQuestionsInput({ ...input, answers: plan.answers, molds, otherTasks }),
+        format: QUESTIONS_FORMAT,
+        parse: questionsParser,
+        effort: "low",
+      });
+      const questions = data.questions.length > 0 ? reviewQuestions(data.questions, key) : null;
+      if (questions) {
+        const target = {
+          questions,
+          other_tasks: otherTasks,
+          previous_answers: plan.answers.flatMap((a) => (a.answer === null ? [] : [{ question: a.question, answer: a.answer }])),
+        };
+        const { answers } = await deps.jev(judgeState(input.idea, input.facts, target), questionQualityQuestions(questions));
+        const good = questions.filter((q) => isGoodQuestion(q.id, answers));
+        if (good.length > 0) return { status: "questions", mold: key, questions: good };
+      }
+    } catch (error) {
+      console.error(`generate: ${error instanceof Error ? error.name : "error"} en las preguntas de ${key}`);
+      return { status: "unavailable" };
+    }
+  }
+
+  const results: { taskId: string; outcome: GenerateOutcome }[] = [];
+  for (const task of targets) {
+    const outcome = await generateTask(deps, { ...input, taskId: task.id, allowQuestions: false });
+    results.push({ taskId: task.id, outcome });
+    if (outcome.status === "unavailable") break;
+  }
+  return { status: "done", results };
 }

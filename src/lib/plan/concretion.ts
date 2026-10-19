@@ -15,6 +15,11 @@ export function canGenerate(task: Task) {
   return task.origin === "catalog" && task.mold !== undefined && !isTaskProtected(task);
 }
 
+/** "Regenerar" solo sobre una tarea generada sin tocar (las empezadas se conservan). */
+export function canRegenerate(task: Task) {
+  return task.origin === "ai" && task.mold !== undefined && !isTaskProtected(task);
+}
+
 export function applyConcretions(
   skeleton: readonly Task[],
   stored: readonly Task[],

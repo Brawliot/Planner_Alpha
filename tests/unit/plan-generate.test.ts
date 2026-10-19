@@ -4,7 +4,16 @@ import type { GptRequest } from "../../src/lib/gpt.ts";
 import type { JevQuestions } from "../../src/lib/jev.ts";
 import { MOLDS } from "../../src/lib/plan/catalog.ts";
 import { defaultConfig, type PlanConfig } from "../../src/lib/plan/config.ts";
-import { answerPending, applyGeneration, generateTask, type GenerateDeps, type GenerateInput } from "../../src/lib/plan/generate.ts";
+import {
+  answerPending,
+  applyGeneration,
+  generateDepartment,
+  generateTask,
+  outdatedGenerated,
+  type GenerateDeps,
+  type GenerateInput,
+} from "../../src/lib/plan/generate.ts";
+import type { Task } from "../../src/lib/plan/task.ts";
 import { stepsAt } from "../../src/lib/plan/mold.ts";
 import { rebuildPlan, type StoredPlan } from "../../src/lib/plan/orchestrator.ts";
 import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
@@ -165,5 +174,111 @@ describe("guardar en el plan", () => {
     const plan = planFrom(stored);
     assert.ok(plan.tasks.some((t) => t.id === "find_premises~1"));
     assert.ok(!plan.tasks.some((t) => t.id === "find_premises"));
+  });
+});
+
+
+/** GPT falso que responde bien a cualquier molde: lee sus pasos de la petición y los cubre todos. */
+function coveringGpt() {
+  const calls: GptRequest<unknown>[] = [];
+  const gpt: GenerateDeps["gpt"] = async <T>(request: GptRequest<T>) => {
+    calls.push(request as GptRequest<unknown>);
+    if (request.format.name === "questions") return { data: request.parse.parse({ questions: [] }) };
+    const steps = (request.input as { mold_task: { steps: { id: string }[] } }).mold_task.steps;
+    const raw = {
+      questions: [],
+      tasks: [
+        {
+          title: "Tarea concreta de tu cafetería",
+          outcome: "Hecha",
+          after_previous: false,
+          cited_facts: ["sector"],
+          quotes: [],
+          steps: steps.map((s) => ({ text: `Paso ${s.id}`, done_when: "Hecho", mold_step: s.id, after_previous: false })),
+        },
+      ],
+    };
+    return { data: request.parse.parse(raw) };
+  };
+  return { gpt, calls };
+}
+
+describe("aviso de 'ha cambiado'", () => {
+  const generated = (extra: Partial<Task> = {}): Task => ({
+    ...planFrom(null).tasks.find((t) => t.id === "find_premises")!,
+    id: "find_premises~1",
+    origin: "ai",
+    basis: ["sector"],
+    citedValues: { sector: "Hospitality/Food service" },
+    ...extra,
+  });
+
+  it("si nada ha cambiado, no avisa", () => {
+    assert.deepEqual(outdatedGenerated([generated()], FACTS, IDEA, []), []);
+  });
+
+  it("dato citado distinto o que ya no se sabe: avisa, y se puede regenerar si no está empezada", () => {
+    const changed = [known("sector", "Retail/Commerce")];
+    assert.deepEqual(outdatedGenerated([generated()], changed, IDEA, []), [{ taskId: "find_premises~1", canRegenerate: true }]);
+    assert.equal(outdatedGenerated([generated()], [], IDEA, []).length, 1);
+    const started = generated();
+    started.steps = started.steps.map((s, i) => (i === 0 ? { ...s, status: "done" as const } : s));
+    assert.deepEqual(outdatedGenerated([started], changed, IDEA, []), [{ taskId: "find_premises~1", canRegenerate: false }]);
+  });
+
+  it("frase citada que ya no está en la idea ni en las respuestas: avisa", () => {
+    const quoted = generated({ quotes: ["cerca del mercado"] });
+    const answers = [{ id: "find_premises#1", mold: "find_premises", question: "¿Zona?", answer: "cerca del mercado" }];
+    assert.deepEqual(outdatedGenerated([quoted], FACTS, IDEA, answers), []);
+    assert.equal(outdatedGenerated([quoted], FACTS, IDEA, []).length, 1);
+  });
+});
+
+describe("regenerar", () => {
+  it("una generada sin tocar se regenera con id nuevo, y la anterior se quita al guardar", async () => {
+    const first = await generateTask({ gpt: coveringGpt().gpt, jev: fakeJev([0.9]).jev }, input());
+    assert.equal(first.status, "generated");
+    const stored = applyGeneration({ lines: [], tasks: [], dismissed: [], fingerprint: "x" }, first);
+    const again = await generateTask({ gpt: coveringGpt().gpt, jev: fakeJev([0.9]).jev }, { ...input(stored), taskId: "find_premises~1" });
+    assert.equal(again.status, "generated");
+    if (again.status !== "generated") return;
+    assert.deepEqual(again.tasks.map((t) => t.id), ["find_premises~2"]);
+    const after = applyGeneration(stored, again);
+    assert.deepEqual(after.tasks.map((t) => t.id), ["find_premises~2"]);
+  });
+});
+
+describe("generar un departamento", () => {
+  const QUESTIONS_ONLY = { questions: [{ text: "¿Tienes zona en mente?", options: ["Sí", "No"] }] };
+
+  it("primero una ronda de preguntas para todo el departamento", async () => {
+    const { gpt } = fakeGpt([QUESTIONS_ONLY]);
+    const out = await generateDepartment({ gpt, jev: fakeJev([0.9]).jev }, { ...input(), department: "operations" });
+    assert.equal(out.status, "questions");
+    if (out.status !== "questions") return;
+    assert.equal(out.mold, "dept:operations");
+    assert.deepEqual(out.questions.map((q) => q.id), ["dept:operations#1"]);
+  });
+
+  it("respondidas, genera cada tarea sin tocar del departamento sin más preguntas", async () => {
+    const asked = applyGeneration(
+      { lines: [], tasks: [], dismissed: [], fingerprint: "x" },
+      { status: "questions", mold: "dept:operations", questions: [{ id: "dept:operations#1", mold: "dept:operations", text: "¿Zona?", options: ["Sí", "No"] }] },
+    );
+    const answered = answerPending(asked, "dept:operations", { "dept:operations#1": { kind: "option", value: "Sí" } })!;
+    const { gpt, calls } = coveringGpt();
+    const out = await generateDepartment({ gpt, jev: fakeJev(Array(20).fill(0.9)).jev }, { ...input(answered), department: "operations" });
+    assert.equal(out.status, "done");
+    if (out.status !== "done") return;
+    assert.ok(out.results.length > 0);
+    assert.ok(out.results.every((r) => r.outcome.status === "generated"));
+    assert.ok(calls.every((c) => (c.input as { may_ask?: boolean }).may_ask !== true));
+  });
+
+  it("sin tareas que generar: nada", async () => {
+    const { gpt, calls } = fakeGpt([]);
+    const out = await generateDepartment({ gpt, jev: fakeJev([]).jev }, { ...input(), department: "team" });
+    assert.deepEqual(out, { status: "done", results: [] });
+    assert.equal(calls.length, 0);
   });
 });

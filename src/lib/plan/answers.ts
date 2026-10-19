@@ -31,8 +31,8 @@ export interface DraftQuestion {
 
 export type Reply = { kind: "option"; value: string } | { kind: "other"; text: string } | { kind: "unknown" };
 
-/** Siguiente id libre: a1, a2… */
-export const answerId = (existing: readonly PlanAnswer[], offset: number) => `a${existing.length + offset + 1}`;
+/** Id por molde (o departamento): cada uno solo pregunta una vez, así que nunca se repite. */
+export const answerId = (mold: string, index: number) => `${mold}#${index + 1}`;
 
 /** Respuestas guardables a partir de lo que elige el usuario. null si alguna no encaja con su pregunta. */
 export function answersFromReplies(

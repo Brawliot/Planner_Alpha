@@ -182,7 +182,7 @@ describe("preguntas previas", () => {
   it("si puede preguntar, devuelve las preguntas con ids que siguen a las respuestas guardadas", () => {
     const result = readGeneration(ask([Q]), CTX);
     assert.ok(result.ok && "questions" in result);
-    assert.deepEqual(result.questions, [{ id: "a2", mold: "find_premises", text: Q.text, options: Q.options }]);
+    assert.deepEqual(result.questions, [{ id: "find_premises#1", mold: "find_premises", text: Q.text, options: Q.options }]);
   });
 
   it("sin permiso para preguntar, o preguntas y tareas a la vez: se rechaza", () => {
