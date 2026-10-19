@@ -8,7 +8,7 @@ import { stateLabel } from "./engine.ts";
 import type { Department } from "./line.ts";
 import type { Mold } from "./mold.ts";
 import type { MoneyStatus, PlanState } from "./orchestrator.ts";
-import { stepActions } from "./progress.ts";
+import { stepActions, type StepAction } from "./progress.ts";
 import type { Actor, StepStatus, ThirdParty } from "./step.ts";
 import {
   PHASES,
@@ -35,7 +35,7 @@ export interface PlanStepView {
   actor: Actor;
   status: StepStatus;
   /** Botones que se ofrecen (transiciones válidas). */
-  actions: StepStatus[];
+  actions: StepAction[];
   effort: Range;
   wait: Range | null;
   cost: Range | null;

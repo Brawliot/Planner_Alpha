@@ -23,7 +23,10 @@ export function setStepStatus(stored: StoredPlan, taskId: string, stepId: string
 }
 
 /** Botones que se ofrecen para un paso: las transiciones válidas que el usuario puede hacer aquí. */
-export function stepActions(actor: Parameters<typeof canTransition>[0], status: StepStatus): StepStatus[] {
-  const candidates: StepStatus[] = ["done", "skipped", "requested", "received", "todo"];
+/** Lo que el usuario puede pedir con un botón (el borrador de la IA no se pide así). */
+export type StepAction = Exclude<StepStatus, "ai_draft">;
+
+export function stepActions(actor: Parameters<typeof canTransition>[0], status: StepStatus): StepAction[] {
+  const candidates: StepAction[] = ["done", "skipped", "requested", "received", "todo"];
   return candidates.filter((to) => !(actor === "ai" && to === "done") && canTransition(actor, status, to));
 }
