@@ -1,6 +1,7 @@
 import type { Fact } from "../report/facts.ts";
 import type { Language } from "../report/narrative.ts";
 import { taskCertainty } from "./certainty.ts";
+import { canGenerate, canRegenerate } from "./concretion.ts";
 import type { PlanConfig } from "./config.ts";
 import { hoursOptionOf, type HoursOption } from "./config-form.ts";
 import { stateLabel } from "./engine.ts";
@@ -32,6 +33,14 @@ export interface PlanTaskView {
   dates: { from: string; to: string };
   estimated: boolean;
   steps: PlanStepView[];
+  /** La personalizó la IA ("Personalizada"). */
+  personalized: boolean;
+  /** Qué botón de IA se ofrece; null si ninguno (ya empezada). */
+  generate: "generate" | "regenerate" | null;
+  /** Preguntas previas pendientes de esta tarea. */
+  questions: { id: string; text: string; options: string[] }[];
+    /** Molde de la tarea (para responder sus preguntas previas). */
+  mold: string | null;
 }
 
 export interface PlanView {
@@ -81,6 +90,12 @@ export function planView(input: {
           wait: step.wait ?? null,
           cost: step.cost ?? null,
         })),
+        personalized: task.origin === "ai",
+        generate: canGenerate(task) ? "generate" : canRegenerate(task) ? "regenerate" : null,
+        questions: state.pendingQuestions
+          .filter((q) => task.mold !== undefined && q.mold === task.mold)
+          .map((q) => ({ id: q.id, text: q.text, options: q.options })),
+        mold: task.mold ?? null,
         phase: task.phase,
         start: s.start.min,
       },

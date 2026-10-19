@@ -38,6 +38,16 @@ export interface PlanTexts {
   createIntro: string;
   notApproved: string;
   backToReport: string;
+  generate: string;
+  regenerate: string;
+  generating: string;
+  personalized: string;
+  questionsIntro: string;
+  unknown: string;
+  other: string;
+  otherLabel: string;
+  answer: string;
+  generateError: Record<"stale" | "unavailable" | "kept" | "not_allowed" | "invalid", string>;
 }
 
 export const PLAN_TEXTS: Record<Language, PlanTexts> = {
@@ -136,5 +146,21 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     createIntro: "Your plan comes from your approved report. You can adjust it later.",
     notApproved: "Approve your report to create the plan.",
     backToReport: "Back to the report",
+    generate: "Personalize with AI",
+    regenerate: "Generate again",
+    generating: "Generating… it can take up to a minute",
+    personalized: "Personalized",
+    questionsIntro: "Before personalizing it, tell us:",
+    unknown: "I don't know yet",
+    other: "Other",
+    otherLabel: "Your answer",
+    answer: "Answer and personalize",
+    generateError: {
+      stale: "This plan has changed. Reload the page.",
+      unavailable: "The AI is not available right now. Try again in a few minutes.",
+      kept: "We couldn't personalize this task; it stays as it was.",
+      not_allowed: "This task can no longer be personalized.",
+      invalid: "Answer every question.",
+    },
   },
 };

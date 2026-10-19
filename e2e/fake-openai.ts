@@ -7,6 +7,9 @@
  *   [gpt:cannot]  en los enums que lo permiten, elige "Cannot infer"
  *   [gpt:numbers] los textos libres llevan una cifra inventada
  *   [gpt:down-write]  error 500 solo en la redacción (modelo de escritura)
+ *   [gpt:ask]         al personalizar una tarea del plan, hace una pregunta previa (si puede preguntar)
+ *   [gpt:down-plan]   error 500 solo al personalizar una tarea del plan
+ * "concretion" (personalizar una tarea) se responde con una tarea válida hecha a partir del molde.
  */
 import { createServer, type ServerResponse } from "node:http";
 
@@ -39,6 +42,33 @@ function fill(schema: Schema, text: string): unknown {
     default:
       return text.includes("[gpt:numbers]") ? "It costs 99,999 euros" : "Fake assumption";
   }
+}
+
+type ConcretionInput = {
+  may_ask?: boolean;
+  facts?: { key: string }[];
+  mold_task?: { title: string; steps: { id: string; text: string; done_when: string }[] };
+};
+
+/** Una tarea que pasa la revisión del código: cubre cada paso del molde y cita un dato. */
+function concretion(input: ConcretionInput, text: string) {
+  if (text.includes("[gpt:ask]") && input.may_ask) {
+    return { questions: [{ text: "Fake question?", options: ["Option A", "Option B"] }], tasks: [] };
+  }
+  const steps = input.mold_task?.steps ?? [];
+  return {
+    questions: [],
+    tasks: [
+      {
+        title: "Personalized task",
+        outcome: "Personalized outcome",
+        after_previous: false,
+        cited_facts: input.facts?.length ? [input.facts[0].key] : [],
+        quotes: [],
+        steps: steps.map((s) => ({ text: `Personalized: ${s.text}`, done_when: s.done_when, mold_step: s.id, after_previous: false })),
+      },
+    ],
+  };
 }
 
 function send(res: ServerResponse, status: number, body?: unknown) {
@@ -74,9 +104,19 @@ createServer(async (req, res) => {
   if (text.includes("[gpt:down]")) return send(res, 500);
   if (text.includes("[gpt:down-write]") && body.model === "gpt-fake-write") return send(res, 500);
 
+  const name = (format as { name?: string }).name;
+  if (name === "concretion" && text.includes("[gpt:down-plan]")) return send(res, 500);
+
+  let content: unknown;
+  if (name === "concretion") {
+    const userMessage = (body.input as { content?: string }[] | undefined)?.[0]?.content ?? "{}";
+    content = concretion(JSON.parse(userMessage) as ConcretionInput, text);
+  } else {
+    content = fill(format.schema, text);
+  }
   const output = text.includes("[gpt:refuse]")
     ? message({ type: "refusal", refusal: "I can't help with that." })
-    : message({ type: "output_text", text: JSON.stringify(fill(format.schema, text)) });
+    : message({ type: "output_text", text: JSON.stringify(content) });
 
   send(res, 200, {
     model: body.model,

@@ -9,8 +9,8 @@ test.afterAll(async () => {
   await deleteTestUsers();
 });
 
-async function approvedReport(page: Page) {
-  await page.getByLabel("Mensaje").fill("Una app de facturación");
+async function approvedReport(page: Page, idea = "Una app de facturación") {
+  await page.getByLabel("Mensaje").fill(idea);
   await page.getByRole("button", { name: "Enviar" }).click();
   await page.waitForURL(/\/informe\//);
   await page.getByRole("button", { name: "Continue anyway" }).click();
@@ -66,6 +66,38 @@ test.describe("plan", () => {
     await page.goto(`${page.url()}/plan`);
     await expect(page.getByText("Approve your report to create the plan.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Create my plan" })).toHaveCount(0);
+  });
+
+  async function createPlanFor(page: Page, idea?: string) {
+    const reportUrl = await approvedReport(page, idea);
+    await page.goto(`${reportUrl}/plan`);
+    await page.getByRole("button", { name: "Create my plan" }).click();
+    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+  }
+
+  test("personalizar una tarea con IA la sustituye por la personalizada", async ({ page }) => {
+    await createPlanFor(page);
+    await page.getByRole("button", { name: "Personalize with AI" }).first().click();
+    await expect(page.getByRole("heading", { name: /Personalized task/ }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Personalized", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Generate again" }).first()).toBeVisible();
+  });
+
+  test("si la IA pregunta antes, se responde en la tarea y se personaliza", async ({ page }) => {
+    await createPlanFor(page, "Una app de facturación [gpt:ask]");
+    await page.getByRole("button", { name: "Personalize with AI" }).first().click();
+    await expect(page.getByText("Fake question?")).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("radio", { name: "Option A" }).check();
+    await page.getByRole("button", { name: "Answer and personalize" }).click();
+    await expect(page.getByRole("heading", { name: /Personalized task/ }).first()).toBeVisible({ timeout: 20_000 });
+  });
+
+  test("si la IA cae, se avisa y la tarea se queda como estaba", async ({ page }) => {
+    await createPlanFor(page, "Una app de facturación [gpt:down-plan]");
+    await page.getByRole("button", { name: "Personalize with AI" }).first().click();
+    await expect(page.getByText("The AI is not available right now. Try again in a few minutes.")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: /Personalized task/ })).toHaveCount(0);
   });
 
   test("otro usuario no puede ver el plan", async ({ page, browser, request }) => {

@@ -2,6 +2,7 @@ import type { PlanTexts } from "@/lib/plan/i18n";
 import type { Range } from "@/lib/plan/task";
 import type { PlanView } from "@/lib/plan/view";
 import { ConfigForm } from "./config-form";
+import { TaskGenerate } from "./task-generate";
 
 function formatDate(iso: string, language: PlanView["language"]) {
   return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(
@@ -61,8 +62,15 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
           </h2>
           <ul className="flex flex-col gap-3">
             {group.tasks.map((task) => (
-              <li key={task.id} className="rounded-md border border-border p-4">
-                <h3 className="font-medium">{task.title}</h3>
+              <li key={task.id} id={`tarea-${task.id}`} tabIndex={-1} className="rounded-md border border-border p-4">
+                <h3 className="font-medium">
+                  {task.title}
+                  {task.personalized && (
+                    <span className="ml-2 rounded-sm border border-border px-1.5 py-0.5 text-xs font-normal">
+                      {t.personalized}
+                    </span>
+                  )}
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {task.department ? t.department[task.department] : ""} · {t.weeks} {task.weeks.from}–{task.weeks.to} ·{" "}
                   {dates(task.dates)}
@@ -83,6 +91,7 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
                     ))}
                   </ul>
                 </details>
+                <TaskGenerate reportId={reportId} version={version} task={task} mold={task.mold} t={t} />
               </li>
             ))}
           </ul>
