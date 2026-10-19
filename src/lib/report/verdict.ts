@@ -73,6 +73,21 @@ const CRITICAL_DEPENDENCY = option("third_party_dependency", "Critical dependenc
 
 type Decision = { verdict: Verdict; reason: string; missing?: string[] };
 
+/** Por qué "Tú" sale en rojo. Lo usa también el plan para elegir el objetivo de la línea. */
+export type FounderCause = "experience" | "time" | "team";
+
+export function founderRiskCauses(facts: readonly Fact[]): FounderCause[] {
+  const experience = valueOf(facts, "founder_experience");
+  const time = valueOf(facts, "time_commitment");
+  const profile = valueOf(facts, "founder_profile");
+  const team = valueOf(facts, "team_requirement");
+  const causes: FounderCause[] = [];
+  if (experience !== null && LITTLE_EXPERIENCE.includes(experience)) causes.push("experience");
+  if (time !== null && UNDER_20H.includes(time)) causes.push("time");
+  if (team === LARGE_TEAM && !(profile !== null && MANAGES.includes(profile))) causes.push("team");
+  return causes;
+}
+
 const needsInfo = (missing: string[]): Decision => ({ verdict: "needs_info", reason: "needs_info", missing });
 const green = (reason: string): Decision => ({ verdict: "strong", reason });
 const red = (reason: string): Decision => ({ verdict: "risk", reason });
@@ -110,16 +125,7 @@ const RULES: Record<AreaKey, (facts: readonly Fact[]) => Decision> = {
   founder(facts) {
     const missing = missingOf(facts, ["founder_experience", "time_commitment"]);
     if (missing.length > 0) return needsInfo(missing);
-    const experience = valueOf(facts, "founder_experience");
-    const time = valueOf(facts, "time_commitment");
-    const profile = valueOf(facts, "founder_profile");
-    const team = valueOf(facts, "team_requirement");
-
-    const gap =
-      (experience !== null && LITTLE_EXPERIENCE.includes(experience)) ||
-      (time !== null && UNDER_20H.includes(time)) ||
-      (team === LARGE_TEAM && !(profile !== null && MANAGES.includes(profile)));
-    return gap ? red("founder.risk") : green("founder.strong");
+    return founderRiskCauses(facts).length > 0 ? red("founder.risk") : green("founder.strong");
   },
 
   money(facts) {

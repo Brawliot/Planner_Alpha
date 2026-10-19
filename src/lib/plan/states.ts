@@ -21,6 +21,7 @@ export const BUSINESS_STATES = [
   "first_customers",
   "differentiator_defined",
   "competitors_mapped",
+  "channel_fit",
   "funding_covered",
   "runway_covered",
   "premises_cost_fit",
@@ -56,6 +57,7 @@ export const BUSINESS_STATE_LABELS: Record<BusinessState, Record<Language, strin
   first_customers: { en: "First customers", es: "Primeros clientes" },
   differentiator_defined: { en: "Differentiator defined", es: "Diferenciación definida" },
   competitors_mapped: { en: "Competitors mapped", es: "Competencia analizada" },
+  channel_fit: { en: "Channel fits the customer", es: "Canal adecuado a tu cliente" },
   funding_covered: { en: "Funding covered", es: "Financiación cubierta" },
   runway_covered: { en: "Runway covered", es: "Margen hasta ingresar cubierto" },
   premises_cost_fit: { en: "Premises cost fits", es: "Coste del local ajustado" },
@@ -113,7 +115,8 @@ export type StateOrigin =
   | { kind: "milestone"; milestone: (typeof MILESTONES)[number] }
   | { kind: "plan"; taskId: string };
 
-const known = (facts: readonly Fact[], key: string) => {
+/** Valor del dato solo si es sabido: lo estimado nunca hace verdad un estado. */
+export const knownValue = (facts: readonly Fact[], key: string) => {
   const input = usable(facts, key);
   return input?.certainty === "known" ? String(input.value) : null;
 };
@@ -133,14 +136,14 @@ export function currentStates(input: {
   };
 
   for (const fact of input.facts) {
-    if (known(input.facts, fact.key) !== null) add(`fact:${fact.key}` as FactState, { kind: "report", key: fact.key });
+    if (knownValue(input.facts, fact.key) !== null) add(`fact:${fact.key}` as FactState, { kind: "report", key: fact.key });
   }
 
-  const stage = known(input.facts, "validation_stage");
+  const stage = knownValue(input.facts, "validation_stage");
   if (stage !== null && Object.hasOwn(VALIDATION_STATES, stage)) {
     for (const state of VALIDATION_STATES[stage]) add(state, { kind: "report", key: "validation_stage" });
   }
-  const differentiator = known(input.facts, "differentiator");
+  const differentiator = knownValue(input.facts, "differentiator");
   if (differentiator !== null && differentiator !== NO_DIFFERENTIATOR) {
     add("differentiator_defined", { kind: "report", key: "differentiator" });
   }
