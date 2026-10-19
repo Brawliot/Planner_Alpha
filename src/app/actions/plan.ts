@@ -90,7 +90,12 @@ async function loadOwnPlan(reportId: string) {
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadOwnPlan>>>;
 
 /** Personaliza la tarea con el plan guardado (o con el que se le pase) y guarda solo si sale bien. */
-async function personalize(loaded: Loaded, taskId: string, version: number, stored = loaded.existing.stored) {
+async function personalize(
+  loaded: Loaded,
+  taskId: string,
+  version: number,
+  stored = loaded.existing.stored,
+): Promise<{ error: GenerateError } | { target: string }> {
   const { user, report, existing } = loaded;
   const input = planInput(report);
   const date = today();
@@ -107,11 +112,11 @@ async function personalize(loaded: Loaded, taskId: string, version: number, stor
     plan: state,
     taskId,
   });
-  if (outcome.status !== "generated" && outcome.status !== "questions") return { error: outcome.status } as const;
+  if (outcome.status !== "generated" && outcome.status !== "questions") return { error: outcome.status };
 
   const next = rebuild(applyGeneration(toStored(state), outcome));
-  if (!(await updateOwnPlan(user.id, existing.id, version, { stored: toStored(next) }))) return { error: "stale" } as const;
-  return { target: outcome.status === "generated" ? outcome.tasks[0].id : taskId } as const;
+  if (!(await updateOwnPlan(user.id, existing.id, version, { stored: toStored(next) }))) return { error: "stale" };
+  return { target: outcome.status === "generated" ? outcome.tasks[0].id : taskId };
 }
 
 /** "Personalizar con IA" o "Volver a generar" en una tarea. */
