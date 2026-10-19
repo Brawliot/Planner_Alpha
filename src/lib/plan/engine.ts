@@ -218,7 +218,13 @@ export function buildSkeleton(input: {
    * Si es un requisito, se queda en la línea solo si es de su mismo departamento; si no, va a su base.
    */
   const achieve = (state: StateId, lineId: string | null, direct: boolean) => {
-    if (satisfied.has(state) || provider.has(state)) return;
+    if (satisfied.has(state)) return;
+    const existing = provider.get(state);
+    if (existing) {
+      // Una línea del informe que lo pide directamente se queda la tarea que había ido a la base.
+      if (direct && lineId !== null && owner.get(existing) === null) owner.set(existing, lineId);
+      return;
+    }
     const candidates = applicable.filter((mold) => moldGets(mold).includes(state));
     if (candidates.length === 0) {
       issues.push(`unreachable ${state}`);

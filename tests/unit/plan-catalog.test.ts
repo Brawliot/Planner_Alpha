@@ -48,6 +48,13 @@ describe("integridad del catálogo", () => {
     }
   });
 
+  it("lo del fundador va primero: acelera todo lo demás", () => {
+    assert.deepEqual(
+      MOLDS.slice(0, 4).map((mold) => mold.id),
+      ["plan_time", "cofounder", "learn_sector", "mentor"],
+    );
+  });
+
   it("sin ciclos entre moldes", () => {
     const nodes = MOLDS.map((mold) => ({
       id: mold.id,

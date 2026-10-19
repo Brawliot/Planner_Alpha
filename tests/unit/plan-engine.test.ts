@@ -139,6 +139,17 @@ describe("buildSkeleton: encadenado", () => {
     assert.equal(taskOf(plan, "sign").lineId, "base:operations");
   });
 
+  it("lo que una línea del informe pide directamente no se queda en la base", () => {
+    // El coste de arranque es de otro departamento: como requisito del préstamo iría a la base,
+    // pero la línea "por concretar" de Dinero lo pide directamente.
+    const research = mold("cost", [], { department: "operations", unlocks: "startup_cost_eur" });
+    const plan = build([...BASE, research, loan], {
+      verdicts: [{ ...red("money", "money.short"), gaps: ["startup_cost_eur"] }],
+    });
+    assert.equal(taskOf(plan, "cost").lineId, "gaps:money");
+    assert.ok(plan.lines.some((line) => line.id === "gaps:money"));
+  });
+
   it("los estimados generan una línea para confirmarlos", () => {
     const research = mold("research", [], { unlocks: "competition", department: "sales" });
     const plan = build([...BASE, research], { facts: [estimated("competition", "Crowded market")] });
