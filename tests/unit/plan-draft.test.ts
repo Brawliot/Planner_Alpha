@@ -120,6 +120,18 @@ describe("reviewDraft", () => {
     assert.equal(reviewDraft({ items: ["Elemento: ____"] }, ctx(step("checklist"), null)), null);
   });
 
+  it("la numeración de una lista no cuenta como cifra; una cifra de verdad sí", () => {
+    const questions = "1. ¿Dónde tomas café?\n2. ¿Qué valoras?\n3. ¿Qué echas en falta?";
+    assert.ok(reviewDraft({ text: questions }, ctx(step("draft_text"), null)));
+    assert.equal(reviewDraft({ text: "1. Pagarías 37 euros al mes" }, ctx(step("draft_text"), null)), null);
+  });
+
+  it("listas sin ruido de plantilla", () => {
+    assert.ok(reviewDraft({ items: ["Alquiler del local", "Café de origen"] }, ctx(step("checklist"), null)));
+    assert.equal(reviewDraft({ items: ["Alquiler: importe [vacío]"] }, ctx(step("checklist"), null)), null);
+    assert.equal(reviewDraft({ items: ["Alquiler; fuente: ninguna"] }, ctx(step("checklist"), null)), null);
+  });
+
   it("sin notas: propuestas de la IA en tablas y resúmenes, no plantilla obligatoria", () => {
     const options: RawDraft = {
       template: false,
