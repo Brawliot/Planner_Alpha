@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { getOwnReport } from "@/lib/report/repository";
 import { MOLDS } from "@/lib/plan/catalog";
@@ -139,6 +140,8 @@ export async function generateTaskAction(
     logError("personalizar la tarea", err);
     return { error: "unavailable" };
   }
+  // Misma página con ancla: sin refresh, el navegador solo haría scroll y no pediría el plan nuevo.
+  refresh();
   redirect(`/informe/${loaded.report.id}/plan#tarea-${encodeURIComponent(target)}`);
 }
 
@@ -167,6 +170,8 @@ export async function answerAndGenerateAction(
     logError("responder y personalizar", err);
     return { error: "unavailable" };
   }
+  // Misma página con ancla: sin refresh, el navegador solo haría scroll y no pediría el plan nuevo.
+  refresh();
   redirect(`/informe/${loaded.report.id}/plan#tarea-${encodeURIComponent(target)}`);
 }
 
