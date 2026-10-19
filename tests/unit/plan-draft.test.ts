@@ -113,6 +113,36 @@ describe("reviewDraft", () => {
     assert.ok(reviewDraft({ items: ["Alquiler", "Fianza"] }, ctx(step("checklist"))));
   });
 
+  it("texto y lista: contenido real, nunca huecos ni JSON", () => {
+    assert.ok(reviewDraft({ text: "¿Dónde tomas café cada mañana y por qué allí?" }, ctx(step("draft_text"), null)));
+    assert.equal(reviewDraft({ text: "Cliente típico: [Por completar]" }, ctx(step("draft_text"), null)), null);
+    assert.equal(reviewDraft({ text: '{"template":true}' }, ctx(step("draft_text"), null)), null);
+    assert.equal(reviewDraft({ items: ["Elemento: ____"] }, ctx(step("checklist"), null)), null);
+  });
+
+  it("sin notas: propuestas de la IA en tablas y resúmenes, no plantilla obligatoria", () => {
+    const options: RawDraft = {
+      template: false,
+      columns: ["Prueba", "Qué cuenta como compromiso"],
+      rows: [
+        { cells: ["Preventa", "Pagar por adelantado"], source: { kind: "suggestion", ref: "" } },
+        { cells: ["Piloto", "Firmar la participación"], source: { kind: "suggestion", ref: "" } },
+      ],
+    };
+    assert.ok(reviewDraft(options, ctx(step("comparison_table"), null)));
+    const summary: RawDraft = { template: false, points: [{ text: "Empieza por tu barrio", source: { kind: "suggestion", ref: "" } }] };
+    assert.ok(reviewDraft(summary, ctx(step("research_summary"), null)));
+  });
+
+  it("con notas no se admite plantilla vacía", () => {
+    const template: RawDraft = {
+      template: true,
+      columns: ["Proveedor", "Precio por kilo"],
+      rows: [{ cells: ["Proveedor 1", ""], source: { kind: "none", ref: "" } }],
+    };
+    assert.equal(reviewDraft(template, ctx(step("comparison_table"))), null);
+  });
+
   it("el esquema de cada capacidad tiene sus campos", () => {
     const table = draftFormat("comparison_table").schema as { required: string[] };
     assert.deepEqual(table.required, ["template", "columns", "rows"]);
