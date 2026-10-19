@@ -7,6 +7,9 @@ import type { Task } from "./task.ts";
  * espera a todas ellas. Se mantienen mientras su molde siga en el plan; si se quitan todas, vuelve el molde.
  */
 
+/** Tope de tareas generadas por molde: GPT decide cuántas (de 1 a este número). */
+export const MAX_GENERATED_TASKS = 3;
+
 /** "Generar" solo sobre una tarea del catálogo que sale de un molde y está sin tocar. */
 export function canGenerate(task: Task) {
   return task.origin === "catalog" && task.mold !== undefined && !isTaskProtected(task);
