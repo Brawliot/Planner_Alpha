@@ -89,3 +89,12 @@ describe("resolveActor", () => {
     assert.equal(resolveActor(logo, config({ delegation: ["ai", "third_party"] })).actor, "ai");
   });
 });
+
+describe("effectivePhase", () => {
+  it("lo de Lanzar por encima de tu nivel pasa a Operar", () => {
+    const loyalty = task({ phase: "launch", launchLevel: 3 });
+    assert.equal(effectivePhase(loyalty, config({ launchLevel: 1 })), "operate");
+    assert.equal(effectivePhase(loyalty, config({ launchLevel: 3 })), "launch");
+    assert.equal(effectivePhase(task({ phase: "prepare", launchLevel: 3 }), config({ launchLevel: 1 })), "prepare");
+  });
+});
