@@ -47,6 +47,8 @@ export const taskSchema = z
     origin: z.enum(TASK_ORIGINS),
     /** Molde del que sale: en las del catálogo, el suyo; en las de IA, el que concretan. */
     mold: z.string().min(1).optional(),
+    /** Solo en las de IA: frases literales de la idea en que se apoya (los datos citados van en basis). */
+    quotes: z.array(z.string().min(1)).optional(),
     milestone: z.enum(MILESTONES).optional(),
     /** Entra si el nivel de validación elegido es >= este. */
     validationLevel: level.optional(),

@@ -85,7 +85,8 @@ function reportLineSources(facts: readonly Fact[], verdicts: readonly AreaVerdic
   return lines;
 }
 
-function buildStep(step: MoldStep, order: number, config: PlanConfig, language: Language): Step {
+/** Paso del plan a partir de un paso de molde: actor según tu configuración y cifras de sus tramos. */
+export function buildStep(step: MoldStep, order: number, config: PlanConfig, language: Language): Step {
   const allowedActors = actorsOf(step);
   const { actor } = resolveActor(
     { allowedActors, suggestedActor: step.suggestedActor, skill: step.skill, professional: step.options.third_party?.thirdParty },
