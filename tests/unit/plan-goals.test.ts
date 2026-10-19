@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FOUNDER_REASON, RISK_GOALS, launchGoal, lineGoal } from "../../src/lib/plan/goals.ts";
+import { FOUNDER_REASON, PERSONAL_KEYS, RISK_GOALS, launchGoal, lineGoal } from "../../src/lib/plan/goals.ts";
 import { BUSINESS_STATES } from "../../src/lib/plan/states.ts";
 import { CALIBRATED_JEV_MODEL } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
@@ -70,6 +70,14 @@ describe("objetivos de las líneas", () => {
     for (const kind of ["needs_info", "gaps", "estimated"] as const) {
       assert.deepEqual(lineGoal({ kind, area: "money", keys }, []), ["fact:monthly_fixed_costs_eur", "fact:competition"]);
     }
+  });
+
+  it("los datos personales no son tareas: se quitan del objetivo", () => {
+    assert.deepEqual(PERSONAL_KEYS, ["founder_experience", "founder_profile", "validation_stage"]);
+    assert.deepEqual(lineGoal({ kind: "gaps", area: "founder", keys: ["founder_profile", "launch_timeline"] }, []), [
+      "fact:launch_timeline",
+    ]);
+    assert.deepEqual(lineGoal({ kind: "needs_info", area: "founder", keys: ["founder_experience"] }, []), []);
   });
 
   it("un motivo desconocido no tiene objetivo; la base sale de la meta de lanzamiento", () => {

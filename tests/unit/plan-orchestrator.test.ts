@@ -41,7 +41,7 @@ const register = mold("register", ["legal_entity_ready"], {
   ],
 });
 const sell = mold("sell", ["first_customers"], { department: "sales", needs: ["legal_entity_ready"] });
-const cost = mold("cost", [], { department: "finance", unlocks: "startup_cost_eur" });
+const cost = mold("cost", [], { department: "finance", unlocks: ["startup_cost_eur"] });
 const loan = mold("loan", ["funding_covered"], { department: "finance", needs: ["fact:startup_cost_eur"] });
 const CATALOG = [register, sell, cost, loan];
 

@@ -32,6 +32,9 @@ export const RISK_GOALS: Record<string, readonly BusinessState[]> = {
 
 export const FOUNDER_REASON = "founder.risk";
 
+/** Datos sobre ti que no se averiguan: se completan en el informe, no son tareas del plan. */
+export const PERSONAL_KEYS: readonly FactKey[] = ["founder_experience", "founder_profile", "validation_stage"];
+
 const FOUNDER_GOALS: Record<FounderCause, BusinessState> = {
   experience: "founder_gap_covered",
   time: "time_secured",
@@ -53,7 +56,9 @@ export function lineGoal(source: LineSource, facts: readonly Fact[]): StateId[] 
     case "gaps":
     case "estimated":
       // Las claves vienen de las áreas del informe (verdict.ts): siempre son claves de datos reales.
-      return source.keys.map((key) => `fact:${key}` as FactState);
+      return source.keys
+        .filter((key) => !(PERSONAL_KEYS as readonly string[]).includes(key))
+        .map((key) => `fact:${key}` as FactState);
     case "base":
       return [];
   }

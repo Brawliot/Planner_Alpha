@@ -99,9 +99,9 @@ describe("stepsAt", () => {
 
 describe("moldGets y moldFit", () => {
   it("el dato que resuelve se añade a lo que consigue, sin repetir", () => {
-    const research: Mold = { ...website, gets: ["competitors_mapped"], unlocks: "competition" };
-    assert.deepEqual(moldGets(research), ["competitors_mapped", "fact:competition"]);
-    assert.deepEqual(moldGets({ ...research, gets: ["fact:competition"] }), ["fact:competition"]);
+    const research: Mold = { ...website, gets: ["competitors_mapped"], unlocks: ["competition", "differentiator"] };
+    assert.deepEqual(moldGets(research), ["competitors_mapped", "fact:competition", "fact:differentiator"]);
+    assert.deepEqual(moldGets({ ...research, gets: ["fact:competition"] }), ["fact:competition", "fact:differentiator"]);
   });
 
   it("puntúa las reglas que encajan y da sus motivos", () => {

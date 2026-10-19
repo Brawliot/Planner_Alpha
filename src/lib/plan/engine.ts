@@ -144,7 +144,7 @@ function buildTask(mold: Mold, lineId: string, dependsOn: string[], config: Plan
     validation: "per_step",
     origin: "catalog",
     steps: stepsAt(mold, config).map((step, index) => buildStep(step, index, config, language)),
-    ...(mold.unlocks ? { unlocks: mold.unlocks } : {}),
+    ...(mold.unlocks && mold.unlocks.length > 0 ? { unlocks: [...mold.unlocks] } : {}),
     ...(mold.validationLevel ? { validationLevel: mold.validationLevel } : {}),
     ...(mold.launchLevel ? { launchLevel: mold.launchLevel } : {}),
   };

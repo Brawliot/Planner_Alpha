@@ -40,6 +40,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("Fixed hours for the project every week", "Horas fijas para el proyecto cada semana"),
     needs: [],
     gets: ["time_secured"],
+    unlocks: ["time_commitment"],
     steps: [
       s("now", t("Write down your current week", "Apunta cómo es tu semana ahora"), t("You see where your time goes", "Ves en qué se te va el tiempo"), { user: { effort: "1_4h" } }),
       s("block", t("Block fixed hours for the project", "Reserva horas fijas para el proyecto"), t("The hours are in your calendar", "Las horas están en tu calendario"), { user: { effort: "1_4h" } }, { dependsOn: ["now"] }),
@@ -188,7 +189,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You know who you compete with and how", "Sabes con quién compites y cómo"),
     needs: [],
     gets: ["competitors_mapped"],
-    unlocks: "competition",
+    unlocks: ["competition"],
     steps: [
       s("list", t("List your direct competitors, nearby and online", "Haz la lista de tus competidores directos, cerca y en internet"), t("You have the list", "Tienes la lista"), { user: { effort: "4_8h" } }),
       s(
@@ -210,7 +211,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("One clear reason to choose you", "Un motivo claro para elegirte"),
     needs: ["competitors_mapped"],
     gets: ["differentiator_defined"],
-    unlocks: "differentiator",
+    unlocks: ["differentiator"],
     steps: [
       s(
         "options",
@@ -230,7 +231,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You know how much you need to open", "Sabes cuánto necesitas para abrir"),
     needs: [],
     gets: [],
-    unlocks: "startup_cost_eur",
+    unlocks: ["startup_cost_eur","capital_intensity"],
     steps: [
       s(
         "list",
@@ -251,7 +252,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You know what you spend every month", "Sabes cuánto gastas cada mes"),
     needs: [],
     gets: [],
-    unlocks: "monthly_fixed_costs_eur",
+    unlocks: ["monthly_fixed_costs_eur"],
     steps: [
       s(
         "list",
@@ -272,6 +273,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("A list of licences, permits and obligations with their deadlines", "Una lista de licencias, permisos y obligaciones con sus plazos"),
     needs: [],
     gets: ["licenses_identified"],
+    unlocks: ["regulatory_load"],
     steps: [
       s(
         "ask",
@@ -289,6 +291,119 @@ export const MOLDS: readonly Mold[] = [
         { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "checklist" } },
         { dependsOn: ["ask"] },
       ),
+    ],
+  },
+
+  // ---- Tanda 3: decidir y averiguar lo que falta en el informe
+  {
+    id: "define_business",
+    department: "product",
+    phase: "validate",
+    kind: "decision",
+    title: t("Define your business", "Define tu negocio"),
+    outcome: t("What you offer, in which sector and how you charge", "Qué ofreces, en qué sector y cómo cobras"),
+    needs: [],
+    gets: [],
+    unlocks: ["sector", "offering_type", "revenue_model"],
+    steps: [
+      s(
+        "offer",
+        t("Describe what you offer in two sentences", "Describe en dos frases qué ofreces"),
+        t("You have your description", "Tienes tu descripción"),
+        { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "draft_text" } },
+      ),
+      s("charge", t("Decide how you will charge", "Decide cómo vas a cobrar"), t("You have chosen how to charge", "Has elegido cómo cobrar"), { user: { effort: "1_4h" } }, { dependsOn: ["offer"] }),
+      s("report", t("Update your report", "Actualiza tu informe"), t("Your report shows it", "Tu informe lo refleja"), { user: { effort: "under_1h" } }, { dependsOn: ["charge"] }),
+    ],
+  },
+  {
+    id: "define_customer",
+    department: "sales",
+    phase: "validate",
+    kind: "decision",
+    title: t("Define your customer and where you operate", "Define tu cliente y dónde operas"),
+    outcome: t("Who buys from you and in which area", "Quién te compra y en qué zona"),
+    needs: [],
+    gets: [],
+    unlocks: ["customer_segment", "geographic_scope"],
+    steps: [
+      s(
+        "customer",
+        t("Describe your typical customer", "Describe a tu cliente típico"),
+        t("You have the description", "Tienes la descripción"),
+        { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "draft_text" } },
+      ),
+      s("area", t("Decide the area you will cover first", "Decide la zona que cubrirás primero"), t("You have chosen the area", "Has elegido la zona"), { user: { effort: "1_4h" } }, { dependsOn: ["customer"] }),
+    ],
+  },
+  {
+    id: "budget_and_date",
+    department: "finance",
+    phase: "validate",
+    kind: "decision",
+    title: t("Set your budget and opening date", "Fija tu presupuesto y tu fecha de apertura"),
+    outcome: t("How much you will invest and when you want to open", "Cuánto vas a invertir y cuándo quieres abrir"),
+    needs: [],
+    gets: [],
+    unlocks: ["budget_band", "budget_eur", "launch_timeline"],
+    steps: [
+      s("budget", t("Decide how much money you can put in", "Decide cuánto dinero puedes poner"), t("You have a figure", "Tienes una cifra"), { user: { effort: "1_4h" } }),
+      s("date", t("Choose the date you want to open", "Elige la fecha en la que quieres abrir"), t("You have a date", "Tienes una fecha"), { user: { effort: "under_1h" } }),
+    ],
+  },
+  {
+    id: "revenue_timing",
+    department: "finance",
+    phase: "validate",
+    kind: "research",
+    title: t("Estimate when your first revenue will arrive", "Estima cuándo llegarán los primeros ingresos"),
+    outcome: t("How many months until the business brings in money", "Cuántos meses hasta que el negocio ingrese"),
+    needs: [],
+    gets: [],
+    unlocks: ["time_to_revenue"],
+    steps: [
+      s(
+        "steps",
+        t("List what must happen before your first sale", "Haz la lista de lo que debe pasar antes de tu primera venta"),
+        t("You have the list", "Tienes la lista"),
+        { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "checklist" } },
+      ),
+      s("months", t("Estimate how many months that takes", "Estima cuántos meses supone"), t("You have a range of months", "Tienes un rango de meses"), { user: { effort: "1_4h" } }, { dependsOn: ["steps"] }),
+    ],
+  },
+  {
+    id: "payment_flow",
+    department: "finance",
+    phase: "validate",
+    kind: "decision",
+    title: t("Decide how you will get paid", "Decide cómo cobrarás"),
+    outcome: t("Whether you will ever hold customers' money", "Si alguna vez tendrás dinero de tus clientes"),
+    needs: [],
+    gets: [],
+    unlocks: ["money_handling"],
+    steps: [
+      s("flow", t("Draw how money moves from customer to you", "Dibuja cómo llega el dinero del cliente a ti"), t("You have the flow", "Tienes el recorrido"), { user: { effort: "1_4h" } }),
+      s("hold", t("Note whether you ever hold others' money", "Apunta si alguna vez guardas dinero ajeno"), t("You know the answer", "Sabes la respuesta"), { user: { effort: "under_1h" } }, { dependsOn: ["flow"] }),
+    ],
+  },
+  {
+    id: "third_parties",
+    department: "operations",
+    phase: "validate",
+    kind: "research",
+    title: t("Check which third parties you depend on", "Revisa de qué terceros dependes"),
+    outcome: t("Which providers or platforms you cannot work without", "Sin qué proveedores o plataformas no puedes trabajar"),
+    needs: [],
+    gets: [],
+    unlocks: ["third_party_dependency"],
+    steps: [
+      s(
+        "list",
+        t("List the providers and platforms you will use", "Haz la lista de proveedores y plataformas que usarás"),
+        t("You have the list", "Tienes la lista"),
+        { user: { effort: "1_4h" }, ai: { effort: "under_1h", capability: "checklist" } },
+      ),
+      s("critical", t("Mark which ones you cannot replace easily", "Marca los que no puedes sustituir fácilmente"), t("Every one is marked", "Cada uno está marcado"), { user: { effort: "under_1h" } }, { dependsOn: ["list"] }),
     ],
   },
 
@@ -681,7 +796,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("How your customers will find and buy from you", "Cómo te encontrarán y te comprarán tus clientes"),
     needs: [],
     gets: ["channel_fit"],
-    unlocks: "acquisition_channel",
+    unlocks: ["acquisition_channel"],
     steps: [
       s("where", t("Note where your customers buy today", "Apunta dónde compran hoy tus clientes"), t("You have the list", "Tienes la lista"), { user: { effort: "1_4h" } }),
       s(
@@ -703,7 +818,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You can bid for public contracts", "Puedes presentarte a contratos públicos"),
     needs: [],
     gets: ["channel_fit"],
-    unlocks: "acquisition_channel",
+    unlocks: ["acquisition_channel"],
     when: { facts: [{ key: "customer_segment", anyOf: [option("customer_segment", "Public sector")] }] },
     steps: [
       s("register", t("Register on the public procurement platform", "Regístrate en la plataforma de contratación pública"), t("You are registered", "Estás registrado"), { user: { effort: "1_4h" } }),
@@ -762,7 +877,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You know what rent you can afford", "Sabes qué alquiler te puedes permitir"),
     needs: [],
     gets: ["premises_cost_fit"],
-    unlocks: "rent_level",
+    unlocks: ["rent_level", "monthly_rent_eur"],
     steps: [
       s("ads", t("Look at 10 premises ads in your area", "Mira 10 anuncios de locales en tu zona"), t("You have 10 ads noted", "Tienes 10 anuncios apuntados"), { user: { effort: "4_8h" } }),
       s(
@@ -806,7 +921,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("You know whether the location pays off", "Sabes si la ubicación compensa"),
     needs: [],
     gets: ["premises_cost_fit"],
-    unlocks: "monthly_rent_eur",
+    unlocks: ["monthly_rent_eur"],
     when: { facts: EXPENSIVE_RENT },
     fit: [
       {
@@ -839,6 +954,7 @@ export const MOLDS: readonly Mold[] = [
     outcome: t("Which people you need and what each does", "A quién necesitas y qué hace cada uno"),
     needs: [],
     gets: ["roles_defined"],
+    unlocks: ["team_requirement"],
     steps: [
       s(
         "tasks",

@@ -70,7 +70,7 @@ export interface Mold {
   needs: readonly StateId[];
   gets: readonly StateId[];
   /** Dato del informe que resuelve al terminar: consigue también su fact:. */
-  unlocks?: FactKey;
+  unlocks?: readonly FactKey[];
   when?: Conditions;
   /** Entra si el nivel de validación elegido es >= este. */
   validationLevel?: Level;
@@ -101,8 +101,8 @@ export function moldApplies(mold: Mold, facts: readonly Fact[], config: ConfigVi
 /** Lo que consigue, incluido el dato que resuelve. */
 export function moldGets(mold: Mold): StateId[] {
   const gets: StateId[] = [...mold.gets];
-  if (mold.unlocks) {
-    const fact: FactState = `fact:${mold.unlocks}`;
+  for (const key of mold.unlocks ?? []) {
+    const fact: FactState = `fact:${key}`;
     if (!gets.includes(fact)) gets.push(fact);
   }
   return gets;
@@ -129,7 +129,7 @@ export function moldIssues(mold: Mold): string[] {
   const issues: string[] = [];
   const at = (message: string) => issues.push(`${mold.id}: ${message}`);
 
-  if (mold.gets.length === 0 && !mold.unlocks) at("gets nothing");
+  if (mold.gets.length === 0 && (mold.unlocks ?? []).length === 0) at("gets nothing");
   for (const state of mold.needs) if (moldGets(mold).includes(state)) at(`needs what it gets: ${state}`);
   if (!mold.steps.some((step) => (step.level ?? 1) === 1)) at("no step at level 1");
 

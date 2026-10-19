@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { MOLDS } from "../../src/lib/plan/catalog.ts";
 import { defaultConfig } from "../../src/lib/plan/config.ts";
 import { findCycle } from "../../src/lib/plan/graph.ts";
+import { PERSONAL_KEYS } from "../../src/lib/plan/goals.ts";
 import { moldGets, moldIssues } from "../../src/lib/plan/mold.ts";
 import { buildSkeleton } from "../../src/lib/plan/engine.ts";
 import { rebuildPlan } from "../../src/lib/plan/orchestrator.ts";
@@ -16,20 +17,8 @@ import { areaVerdicts } from "../../src/lib/report/verdict.ts";
 const FACT_STATES = [...Object.keys(CATALOG), ...Object.values(FIGURE_KEYS)].map((key) => `fact:${key}` as StateId);
 const ALL_STATES: StateId[] = [...BUSINESS_STATES, ...FACT_STATES];
 
-/** Sin molde genérico todavía. Se vacía tanda a tanda; el test falla si algo de aquí ya está cubierto. */
-const PENDING = new Set<StateId>(
-  FACT_STATES.filter(
-    (state) =>
-      ![
-        "fact:competition",
-        "fact:differentiator",
-        "fact:startup_cost_eur",
-        "fact:monthly_fixed_costs_eur",
-        "fact:acquisition_channel",
-        "fact:rent_level",
-      ].includes(state),
-  ),
-);
+/** Datos personales: no son tareas del plan, se completan en el informe. */
+const PERSONAL = new Set<StateId>(PERSONAL_KEYS.map((key) => `fact:${key}` as StateId));
 
 const generic = (state: StateId) =>
   MOLDS.some((mold) => mold.when === undefined && mold.validationLevel === undefined && moldGets(mold).includes(state));
@@ -41,10 +30,9 @@ describe("integridad del catálogo", () => {
     assert.equal(new Set(ids).size, ids.length);
   });
 
-  it("todo estado tiene un molde sin condiciones, salvo los pendientes (y la lista no miente)", () => {
+  it("todo estado tiene un molde sin condiciones, salvo los datos personales", () => {
     for (const state of ALL_STATES) {
-      if (PENDING.has(state)) assert.ok(!generic(state), `${state} ya está cubierto: quítalo de PENDING`);
-      else assert.ok(generic(state), `${state} no tiene molde sin condiciones`);
+      if (!PERSONAL.has(state)) assert.ok(generic(state), `${state} no tiene molde sin condiciones`);
     }
   });
 
@@ -105,11 +93,8 @@ describe("de punta a punta: la cafetería de Ana", () => {
   const ids = plan.tasks.map((task) => task.id);
   const task = (id: string) => plan.tasks.find((t) => t.id === id)!;
 
-  it("solo quedan sin resolver estados pendientes de próximas tandas", () => {
-    for (const issue of plan.issues) {
-      const state = /^unreachable (.+)$/.exec(issue)?.[1];
-      assert.ok(state && PENDING.has(state as StateId), issue);
-    }
+  it("no queda nada sin resolver", () => {
+    assert.deepEqual(plan.issues, []);
   });
 
   it("sale el plan de una cafetería, sin lo que no le toca", () => {

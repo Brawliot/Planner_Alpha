@@ -41,7 +41,7 @@ export const taskSchema = z
     /** Datos del informe en que se apoya: de aquí sale su certeza. */
     basis: z.array(z.string().min(1)),
     /** Dato del informe que esta tarea resuelve al terminarla. */
-    unlocks: z.string().min(1).optional(),
+    unlocks: z.array(z.string().min(1)).min(1).optional(),
     /** Cómo valida el usuario lo que haga la IA: borrador a borrador o todos a la vez. */
     validation: z.enum(VALIDATION_MODES),
     origin: z.enum(TASK_ORIGINS),

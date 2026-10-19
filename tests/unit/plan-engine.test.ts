@@ -60,7 +60,7 @@ const config = (changes: Partial<PlanConfig> = {}): PlanConfig => ({
 // Lanzamiento de nivel 1 sin datos: primeros clientes y alta.
 const register = mold("register", ["legal_entity_ready"], { department: "legal" });
 const sell = mold("sell", ["first_customers"], { department: "sales", needs: ["legal_entity_ready"], phase: "launch" });
-const cost = mold("cost", [], { department: "finance", unlocks: "startup_cost_eur", phase: "validate" });
+const cost = mold("cost", [], { department: "finance", unlocks: ["startup_cost_eur"], phase: "validate" });
 const loan = mold("loan", ["funding_covered"], { department: "finance", needs: ["fact:startup_cost_eur"] });
 const cut = mold("cut", ["funding_covered"], {
   department: "finance",
@@ -142,7 +142,7 @@ describe("buildSkeleton: encadenado", () => {
   it("lo que una línea del informe pide directamente no se queda en la base", () => {
     // El coste de arranque es de otro departamento: como requisito del préstamo iría a la base,
     // pero la línea "por concretar" de Dinero lo pide directamente.
-    const research = mold("cost", [], { department: "operations", unlocks: "startup_cost_eur" });
+    const research = mold("cost", [], { department: "operations", unlocks: ["startup_cost_eur"] });
     const plan = build([...BASE, research, loan], {
       verdicts: [{ ...red("money", "money.short"), gaps: ["startup_cost_eur"] }],
     });
@@ -151,7 +151,7 @@ describe("buildSkeleton: encadenado", () => {
   });
 
   it("los estimados generan una línea para confirmarlos", () => {
-    const research = mold("research", [], { unlocks: "competition", department: "sales" });
+    const research = mold("research", [], { unlocks: ["competition"], department: "sales" });
     const plan = build([...BASE, research], { facts: [estimated("competition", "Crowded market")] });
     assert.equal(taskOf(plan, "research").lineId, "estimated:competition");
   });
