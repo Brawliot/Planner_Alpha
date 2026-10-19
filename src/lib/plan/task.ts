@@ -49,6 +49,8 @@ export const taskSchema = z
     mold: z.string().min(1).optional(),
     /** Solo en las de IA: frases literales de la idea en que se apoya (los datos citados van en basis). */
     quotes: z.array(z.string().min(1)).optional(),
+    /** Solo en las de IA: valor de cada dato citado al generarla (para avisar si cambia). */
+    citedValues: z.record(z.string(), z.unknown()).optional(),
     milestone: z.enum(MILESTONES).optional(),
     /** Entra si el nivel de validación elegido es >= este. */
     validationLevel: level.optional(),
