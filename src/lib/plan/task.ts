@@ -50,10 +50,6 @@ export const taskSchema = z
     validationLevel: level.optional(),
     /** En fase Lanzar: si supera el nivel de lanzamiento elegido, pasa a Operar. */
     launchLevel: level.optional(),
-    /** Solo entra si la configuración coincide (un "no lo sé" nunca coincide). */
-    appliesWhen: z.object({ employed: z.boolean().optional(), hasNetwork: z.boolean().optional() }).optional(),
-    /** Palanca a la que pertenece: solo entra si es la elegida para su línea. */
-    lever: z.string().min(1).optional(),
     /** Ya no aplica según el informe, pero se empezó: visible, fuera del timeline, no bloquea. */
     archived: z.literal("no_longer_needed").optional(),
     steps: z.array(stepSchema).min(1),

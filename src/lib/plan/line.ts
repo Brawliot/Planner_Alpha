@@ -33,8 +33,6 @@ export const lineSchema = z.object({
   department: z.enum(DEPARTMENTS),
   source: lineSourceSchema,
   goal: z.string().min(1),
-  /** Cómo se elige resolverla; dónde se elige se decide con la configuración del entorno. */
-  lever: z.string().min(1).optional(),
 });
 
 export type Line = z.infer<typeof lineSchema>;

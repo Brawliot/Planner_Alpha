@@ -29,7 +29,7 @@ export const planConfigSchema = z
     delegation: z.array(z.enum(DELEGATION)).min(1),
     validationLevel: level,
     launchLevel: level,
-    /** Palanca elegida por línea; si falta, aún no está decidida. */
+    /** Camino elegido por ti para conseguir un estado (estado → id del molde). Sin entrada, decide el motor. */
     levers: z.record(z.string(), z.string().min(1)),
   })
   .superRefine((config, ctx) => {
@@ -103,16 +103,6 @@ export function resolveActor(step: ActorChoiceInput, config: PlanConfig): { acto
   if (wants("third_party") && allows("third_party")) return { actor: "third_party", reason: "third_party_preference" };
   if (wants("self") && allows("user")) return { actor: "user", reason: "self_preference" };
   return { actor: step.suggestedActor, reason: "suggested" };
-}
-
-/** La tarea entra en el plan según la palanca de su línea, el nivel de validación y sus condiciones. */
-export function taskApplies(task: Task, config: PlanConfig) {
-  if (task.lever !== undefined && config.levers[task.lineId] !== task.lever) return false;
-  if (task.validationLevel !== undefined && task.validationLevel > config.validationLevel) return false;
-  const when = task.appliesWhen;
-  if (when?.employed !== undefined && config.employed !== when.employed) return false;
-  if (when?.hasNetwork !== undefined && config.hasNetwork !== when.hasNetwork) return false;
-  return true;
 }
 
 /** Lo de Lanzar que supera el nivel elegido pasa a Operar: se lanza antes, con lo mínimo. */

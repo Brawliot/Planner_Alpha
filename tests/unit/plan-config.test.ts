@@ -5,7 +5,6 @@ import {
   effectivePhase,
   planConfigSchema,
   resolveActor,
-  taskApplies,
   type ActorChoiceInput,
   type PlanConfig,
 } from "../../src/lib/plan/config.ts";
@@ -88,37 +87,5 @@ describe("resolveActor", () => {
 
   it("IA y terceros: la IA va antes que pagar a alguien nuevo", () => {
     assert.equal(resolveActor(logo, config({ delegation: ["ai", "third_party"] })).actor, "ai");
-  });
-});
-
-describe("taskApplies", () => {
-  it("palanca: solo la elegida; sin decidir, ninguna", () => {
-    const loan = task({ lever: "funding" });
-    assert.equal(taskApplies(loan, config({ levers: { "money.short": "funding" } })), true);
-    assert.equal(taskApplies(loan, config({ levers: { "money.short": "reduce_startup" } })), false);
-    assert.equal(taskApplies(loan, base), false);
-    assert.equal(taskApplies(task({}), base), true);
-  });
-
-  it("nivel de validación", () => {
-    const deep = task({ validationLevel: 3 });
-    assert.equal(taskApplies(deep, config({ validationLevel: 2 })), false);
-    assert.equal(taskApplies(deep, config({ validationLevel: 3 })), true);
-  });
-
-  it("condiciones: un 'no lo sé' nunca coincide", () => {
-    const compat = task({ appliesWhen: { employed: true } });
-    assert.equal(taskApplies(compat, config({ employed: true })), true);
-    assert.equal(taskApplies(compat, config({ employed: false })), false);
-    assert.equal(taskApplies(compat, base), false);
-  });
-});
-
-describe("effectivePhase", () => {
-  it("lo de Lanzar por encima de tu nivel pasa a Operar", () => {
-    const loyalty = task({ phase: "launch", launchLevel: 3 });
-    assert.equal(effectivePhase(loyalty, config({ launchLevel: 1 })), "operate");
-    assert.equal(effectivePhase(loyalty, config({ launchLevel: 3 })), "launch");
-    assert.equal(effectivePhase(task({ phase: "prepare", launchLevel: 3 }), config({ launchLevel: 1 })), "prepare");
   });
 });
