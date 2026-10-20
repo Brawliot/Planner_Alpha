@@ -16,6 +16,16 @@ import {
   type StoredNarrative,
 } from "./narrative";
 import { mergeFacts } from "./questions";
+import {
+  buildSummary,
+  SUMMARY_INSTRUCTIONS,
+  summaryInput,
+  withSummaryFormat,
+  withSummaryParser,
+  type Summary,
+  type SummaryResult,
+} from "./summary";
+import type { AreaVerdict } from "./verdict";
 import { PLAUSIBILITY_QUESTION } from "./plausibility";
 import {
   INFERENCE_INSTRUCTIONS,
@@ -104,17 +114,10 @@ export async function writeNarrative(
   const stale = staleAreas(previous, fingerprints);
   if (previous && stale.length === 0) return previous;
 
-  let result: NarrativeResult | null = null;
+  let result: (NarrativeResult & { summary: SummaryResult | null }) | null = null;
   if (verdicts.some((v) => v.verdict !== "needs_info")) {
     try {
-      const response = await callGpt({
-        task: "write",
-        instructions: NARRATIVE_INSTRUCTIONS,
-        input: narrativeInput(idea, facts, verdicts),
-        format: narrativeFormat(verdicts),
-        parse: narrativeParser(),
-        effort: "low",
-      });
+      const response = await callGpt(writeRequest(idea, facts, verdicts));
       result = response.data;
     } catch (err) {
       // Las frases no son críticas: el informe sale con plantillas.
@@ -122,7 +125,36 @@ export async function writeNarrative(
     }
   }
 
-  return mergeNarrative(buildNarrative(result, idea, facts, verdicts), previous, stale, fingerprints);
+  const merged = mergeNarrative(buildNarrative(result, idea, facts, verdicts), previous, stale, fingerprints);
+  // El resumen habla de todo el informe: si cambió cualquier área, se redacta de nuevo.
+  return { ...merged, summary: buildSummary(result?.summary, idea, facts, verdicts) };
+}
+
+/** Una sola petición para las frases de las áreas y el resumen ejecutivo. */
+function writeRequest(idea: string, facts: Fact[], verdicts: readonly AreaVerdict[]) {
+  return {
+    task: "write" as const,
+    instructions: `${NARRATIVE_INSTRUCTIONS} ${SUMMARY_INSTRUCTIONS}`,
+    input: summaryInput(idea, facts, verdicts),
+    format: withSummaryFormat(narrativeFormat(verdicts), verdicts),
+    parse: withSummaryParser(narrativeParser()),
+    effort: "low" as const,
+  };
+}
+
+/**
+ * Solo el resumen (reintento desde el popup). Repite la misma petición y descarta las frases:
+ * así valen las mismas reglas de cifras e idioma. null si GPT falla o no pasa la revisión.
+ */
+export async function writeSummary(idea: string, facts: Fact[]): Promise<Summary | null> {
+  const verdicts = areaVerdicts(facts);
+  try {
+    const response = await callGpt(writeRequest(idea, facts, verdicts));
+    return buildSummary(response.data.summary, idea, facts, verdicts);
+  } catch (err) {
+    console.error("report: no se pudo redactar el resumen", err instanceof Error ? err.name : "desconocido");
+    return null;
+  }
 }
 
 /**

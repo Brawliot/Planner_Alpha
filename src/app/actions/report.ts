@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { parseIdea } from "@/lib/report/idea";
 import { classifyIdea } from "@/lib/report/classify";
@@ -9,7 +10,7 @@ import { findContradictions } from "@/lib/report/contradictions";
 import type { Fact } from "@/lib/report/facts";
 import { getOwnReport, insertReport, updateOwnReport, type ReportStatus } from "@/lib/report/repository";
 import { currentStep, mergeFacts, nextStatus, parseAnswers } from "@/lib/report/questions";
-import { analyse, reanalyse, writeNarrative } from "@/lib/report/analyse";
+import { analyse, reanalyse, writeNarrative, writeSummary } from "@/lib/report/analyse";
 import { improvementsByArea, parseImproveAnswers } from "@/lib/report/improve";
 export type FormState = { error: string | null };
 
@@ -108,6 +109,32 @@ export async function improveArea(
     return { error: "failed" };
   }
   redirect(`/informe/${report.id}?area=${encodeURIComponent(area)}`);
+}
+
+/** Errores como código: el popup los muestra en el idioma del informe. */
+export type SummaryState = { error: "stale" | "failed" | null };
+
+/** Vuelve a redactar solo el resumen ejecutivo. Vale en revisión y aprobado: no toca los datos. */
+export async function retrySummary(id: string, _prev: SummaryState): Promise<SummaryState> {
+  const user = await requireUser();
+  const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
+  if (!report?.narrative || (report.status !== "review" && report.status !== "approved")) return { error: "stale" };
+
+  const summary = await writeSummary(report.idea, report.facts);
+  if (!summary) return { error: "failed" };
+  try {
+    await updateOwnReport(user.id, report.id, report.status, {
+      facts: report.facts,
+      status: report.status,
+      narrative: { ...report.narrative, summary },
+    });
+  } catch (err) {
+    logError("guardar el resumen", err);
+    return { error: "failed" };
+  }
+  // Misma página, sin redirección: hay que pedir que se repinte con el resumen nuevo.
+  refresh();
+  return { error: null };
 }
 
 export type EditState = { error: "stale" | "invalid" | "inconsistent_budget" | "failed" | null };

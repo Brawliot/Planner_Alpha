@@ -4,6 +4,7 @@ import { certaintyOf } from "./certainty.ts";
 import type { Fact } from "./facts.ts";
 import { moneyCheck } from "./money.ts";
 import type { AreaVerdict } from "./verdict.ts";
+import type { Summary } from "./summary.ts";
 
 /**
  * Frases del informe. GPT redacta; el código decide qué se dice (veredicto, motivo, cifras) y revisa
@@ -244,8 +245,11 @@ export function buildNarrative(
 // ---- Guardado y regeneración parcial
 
 /** Lo que se guarda: la narrativa y la huella de los datos con los que se redactó cada área. */
-export type StoredNarrative = Narrative & { fingerprints: Partial<Record<AreaKey, string>> };
-
+export type StoredNarrative = Narrative & {
+  fingerprints: Partial<Record<AreaKey, string>>;
+  /** Resumen ejecutivo revisado; null si GPT falló o no pasó la revisión; ausente en informes antiguos. */
+  summary?: Summary | null;
+};
 /** Huella de cada área: sus datos tal como se le pasan a GPT. Si cambian, su frase está desfasada. */
 export function areaFingerprints(facts: readonly Fact[], verdicts: readonly AreaVerdict[]) {
   return Object.fromEntries(verdicts.map((v) => [v.area, JSON.stringify(areaData(facts, v))])) as Partial<

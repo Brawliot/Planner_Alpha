@@ -104,3 +104,25 @@ describe("por concretar", () => {
     assert.deepEqual(founder?.pending.slice(0, 2).map((p) => p.key), ["founder_experience", "time_commitment"]);
   });
 });
+
+describe("resumen ejecutivo", () => {
+  const narrative = {
+    language: "es" as const,
+    areas: {},
+    risks: [],
+    fingerprints: { money: "huella interna" },
+    summary: { lead: [{ text: "Hola" }], next: [{ text: "Sigue" }] },
+  };
+
+  it("llega a la vista tal cual; la huella interna no", () => {
+    const view = reportView("idea", [], narrative);
+    assert.deepEqual(view.summary, narrative.summary);
+    assert.equal(JSON.stringify(view).includes("huella interna"), false);
+  });
+
+  it("sin narrativa o en un informe antiguo (sin resumen), null", () => {
+    assert.equal(reportView("idea", [], null).summary, null);
+    const { summary: _summary, ...old } = narrative;
+    assert.equal(reportView("idea", [], old).summary, null);
+  });
+});

@@ -7,6 +7,7 @@ import { improvementsByArea } from "./improve.ts";
 import { findContradictions, type Contradiction } from "./contradictions.ts";
 import { usable } from "./areas.ts";
 import { reportTexts } from "./i18n.ts";
+import type { Summary } from "./summary.ts";
 
 /**
  * Vista del informe: lo único que llega al navegador. Textos y veredictos ya decididos;
@@ -42,6 +43,8 @@ export interface ReportView {
   contradictions: Contradiction[];
   /** Aprobado: solo lectura hasta que se reabra. */
   approved: boolean;
+  /** Resumen ejecutivo (texto de la IA con las cifras marcadas por el código), o null si no lo hay. */
+  summary: Summary | null;
 }
 
 const MONTHLY_KEYS = ["monthly_fixed_costs_eur", "monthly_rent_eur"];
@@ -151,5 +154,6 @@ export function reportView(
     focusArea: focus?.area ?? null,
     contradictions,
     approved,
+    summary: narrative?.summary ?? null,
   };
 }
