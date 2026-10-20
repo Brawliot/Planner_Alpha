@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import type { FormState } from "@/app/actions/report";
 import { Button } from "@/components/ui/button";
 import { ChoiceGroup } from "@/components/ui/choice-group";
+import { NOT_DECIDED } from "@/lib/report/certainty";
 import type { QuestionStep } from "@/lib/report/questions";
 import { cn } from "@/lib/cn";
 
@@ -22,26 +23,59 @@ type QuestionsFormProps = {
 
 export function QuestionsForm({ action, topic, title, from, to, totalQuestions, topics, questions }: QuestionsFormProps) {
   const [state, formAction, pending] = useActionState(action, { error: null });
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const canSkip = questions.some((q) => q.options.includes(NOT_DECIDED));
+
+  // Al llegar a un tema nuevo (se monta de nuevo por key), el foco va a su título: el lector lo anuncia.
+  // En la primera pantalla no: el usuario acaba de llegar y no se le mueve el foco.
+  useEffect(() => {
+    if (from > 1) headingRef.current?.focus();
+  }, [from]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form action={formAction} className="flex flex-col gap-8">
       <input type="hidden" name="topic" value={topic} />
       <TopicProgress topics={topics} />
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-muted-foreground">
           {from === to ? `Question ${from} of ${totalQuestions}` : `Questions ${from}–${to} of ${totalQuestions}`}
         </p>
+        <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-bold tracking-tighter outline-none">
+          {title}
+        </h1>
+        {canSkip && (
+          <p className="text-muted-foreground">
+            If you don&apos;t know, say so: we&apos;ll mark it as{" "}
+            <span className="rounded-full border border-dashed border-muted-foreground px-2 text-xs">to be confirmed</span>.
+          </p>
+        )}
       </div>
-      {questions.map((q) => (
-        <ChoiceGroup key={q.key} name={q.key} legend={q.prompt} options={q.options} required />
+
+      {questions.map((q, index) => (
+        <div
+          key={q.key}
+          className="rise rounded-[1.25rem] bg-surface p-6 shadow-soft"
+          style={{ animationDelay: `${index * 60}ms` }}
+        >
+          <ChoiceGroup name={q.key} legend={q.prompt} options={q.options} required />
+        </div>
       ))}
-      <Button type="submit" disabled={pending} className="self-end">
-        {pending ? "Saving…" : "Continue"}
-      </Button>
-      <p aria-live="polite" className="text-sm text-danger">
-        {state.error}
-      </p>
+
+      <div className="flex flex-col items-end gap-2">
+        <Button type="submit" variant="accent" disabled={pending} className="min-h-11 gap-2 px-6">
+          {pending ? (
+            "Saving…"
+          ) : (
+            <>
+              Continue <span aria-hidden="true">→</span>
+            </>
+          )}
+        </Button>
+        <p aria-live="polite" className="text-sm text-danger">
+          {state.error}
+        </p>
+      </div>
     </form>
   );
 }

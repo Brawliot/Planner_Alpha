@@ -49,7 +49,7 @@ async function ReportContent({ id, area }: { id: string; area: string | null }) 
   return (
     <>
       <h1 className="text-2xl font-semibold">Tu idea</h1>
-      <p className="whitespace-pre-wrap break-words">{report.idea}</p>
+      <p className="whitespace-pre-wrap break-words">{idea}</p>
       <ReportStep report={report} />
     </>
   );
@@ -63,6 +63,7 @@ function ReportStep({ report }: { report: Report }) {
     case "new":
       return (
         <>
+          <h1 className="sr-only">Your idea</h1>
           <p className="text-sm">No hemos podido analizar tu idea.</p>
           <RetryForm action={retryClassification.bind(null, report.id)} />
         </>
@@ -73,6 +74,8 @@ function ReportStep({ report }: { report: Report }) {
       // Al navegador solo llegan las preguntas pendientes de este tema, no lo que ya se sabe.
       return (
         <QuestionsForm
+          // Un tema nuevo monta el formulario de nuevo: empieza limpio y recibe el foco.
+          key={step.topic}
           action={answerQuestions.bind(null, report.id)}
           topic={step.topic}
           title={step.title}
@@ -87,6 +90,7 @@ function ReportStep({ report }: { report: Report }) {
     case "analysis":
       return (
         <>
+          <h1 className="sr-only">Your idea</h1>
           <p className="text-sm">No hemos podido completar el análisis de tu idea.</p>
           <RetryForm action={retryAnalysis.bind(null, report.id)} />
         </>
