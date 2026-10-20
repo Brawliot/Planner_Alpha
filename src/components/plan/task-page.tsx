@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PlanTexts } from "@/lib/plan/i18n";
+import { fillText, type PlanTexts } from "@/lib/plan/i18n";
 import type { Range } from "@/lib/plan/task";
 import type { TaskLink, TaskPageView } from "@/lib/plan/task-view";
 import type { PlanStepView } from "@/lib/plan/view";
@@ -30,7 +30,9 @@ export function TaskPage({ page, t, reportId, version }: { page: TaskPageView; t
   const { task, language, summary } = page;
   const taskHref = (id: string) => `/informe/${reportId}/plan/tarea/${encodeURIComponent(id)}`;
   const who = (step: PlanStepView) =>
-    step.actor === "third_party" ? t.task.whoThird(t.thirdParty[step.thirdParty ?? "other"]) : t.task.who[step.actor];
+    step.actor === "third_party"
+      ? fillText(t.task.whoThird, { who: t.thirdParty[step.thirdParty ?? "other"] })
+      : t.task.who[step.actor];
   const pct = summary.total === 0 ? 0 : Math.round((summary.done / summary.total) * 100);
 
   return (
@@ -47,7 +49,9 @@ export function TaskPage({ page, t, reportId, version }: { page: TaskPageView; t
               {t.task.previous}
             </Link>
           )}
-          <span className="text-xs text-muted-foreground">{t.task.position(page.position.index, page.position.total)}</span>
+          <span className="text-xs text-muted-foreground">
+            {fillText(t.task.position, { index: page.position.index, total: page.position.total })}
+          </span>
           {page.next && (
             <Link href={taskHref(page.next.id)} className={buttonStyles("secondary", "min-h-11 rounded-full")}>
               {t.task.next}
@@ -93,7 +97,7 @@ export function TaskPage({ page, t, reportId, version }: { page: TaskPageView; t
               >
                 <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
               </div>
-              <b>{t.task.progress(summary.done, summary.total)}</b>
+              <b>{fillText(t.task.progress, { done: summary.done, total: summary.total })}</b>
             </div>
             {summary.userHours.max > 0 && (
               <span className="flex items-center gap-2">
@@ -104,13 +108,13 @@ export function TaskPage({ page, t, reportId, version }: { page: TaskPageView; t
             {summary.aiDrafts > 0 && (
               <span className="flex items-center gap-2">
                 <WhoIcon actor="ai" small />
-                {t.task.drafts(summary.aiDrafts)}
+                {summary.aiDrafts === 1 ? t.task.draftOne : fillText(t.task.draftMany, { n: summary.aiDrafts })}
               </span>
             )}
             {summary.aiPending > 0 && (
               <span className="flex items-center gap-2">
                 <WhoIcon actor="ai" small />
-                {t.task.aiPending(summary.aiPending)}
+                {summary.aiPending === 1 ? t.task.aiStepOne : fillText(t.task.aiStepMany, { n: summary.aiPending })}
               </span>
             )}
             {summary.wait && (

@@ -60,20 +60,23 @@ export interface PlanTexts {
   status: Record<"todo" | "ai_draft" | "requested" | "received" | "done" | "skipped", string>;
   action: Record<"done" | "skipped" | "requested" | "received" | "todo", string>;
   progressError: Record<"stale" | "invalid" | "failed", string>;
+  /** Solo textos (sin funciones): t se pasa a componentes de cliente. Las plantillas se rellenan con fillText. */
   task: {
-    position: (index: number, total: number) => string;
+    position: string;
     previous: string;
     next: string;
-    progress: (done: number, total: number) => string;
+    progress: string;
     yourHours: string;
-    drafts: (n: number) => string;
-    aiPending: (n: number) => string;
+    draftOne: string;
+    draftMany: string;
+    aiStepOne: string;
+    aiStepMany: string;
     days: string;
     waitDays: string;
     now: string;
     doneWhen: string;
     who: { user: string; ai: string };
-    whoThird: (who: string) => string;
+    whoThird: string;
     yourTime: string;
     cost: string;
     waitLabel: string;
@@ -171,19 +174,21 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     status: { todo: "Pendiente", ai_draft: "Borrador", requested: "Pedido", received: "Recibido", done: "Hecho", skipped: "Saltado" },
     action: { done: "Hecho", skipped: "Saltar", requested: "Pedido", received: "Recibido", todo: "Reabrir" },
     task: {
-      position: (index, total) => `${index} de ${total}`,
+      position: "{index} de {total}",
       previous: "Anterior",
       next: "Siguiente",
-      progress: (done, total) => `${done} de ${total}`,
+      progress: "{done} de {total}",
       yourHours: "tuyas",
-      drafts: (n) => (n === 1 ? "1 borrador por validar" : `${n} borradores por validar`),
-      aiPending: (n) => (n === 1 ? "1 paso de la IA" : `${n} pasos de la IA`),
+      draftOne: "1 borrador por validar",
+      draftMany: "{n} borradores por validar",
+      aiStepOne: "1 paso de la IA",
+      aiStepMany: "{n} pasos de la IA",
       days: "días",
       waitDays: "de espera",
       now: "Ahora",
       doneWhen: "Está hecho cuando",
       who: { user: "Lo haces tú", ai: "Lo prepara la IA, lo validas tú" },
-      whoThird: (who) => `Lo hace ${who}`,
+      whoThird: "Lo hace {who}",
       yourTime: "Tu tiempo",
       cost: "Coste",
       waitLabel: "Espera",
@@ -284,19 +289,21 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     status: { todo: "To do", ai_draft: "Draft", requested: "Requested", received: "Received", done: "Done", skipped: "Skipped" },
     action: { done: "Done", skipped: "Skip", requested: "Requested", received: "Received", todo: "Reopen" },
     task: {
-      position: (index, total) => `${index} of ${total}`,
+      position: "{index} of {total}",
       previous: "Previous",
       next: "Next",
-      progress: (done, total) => `${done} of ${total}`,
+      progress: "{done} of {total}",
       yourHours: "yours",
-      drafts: (n) => (n === 1 ? "1 draft to review" : `${n} drafts to review`),
-      aiPending: (n) => (n === 1 ? "1 AI step" : `${n} AI steps`),
+      draftOne: "1 draft to review",
+      draftMany: "{n} drafts to review",
+      aiStepOne: "1 AI step",
+      aiStepMany: "{n} AI steps",
       days: "days",
       waitDays: "of waiting",
       now: "Now",
       doneWhen: "Done when",
       who: { user: "You do it", ai: "The AI drafts it, you validate it" },
-      whoThird: (who) => `Done by ${who}`,
+      whoThird: "Done by {who}",
       yourTime: "Your time",
       cost: "Cost",
       waitLabel: "Wait",
@@ -314,3 +321,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     },
   },
 };
+
+/** Rellena una plantilla: fillText("{done} de {total}", { done: 1, total: 4 }) → "1 de 4". */
+export function fillText(template: string, values: Record<string, string | number>) {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+}
