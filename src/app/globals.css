@@ -208,6 +208,15 @@
   to { --border-angle: 360deg; }
 }
 
+/* ========== Resumen ejecutivo ========== */
+.summary-panel {
+  animation: summary-panel 350ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes summary-panel {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ========== Espera del análisis ========== */
 .analysis-diamond {
   transform-box: fill-box;
@@ -274,7 +283,8 @@
   .analysis-halo,
   .analysis-bar::after,
   .analysis-spinner,
-  .analysis-step {
+  .analysis-step,
+  .summary-panel {
     animation: none;
   }
 }

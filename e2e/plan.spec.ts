@@ -1,7 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
-import { createUser, deleteTestUsers, login, resetRateLimits, uniqueEmail } from "./helpers";
+import { createUser, deleteTestUsers, login, resetRateLimits, skipSummaryPopup, uniqueEmail } from "./helpers";
 
-test.beforeEach(async () => {
+test.beforeEach(async ({ page }) => {
+  await skipSummaryPopup(page);
   await resetRateLimits();
 });
 

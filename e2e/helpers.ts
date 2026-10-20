@@ -61,3 +61,13 @@ export function reportIdFrom(url: string) {
   // Solo la ruta: tras mejorar un área la URL lleva ?area=...
   return new URL(url).pathname.split("/").pop() ?? "";
 }
+
+/** El resumen ejecutivo se abre solo la primera vez: en los tests que no lo prueban, se da por visto. */
+export async function skipSummaryPopup(page: Page) {
+  await page.addInitScript(() => {
+    const getItem = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      return key.startsWith("mando:resumen-visto:") ? "1" : getItem.call(this, key);
+    };
+  });
+}

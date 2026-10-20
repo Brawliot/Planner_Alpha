@@ -38,6 +38,25 @@ export interface ReportTexts {
   approved: string;
   reopen: string;
   plan: string; contradictionsTitle: string;
+  summary: {
+    open: string;
+    aiBadge: string;
+    partsLabel: string;
+    tab: Record<"strengths" | "work" | "unknown" | "next", string>;
+    heading: Record<"strengths" | "work" | "unknown" | "next", string>;
+    counts: (strong: number, risk: number, unknown: number) => string;
+    previous: string;
+    next: string;
+    toReport: string;
+    close: string;
+    footnote: string;
+    unavailable: string;
+    retry: string;
+    writing: string;
+    error: Record<"stale" | "failed", string>;
+    generate: string;
+    soon: string;
+  };
   contradiction: Record<ContradictionId, string>;
   includesEstimate: string;
   approveError: Record<"stale" | "contradictions" | "failed", string>;
@@ -109,6 +128,34 @@ const ES: ReportTexts = {
   approved: "Aprobado · listo para planificar",
     reopen: "Reabrir",
   plan: "Mi plan",
+  summary: {
+    open: "Resumen ejecutivo",
+    aiBadge: "Redactado por la IA",
+    partsLabel: "Partes del resumen",
+    tab: { strengths: "Lo sólido", work: "A trabajar", unknown: "Sin datos", next: "Siguiente paso" },
+    heading: {
+      strengths: "Lo más sólido",
+      work: "Lo que hay que trabajar",
+      unknown: "Lo que aún no sabemos",
+      next: "Siguiente paso",
+    },
+    counts: (strong, risk, unknown) => `${strong} a favor · ${risk} a trabajar · ${unknown} sin datos`,
+    previous: "Anterior",
+    next: "Siguiente",
+    toReport: "Ver el informe",
+    close: "Cerrar",
+    footnote:
+      "Texto redactado por IA a partir de tu informe. Las cifras las calcula el código. Orientativo: no es asesoramiento financiero ni legal.",
+    unavailable: "No hemos podido redactar el resumen.",
+    retry: "Reintentar",
+    writing: "Redactando tu resumen…",
+    error: {
+      stale: "Este informe ha cambiado. Recarga la página.",
+      failed: "Seguimos sin poder redactarlo. Inténtalo en unos minutos.",
+    },
+    generate: "Generar informe",
+    soon: "Próximamente",
+  },
   contradictionsTitle: "Hay datos que se contradicen",
   contradiction: {
     online_with_premises: "El negocio es solo online, pero tiene local o alquiler.",
@@ -219,6 +266,33 @@ const EN: ReportTexts = {
   approved: "Approved · ready to plan",
     reopen: "Reopen",
   plan: "My plan",
+  summary: {
+    open: "Executive summary",
+    aiBadge: "Written by AI",
+    partsLabel: "Summary sections",
+    tab: { strengths: "Strengths", work: "Needs work", unknown: "Unknown", next: "Next step" },
+    heading: {
+      strengths: "What is most solid",
+      work: "What needs work",
+      unknown: "What we don't know yet",
+      next: "Next step",
+    },
+    counts: (strong, risk, unknown) => `${strong} in your favour · ${risk} need work · ${unknown} without data`,
+    previous: "Previous",
+    next: "Next",
+    toReport: "View the report",
+    close: "Close",
+    footnote: "Written by AI from your report. Figures are calculated by code. Indicative: not financial or legal advice.",
+    unavailable: "We couldn't write your summary.",
+    retry: "Try again",
+    writing: "Writing your summary…",
+    error: {
+      stale: "This report has changed. Reload the page.",
+      failed: "We still couldn't write it. Try again in a few minutes.",
+    },
+    generate: "Generate report",
+    soon: "Coming soon",
+  },
   contradictionsTitle: "Some data contradict each other",
   contradiction: {
     online_with_premises: "The business is online only, but it has premises or rent.",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useActionState, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   approveReport,
   improveArea,
@@ -15,6 +15,7 @@ import type { AreaCard, ReportView } from "@/lib/report/view";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { VerdictIcon, VerdictLabel } from "@/components/ui/verdict-icon";
+import { SummaryDialog } from "./summary-dialog";
 import { cn } from "@/lib/cn";
 
 const LEGEND = ["strong", "risk", "needs_info"] as const;
@@ -51,6 +52,7 @@ export function ReportInteractive({
   const [selected, setSelected] = useState<Selection>(initialArea);
   const isMobile = useIsMobile();
   const panelId = useId();
+  const summaryRef = useRef<HTMLDialogElement>(null);
 
   const toggle = (key: Exclude<Selection, null>) => setSelected((current) => (current === key ? null : key));
   // Abre un área y lleva el foco a su tarjeta (el navegador la hace visible).
@@ -65,6 +67,28 @@ export function ReportInteractive({
       <div className="grid gap-6 md:grid-cols-2">
         <div className="flex flex-col gap-6">
           <h1 className="text-2xl font-semibold leading-tight">{t.title}</h1>
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="accent" className="min-h-11" onClick={() => summaryRef.current?.showModal()}>
+              {t.summary.open}
+            </Button>
+            {/* Sin función todavía: aria-disabled (no disabled) para que teclado y lector lleguen y lean "Próximamente". */}
+            <button
+              type="button"
+              aria-disabled="true"
+              className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-md border px-4 text-sm font-medium text-muted-foreground"
+            >
+              {t.summary.generate}
+              <span className="rounded-full bg-muted px-2 text-[11px]">{t.summary.soon}</span>
+            </button>
+          </div>
+          <SummaryDialog
+            view={view}
+            reportId={reportId}
+            t={t}
+            dialogRef={summaryRef}
+            autoOpen={initialArea === null}
+          />
 
           {view.approved && (
             <p role="status" className="rounded-lg border border-success px-4 py-2 font-semibold text-success">

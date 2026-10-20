@@ -7,11 +7,13 @@ import {
   login,
   reportIdFrom,
   resetRateLimits,
+  skipSummaryPopup,
   uniqueEmail,
 } from "./helpers";
 
 
-test.beforeEach(async () => {
+test.beforeEach(async ({ page }) => {
+  await skipSummaryPopup(page);
   await resetRateLimits();
 });
 
