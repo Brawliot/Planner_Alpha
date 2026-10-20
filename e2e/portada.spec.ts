@@ -62,10 +62,16 @@ test.describe("portada", () => {
     await expect(page.getByLabel("Tu idea")).toHaveValue("Un bar de tapas en Madrid");
   });
 
-  test("sin sesión, enviar una idea lleva a iniciar sesión", async ({ page }) => {
+  test("sin sesión, enviar una idea abre el popup de registro con la idea", async ({ page }) => {
     await page.goto("/");
-getByText("Hola, Ana Prueba")
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await page.getByLabel("Tu idea").fill("Un bar de tapas en Madrid");
+    await page.getByLabel("Tu idea").press("Enter");
+
+    const dialog = page.getByRole("dialog");
+    const card = dialog.locator("section:not([inert])");
+    await expect(card.getByRole("heading", { name: "Crear Cuenta" })).toBeVisible();
+    await expect(page).toHaveURL(`${BASE_URL}/registro`);
+    await expect(card.getByText("Un bar de tapas en Madrid")).toBeVisible();
   });
 
   test("sin sesión, la cabecera tiene los enlaces y Iniciar sesión abre el popup", async ({ page }) => {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { PasswordField } from "@/components/ui/password-field";
 
 export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
   const router = useRouter();
@@ -41,11 +42,11 @@ export function LoginForm({ onSwitch }: { onSwitch?: () => void }) {
     <div className="flex flex-col gap-4">
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <Field label="Email" name="email" type="email" required maxLength={254} autoComplete="email" />
-        <Field label="Contraseña" name="password" type="password" required maxLength={128} autoComplete="current-password" />
+        <PasswordField label="Contraseña" name="password" required maxLength={128} autoComplete="current-password" />
 
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" variant="accent" disabled={loading} className="min-h-11 w-full">
           {loading ? "Entrando..." : "Entrar"}
         </Button>
       </form>

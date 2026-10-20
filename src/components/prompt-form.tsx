@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { createReport, type FormState } from "@/app/actions/report";
 import { IDEA_MAX_LENGTH } from "@/lib/report/idea";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,11 @@ function subscribe(onChange: () => void) {
   return () => window.removeEventListener("storage", onChange);
 }
 
+/** Borrador de la idea en este navegador ("" en el servidor). También lo lee el popup de acceso. */
+export function useIdeaDraft() {
+  return useSyncExternalStore(subscribe, readDraft, () => "");
+}
+
 const EXAMPLES = [
   { label: "Cafetería", idea: "Una cafetería de especialidad con tostado propio en mi barrio", Icon: CupIcon },
   { label: "Tienda online", idea: "Una tienda online de cerámica hecha a mano", Icon: BagIcon },
@@ -45,7 +51,8 @@ const EXAMPLES = [
 
 export function PromptForm({ signedIn }: { signedIn: boolean }) {
   // En el servidor no hay borrador; en el navegador se lee sin desajuste de hidratación.
-  const draft = useSyncExternalStore(subscribe, readDraft, () => "");
+  const draft = useIdeaDraft();
+  const router = useRouter();
   const [typed, setTyped] = useState<string | null>(null);
   const text = typed ?? draft;
   const [state, formAction, pending] = useActionState(createReport, initialState);
@@ -61,8 +68,17 @@ export function PromptForm({ signedIn }: { signedIn: boolean }) {
     <div className="flex w-full flex-col items-center gap-5">
       <form
         action={formAction}
-        // Con sesión, la idea se envía de verdad: el borrador ya no hace falta.
-        onSubmit={() => signedIn && writeDraft("")}
+        onSubmit={(e) => {
+          // Sin sesión: no se llama al servidor; se abre el popup de registro (navegación interceptada).
+          // La idea queda en el borrador. Sin JS, la acción sigue redirigiendo a /login.
+          if (!signedIn) {
+            e.preventDefault();
+            router.push("/registro");
+            return;
+          }
+          // Con sesión, la idea se envía de verdad: el borrador ya no hace falta.
+          writeDraft("");
+        }}
         className="w-full max-w-2xl text-left"
       >
         <div className="glow-border flex flex-col gap-3 rounded-[1.25rem] bg-background p-5">

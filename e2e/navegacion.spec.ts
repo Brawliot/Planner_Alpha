@@ -52,3 +52,23 @@ test("el registro enlaza al aviso legal y la página existe", async ({ page }) =
   await page.goto("/legal/aviso");
   await expect(page.getByRole("heading", { name: "Aviso legal" })).toBeVisible();
 });
+
+test("el popup se cierra con el botón Cerrar", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("banner").getByRole("link", { name: "Iniciar sesión" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("la contraseña se puede mostrar y ocultar", async ({ page }) => {
+  await page.goto("/login");
+  const card = page.locator("section:not([inert])");
+  const password = card.getByLabel("Contraseña");
+  await expect(password).toHaveAttribute("type", "password");
+  await card.getByRole("button", { name: "Mostrar clave" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+});

@@ -4,16 +4,14 @@ import { unstable_rethrow } from "next/navigation";
 import { getUser } from "@/lib/session";
 import { buttonStyles } from "@/components/ui/button";
 import { UserMenu } from "@/components/user-menu";
+import { LogoMark } from "@/components/logo-mark";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2 font-semibold">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6">
-            <rect width="24" height="24" rx="6" className="fill-accent" />
-            <path d="M12 6l6 6-6 6-6-6z" className="fill-accent-foreground" />
-          </svg>
+          <LogoMark />
           Mando
         </Link>
         {/* Hueco reservado mientras carga la sesión: la cabecera no cambia de forma. */}

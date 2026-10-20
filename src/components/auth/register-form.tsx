@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { PasswordField } from "@/components/ui/password-field";
 
 export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
   const router = useRouter();
@@ -44,11 +45,19 @@ export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
         <Field label="Nombre" name="name" required maxLength={100} autoComplete="given-name" />
         <Field label="Apellidos" name="lastName" required maxLength={100} autoComplete="family-name" />
         <Field label="Email" name="email" type="email" required maxLength={254} autoComplete="email" />
-        <Field label="Contraseña" name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" />
+        <PasswordField
+          label="Contraseña"
+          name="password"
+          hint="Mínimo 10 caracteres"
+          required
+          minLength={10}
+          maxLength={128}
+          autoComplete="new-password"
+        />
 
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" variant="accent" disabled={loading} className="min-h-11 w-full">
           {loading ? "Creando cuenta..." : "Crear Cuenta"}
         </Button>
 
