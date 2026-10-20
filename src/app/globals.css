@@ -208,11 +208,73 @@
   to { --border-angle: 360deg; }
 }
 
+/* ========== Espera del análisis ========== */
+.analysis-diamond {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: analysis-turn 3.2s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes analysis-turn {
+  50% { transform: rotate(180deg) scale(0.86); }
+  to { transform: rotate(360deg); }
+}
+
+.analysis-ring {
+  animation: analysis-ring 2.4s ease-out infinite;
+}
+@keyframes analysis-ring {
+  from { transform: scale(0.6); opacity: 0.7; }
+  to { transform: scale(1.7); opacity: 0; }
+}
+
+/* Centrado con translate y animación con scale: propiedades distintas, no se pisan. */
+.analysis-halo {
+  translate: -50% -50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 28%, transparent), transparent);
+  animation: analysis-breathe 3s ease-in-out infinite;
+}
+@keyframes analysis-breathe {
+  50% { opacity: 0.55; scale: 0.92; }
+}
+
+.analysis-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-foreground) 55%, transparent), transparent);
+  animation: analysis-sheen 1.6s linear infinite;
+}
+@keyframes analysis-sheen {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.analysis-spinner {
+  animation: analysis-spin 0.9s linear infinite;
+}
+@keyframes analysis-spin {
+  to { transform: rotate(360deg); }
+}
+
+.analysis-step {
+  animation: analysis-step 400ms ease-out both;
+}
+@keyframes analysis-step {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .modal-enter,
   .modal-enter::backdrop,
   .rise,
-  .glow-border {
+  .glow-border,
+  .analysis-diamond,
+  .analysis-ring,
+  .analysis-halo,
+  .analysis-bar::after,
+  .analysis-spinner,
+  .analysis-step {
     animation: none;
   }
 }

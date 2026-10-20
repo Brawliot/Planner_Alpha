@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import type { FormState } from "@/app/actions/report";
 import { Button } from "@/components/ui/button";
 import { ChoiceGroup } from "@/components/ui/choice-group";
+import { AnalysisWait } from "./analysis-wait";
 import { NOT_DECIDED } from "@/lib/report/certainty";
 import type { QuestionStep } from "@/lib/report/questions";
 import { cn } from "@/lib/cn";
@@ -25,6 +26,8 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
   const [state, formAction, pending] = useActionState(action, { error: null });
   const headingRef = useRef<HTMLHeadingElement>(null);
   const canSkip = questions.some((q) => q.options.includes(NOT_DECIDED));
+  // La última pantalla dispara el análisis completo (~17 s): mientras tanto, la espera.
+  const waiting = pending && to === totalQuestions;
 
   // Al llegar a un tema nuevo (se monta de nuevo por key), el foco va a su título: el lector lo anuncia.
   // En la primera pantalla no: el usuario acaba de llegar y no se le mueve el foco.
@@ -33,7 +36,10 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
   }, [from]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-8">
+    <>
+      {waiting && <AnalysisWait />}
+      {/* Oculto, no desmontado: la acción en curso no se toca. */}
+      <form action={formAction} hidden={waiting} className="flex flex-col gap-8">
       <input type="hidden" name="topic" value={topic} />
       <TopicProgress topics={topics} />
 
@@ -76,7 +82,8 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
           {state.error}
         </p>
       </div>
-    </form>
+      </form>
+    </>
   );
 }
 
