@@ -12,12 +12,18 @@ export function StepActions({
   version,
   step,
   t,
+  returnTo,
+  emphasis = false,
 }: {
   reportId: string;
   taskId: string;
   version: number;
   step: PlanStepView;
   t: PlanTexts;
+  /** "task": tras guardar, vuelve a la página de la tarea (si no, al plan). */
+  returnTo?: "task";
+  /** Paso actual: el primer botón es el principal (lima) y todos miden 44 px. */
+  emphasis?: boolean;
 }) {
   const action = useMemo(() => markStepAction.bind(null, reportId, taskId, step.id), [reportId, taskId, step.id]);
   const [state, formAction, pending] = useActionState<ProgressState, FormData>(action, { error: null });
@@ -26,8 +32,17 @@ export function StepActions({
   return (
     <form action={formAction} className="mt-1 flex flex-wrap items-center gap-2">
       <input type="hidden" name="version" value={version} />
-      {step.actions.map((to) => (
-        <Button key={to} type="submit" name="to" value={to} variant="secondary" disabled={pending} className="min-h-9 px-3 py-1 text-xs">
+      {returnTo && <input type="hidden" name="return" value={returnTo} />}
+      {step.actions.map((to, index) => (
+        <Button
+          key={to}
+          type="submit"
+          name="to"
+          value={to}
+          variant={emphasis && index === 0 ? "accent" : "secondary"}
+          disabled={pending}
+          className={emphasis ? "min-h-11" : "min-h-9 px-3 py-1 text-xs"}
+        >
           {t.action[to]}
         </Button>
       ))}

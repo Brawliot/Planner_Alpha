@@ -60,6 +60,30 @@ export interface PlanTexts {
   status: Record<"todo" | "ai_draft" | "requested" | "received" | "done" | "skipped", string>;
   action: Record<"done" | "skipped" | "requested" | "received" | "todo", string>;
   progressError: Record<"stale" | "invalid" | "failed", string>;
+  task: {
+    position: (index: number, total: number) => string;
+    previous: string;
+    next: string;
+    progress: (done: number, total: number) => string;
+    yourHours: string;
+    drafts: (n: number) => string;
+    aiPending: (n: number) => string;
+    days: string;
+    waitDays: string;
+    now: string;
+    doneWhen: string;
+    who: { user: string; ai: string };
+    whoThird: (who: string) => string;
+    yourTime: string;
+    cost: string;
+    waitLabel: string;
+    where: string;
+    before: string;
+    unlocks: string;
+    thisTask: string;
+    alternative: string;
+    allDone: string;
+  };
 }
 
 export const PLAN_TEXTS: Record<Language, PlanTexts> = {
@@ -146,6 +170,30 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     doneGroup: "Hechas",
     status: { todo: "Pendiente", ai_draft: "Borrador", requested: "Pedido", received: "Recibido", done: "Hecho", skipped: "Saltado" },
     action: { done: "Hecho", skipped: "Saltar", requested: "Pedido", received: "Recibido", todo: "Reabrir" },
+    task: {
+      position: (index, total) => `${index} de ${total}`,
+      previous: "Anterior",
+      next: "Siguiente",
+      progress: (done, total) => `${done} de ${total}`,
+      yourHours: "tuyas",
+      drafts: (n) => (n === 1 ? "1 borrador por validar" : `${n} borradores por validar`),
+      aiPending: (n) => (n === 1 ? "1 paso de la IA" : `${n} pasos de la IA`),
+      days: "días",
+      waitDays: "de espera",
+      now: "Ahora",
+      doneWhen: "Está hecho cuando",
+      who: { user: "Lo haces tú", ai: "Lo prepara la IA, lo validas tú" },
+      whoThird: (who) => `Lo hace ${who}`,
+      yourTime: "Tu tiempo",
+      cost: "Coste",
+      waitLabel: "Espera",
+      where: "Dónde encaja",
+      before: "Antes",
+      unlocks: "Desbloquea",
+      thisTask: "Esta tarea",
+      alternative: "Camino alternativo",
+      allDone: "Tarea terminada",
+    },
     progressError: {
       stale: "Este plan ha cambiado. Recarga la página.",
       invalid: "Ese cambio ya no se puede hacer. Recarga la página.",
@@ -235,6 +283,30 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     doneGroup: "Done",
     status: { todo: "To do", ai_draft: "Draft", requested: "Requested", received: "Received", done: "Done", skipped: "Skipped" },
     action: { done: "Done", skipped: "Skip", requested: "Requested", received: "Received", todo: "Reopen" },
+    task: {
+      position: (index, total) => `${index} of ${total}`,
+      previous: "Previous",
+      next: "Next",
+      progress: (done, total) => `${done} of ${total}`,
+      yourHours: "yours",
+      drafts: (n) => (n === 1 ? "1 draft to review" : `${n} drafts to review`),
+      aiPending: (n) => (n === 1 ? "1 AI step" : `${n} AI steps`),
+      days: "days",
+      waitDays: "of waiting",
+      now: "Now",
+      doneWhen: "Done when",
+      who: { user: "You do it", ai: "The AI drafts it, you validate it" },
+      whoThird: (who) => `Done by ${who}`,
+      yourTime: "Your time",
+      cost: "Cost",
+      waitLabel: "Wait",
+      where: "Where it fits",
+      before: "Before",
+      unlocks: "Unlocks",
+      thisTask: "This task",
+      alternative: "Alternative path",
+      allDone: "Task finished",
+    },
     progressError: {
       stale: "This plan has changed. Reload the page.",
       invalid: "That change is no longer possible. Reload the page.",

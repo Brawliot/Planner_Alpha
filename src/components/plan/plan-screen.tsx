@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PlanTexts } from "@/lib/plan/i18n";
 import type { Range } from "@/lib/plan/task";
 import type { PlanStepView, PlanView } from "@/lib/plan/view";
@@ -112,7 +113,12 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
             {group.tasks.map((task) => (
               <li key={task.id} id={`tarea-${task.id}`} tabIndex={-1} className="rounded-md border border-border p-4">
                 <h3 className="font-medium">
-                  {task.title}
+                  <Link
+                    href={`/informe/${reportId}/plan/tarea/${encodeURIComponent(task.id)}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {task.title}
+                  </Link>
                   {task.personalized && (
                     <span className="ml-2 rounded-sm border border-border px-1.5 py-0.5 text-xs font-normal">{t.personalized}</span>
                   )}

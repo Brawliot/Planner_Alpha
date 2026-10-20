@@ -17,6 +17,15 @@ import { parseReplies } from "@/lib/plan/replies-form";
 import { setStepStatus } from "@/lib/plan/progress";
 
 export type PlanFormState = { error: string | null };
+
+/**
+ * A dónde volver tras una acción: la página de la tarea si se hizo desde ella ("return" = "task",
+ * único valor aceptado); si no, el plan con el ancla de la tarea.
+ */
+function backTo(reportId: string, taskId: string, formData: FormData) {
+  const id = encodeURIComponent(taskId);
+  return formData.get("return") === "task" ? `/informe/${reportId}/plan/tarea/${id}` : `/informe/${reportId}/plan#tarea-${id}`;
+}
 export type GenerateError = "stale" | "unavailable" | "kept" | "not_allowed" | "invalid";
 export type GenerateState = { error: GenerateError | null };
 
@@ -143,7 +152,7 @@ export async function generateTaskAction(
   }
   // Misma página con ancla: sin refresh, el navegador solo haría scroll y no pediría el plan nuevo.
   refresh();
-  redirect(`/informe/${loaded.report.id}/plan#tarea-${encodeURIComponent(target)}`);
+  redirect(backTo(loaded.report.id, target, formData));
 }
 
 /** Responde las preguntas previas de una tarea y la personaliza. Todo o nada. */
@@ -173,7 +182,7 @@ export async function answerAndGenerateAction(
   }
   // Misma página con ancla: sin refresh, el navegador solo haría scroll y no pediría el plan nuevo.
   refresh();
-  redirect(`/informe/${loaded.report.id}/plan#tarea-${encodeURIComponent(target)}`);
+  redirect(backTo(loaded.report.id, target, formData));
 }
 
 export type ProgressState = { error: "stale" | "invalid" | "failed" | null };
@@ -206,7 +215,7 @@ export async function markStepAction(
     return { error: "failed" };
   }
   refresh();
-  redirect(`/informe/${report.id}/plan#tarea-${encodeURIComponent(taskId)}`);
+  redirect(backTo(report.id, taskId, formData));
 }
 
 function logError(action: string, err: unknown) {

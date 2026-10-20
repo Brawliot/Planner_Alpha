@@ -15,12 +15,15 @@ export function TaskGenerate({
   task,
   mold,
   t,
+  returnTo,
 }: {
   reportId: string;
   version: number;
   task: PlanTaskView;
   mold: string | null;
   t: PlanTexts;
+  /** "task": tras personalizar, vuelve a la página de la tarea (si no, al plan). */
+  returnTo?: "task";
 }) {
   const generate = useMemo(() => generateTaskAction.bind(null, reportId, task.id), [reportId, task.id]);
   const answer = useMemo(
@@ -39,6 +42,7 @@ export function TaskGenerate({
       {task.questions.length > 0 && mold ? (
         <form action={answerAction} className="flex flex-col gap-3">
           <input type="hidden" name="version" value={version} />
+          {returnTo && <input type="hidden" name="return" value={returnTo} />}
           <p className="text-sm font-medium">{t.questionsIntro}</p>
           {task.questions.map((q) => (
             <fieldset key={q.id} className="flex flex-col gap-1 text-sm">
@@ -68,6 +72,7 @@ export function TaskGenerate({
       ) : (
         <form action={generateAction}>
           <input type="hidden" name="version" value={version} />
+          {returnTo && <input type="hidden" name="return" value={returnTo} />}
           <Button type="submit" variant="secondary" disabled={pending} className="min-h-11">
             {task.generate === "regenerate" ? t.regenerate : t.generate}
           </Button>

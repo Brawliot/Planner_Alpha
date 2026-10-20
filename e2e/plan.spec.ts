@@ -49,6 +49,25 @@ test.describe("plan", () => {
     await expect(page.getByText(/You open: weeks \d+–\d+/)).toBeVisible();
   });
 
+    test("cada tarea tiene su página: se ve el paso actual y al marcarlo se queda en ella", async ({ page }) => {
+    const reportUrl = await approvedReport(page);
+    await page.goto(`${reportUrl}/plan`);
+    await page.getByRole("button", { name: "Create my plan" }).click();
+    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+
+    const firstTask = page.getByRole("heading", { level: 3 }).getByRole("link").first();
+    const title = (await firstTask.textContent()) ?? "";
+    await firstTask.click();
+    await expect(page).toHaveURL(/\/plan\/tarea\//);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await expect(page.getByText("Done when", { exact: true }).first()).toBeVisible();
+
+    const url = page.url();
+    await page.getByRole("button", { name: "Skip" }).first().click();
+    await expect(page).toHaveURL(url);
+    await expect(page.getByRole("progressbar", { name: "Steps" })).toHaveAttribute("aria-valuenow", "1");
+  });
+
   test("ajustar las horas se guarda", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
