@@ -64,7 +64,8 @@ export function reportIdFrom(url: string) {
 
 /** El resumen ejecutivo se abre solo la primera vez: en los tests que no lo prueban, se da por visto. */
 export async function skipSummaryPopup(page: Page) {
-  await page.addInitScript(() => {
+  // En el contexto, no en la página: cubre también las pestañas que abra el test.
+  await page.context().addInitScript(() => {
     const getItem = Storage.prototype.getItem;
     Storage.prototype.getItem = function (key: string) {
       return key.startsWith("mando:resumen-visto:") ? "1" : getItem.call(this, key);

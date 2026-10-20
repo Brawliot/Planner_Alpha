@@ -97,6 +97,7 @@ test.describe("clasificación y preguntas", () => {
     test("las decisiones admiten 'Not decided yet' y no se vuelven a preguntar", async ({ page }) => {
     await submitIdea(page, "Algo [jev:unknown=revenue_model]");
     await expect(page.getByRole("navigation", { name: "Progress" }).locator('[aria-current="step"]')).toContainText("Your business");
+    await page.getByRole("group", { name: "How will you make money?" }).getByLabel("Not decided yet").check();
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
   });
@@ -425,7 +426,7 @@ test.describe("pantalla del informe", () => {
     await page.getByRole("button", { name: /Money/ }).click();
     await expect(page.getByText("Data for this area")).toBeVisible();
     await expect(page.getByText("Startup cost", { exact: true })).toBeVisible();
-    await expect(page.getByText("From you").first()).toBeVisible();
+  await expect(dialog.getByText("✦ Written by AI", { exact: true })).toBeVisible();
   });
 });
 
