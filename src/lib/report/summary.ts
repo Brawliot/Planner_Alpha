@@ -108,8 +108,7 @@ function certaintyOfNumbers(idea: string, areas: Record<string, AreaInput>) {
     for (const item of area.data) (item.estimated ? estimated : known).push(...allowedNumbers(item.value));
     if ("figures" in area && area.figures) {
       // El presupuesto es del usuario (cifra exacta o suelo del tramo que eligió); el resto se calcula con estimaciones.
-      const { budget_eur: _budget, budget_is_band_floor: _floor, ...derived } = area.figures;
-      estimated.push(...allowedNumbers(derived));
+      estimated.push(...allowedNumbers({ ...area.figures, budget_eur: null }));
     }
   }
   const near = (list: readonly number[], n: number) =>

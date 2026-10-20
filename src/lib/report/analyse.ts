@@ -9,7 +9,6 @@ import {
   mergeNarrative,
   NARRATIVE_INSTRUCTIONS,
   narrativeFormat,
-  narrativeInput,
   narrativeParser,
   staleAreas,
   type NarrativeResult,

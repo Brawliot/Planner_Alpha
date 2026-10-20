@@ -115,7 +115,7 @@ export async function improveArea(
 export type SummaryState = { error: "stale" | "failed" | null };
 
 /** Vuelve a redactar solo el resumen ejecutivo. Vale en revisión y aprobado: no toca los datos. */
-export async function retrySummary(id: string, _prev: SummaryState): Promise<SummaryState> {
+export async function retrySummary(id: string): Promise<SummaryState> {
   const user = await requireUser();
   const report = typeof id === "string" ? await getOwnReport(user.id, id) : null;
   if (!report?.narrative || (report.status !== "review" && report.status !== "approved")) return { error: "stale" };

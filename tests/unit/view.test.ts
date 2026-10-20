@@ -122,7 +122,7 @@ describe("resumen ejecutivo", () => {
 
   it("sin narrativa o en un informe antiguo (sin resumen), null", () => {
     assert.equal(reportView("idea", [], null).summary, null);
-    const { summary: _summary, ...old } = narrative;
+    const old = { ...narrative, summary: undefined };
     assert.equal(reportView("idea", [], old).summary, null);
   });
 });

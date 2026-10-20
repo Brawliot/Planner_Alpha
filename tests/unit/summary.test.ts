@@ -82,7 +82,7 @@ describe("buildSummary", () => {
 
   it("una parte demasiado larga o que falta descarta el resumen entero", () => {
     assert.equal(buildSummary(fullResult({ lead: "a".repeat(SUMMARY_LIMITS.lead + 1) }), IDEA, FACTS, verdicts), null);
-    const { work: _work, ...withoutWork } = fullResult();
+    const withoutWork = { ...fullResult(), work: undefined };
     assert.ok(summaryKeys(verdicts).includes("work"));
     assert.equal(buildSummary(withoutWork, IDEA, FACTS, verdicts), null);
   });
@@ -105,7 +105,7 @@ describe("esquema y parser", () => {
   it("el esquema añade summary obligatorio con solo las partes que tocan", () => {
     const format = withSummaryFormat(narrativeFormat(verdicts), verdicts);
     assert.ok(format.schema.required.includes("summary"));
-    const summary = format.schema.properties.summary as { required: string[] };
+    const summary = (format.schema.properties as Record<string, unknown>).summary as { required: string[] };
     assert.deepEqual(summary.required, summaryKeys(verdicts));
   });
 
