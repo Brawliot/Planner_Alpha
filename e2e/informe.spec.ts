@@ -25,8 +25,8 @@ test.describe("crear informe", () => {
     await createUser(request, email);
     await login(page, email);
 
-    await page.getByLabel("Mensaje").fill("  Un bar de tapas en Malasaña  ");
-    await page.getByRole("button", { name: "Enviar" }).click();
+    await page.getByLabel("Tu idea").fill("  Un bar de tapas en Malasaña  ");
+    await page.getByRole("button", { name: "Empezar" }).click();
 
     await expect(page).toHaveURL(new RegExp(`^${BASE_URL}/informe/[0-9a-f-]{36}$`));
     await expect(page.getByRole("heading", { name: "Your idea", exact: true })).toBeVisible();
@@ -38,8 +38,8 @@ test.describe("crear informe", () => {
     const owner = uniqueEmail();
     await createUser(request, owner);
     await login(page, owner);
-    await page.getByLabel("Mensaje").fill("Idea privada");
-    await page.getByRole("button", { name: "Enviar" }).click();
+    await page.getByLabel("Tu idea").fill("Idea privada");
+    await page.getByRole("button", { name: "Empezar" }).click();
     await page.waitForURL(/\/informe\//);
     const reportUrl = page.url();
 
@@ -59,8 +59,8 @@ test.describe("crear informe", () => {
     const email = uniqueEmail();
     await createUser(request, email);
     await login(page, email);
-    await page.getByLabel("Mensaje").fill("Otra idea");
-    await page.getByRole("button", { name: "Enviar" }).click();
+    await page.getByLabel("Tu idea").fill("Otra idea");
+    await page.getByRole("button", { name: "Empezar" }).click();
     await page.waitForURL(/\/informe\//);
 
     const anonymous = await browser.newContext();
@@ -80,8 +80,8 @@ test.describe("crear informe", () => {
 });
 
 async function submitIdea(page: import("@playwright/test").Page, idea: string) {
-  await page.getByLabel("Mensaje").fill(idea);
-  await page.getByRole("button", { name: "Enviar" }).click();
+  await page.getByLabel("Tu idea").fill(idea);
+  await page.getByRole("button", { name: "Empezar" }).click();
   await page.waitForURL(/\/informe\//);
 }
 

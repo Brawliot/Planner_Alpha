@@ -10,8 +10,8 @@ test.afterAll(async () => {
 });
 
 async function approvedReport(page: Page, idea = "Una app de facturación") {
-  await page.getByLabel("Mensaje").fill(idea);
-  await page.getByRole("button", { name: "Enviar" }).click();
+  await page.getByLabel("Tu idea").fill(idea);
+  await page.getByRole("button", { name: "Empezar" }).click();
   await page.waitForURL(/\/informe\//);
   await page.getByRole("button", { name: "Continue anyway" }).click();
   await expect(page.getByText("Approved · ready to plan")).toBeVisible();
@@ -65,8 +65,8 @@ test.describe("plan", () => {
   });
 
   test("con el informe sin aprobar no se puede crear", async ({ page }) => {
-    await page.getByLabel("Mensaje").fill("Una app de facturación");
-    await page.getByRole("button", { name: "Enviar" }).click();
+    await page.getByLabel("Tu idea").fill("Una app de facturación");
+    await page.getByRole("button", { name: "Empezar" }).click();
     await page.waitForURL(/\/informe\//);
     await page.goto(`${page.url()}/plan`);
     await expect(page.getByText("Approve your report to create the plan.")).toBeVisible();
