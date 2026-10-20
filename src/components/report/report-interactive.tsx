@@ -15,15 +15,14 @@ import type { AreaCard, ReportView } from "@/lib/report/view";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { VerdictIcon, VerdictLabel } from "@/components/ui/verdict-icon";
-import { SummaryDialog } from "./summary-dialog";
 import { cn } from "@/lib/cn";
+import { SummaryDialog } from "./summary-dialog";
 
-const LEGEND = ["strong", "risk", "needs_info"] as const;
 // Mismo corte que md: de Tailwind (768px).
 const MOBILE_QUERY = "(max-width: 767px)";
 const cardButtonId = (area: AreaKey) => `card-${area}`;
-
-type Selection = AreaKey | "risks" | null;
+const SECTION_LABEL = "text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground";
+const ESTIMATED_TAG = "rounded-full border border-dashed border-muted-foreground px-2 text-xs text-muted-foreground";
 
 /** En el servidor se asume escritorio; en el navegador se lee el ancho real (patrón oficial de React). */
 function useIsMobile() {
@@ -49,12 +48,12 @@ export function ReportInteractive({
 }) {
   const t = reportTexts(view.language);
   // Tras mejorar un área, se vuelve con ella abierta.
-  const [selected, setSelected] = useState<Selection>(initialArea);
+  const [selected, setSelected] = useState<AreaKey | null>(initialArea);
   const isMobile = useIsMobile();
   const panelId = useId();
   const summaryRef = useRef<HTMLDialogElement>(null);
 
-  const toggle = (key: Exclude<Selection, null>) => setSelected((current) => (current === key ? null : key));
+  const toggle = (area: AreaKey) => setSelected((current) => (current === area ? null : area));
   // Abre un área y lleva el foco a su tarjeta (el navegador la hace visible).
   const focusArea = (area: AreaKey) => {
     setSelected(area);
@@ -63,138 +62,151 @@ export function ReportInteractive({
   const panel = <DetailPanel id={panelId} view={view} reportId={reportId} selected={selected} t={t} />;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <h1 className="text-2xl font-semibold leading-tight">{t.title}</h1>
+    // pb-28: la barra de acciones fija no tapa lo último.
+    <div className="flex flex-col gap-8 pb-28">
+      <ReportHeader view={view} reportId={reportId} t={t} onOpenSummary={() => summaryRef.current?.showModal()} />
+      <SummaryDialog view={view} reportId={reportId} t={t} dialogRef={summaryRef} autoOpen={initialArea === null} />
 
-          <div className="flex flex-wrap gap-2">
-            <Button variant="accent" className="min-h-11" onClick={() => summaryRef.current?.showModal()}>
-              {t.summary.open}
-            </Button>
-            {/* Sin función todavía: aria-disabled (no disabled) para que teclado y lector lleguen y lean "Próximamente". */}
-            <button
-              type="button"
-              aria-disabled="true"
-              className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-md border px-4 text-sm font-medium text-muted-foreground"
-            >
-              {t.summary.generate}
-              <span className="rounded-full bg-muted px-2 text-[11px]">{t.summary.soon}</span>
-            </button>
-          </div>
-          <SummaryDialog
-            view={view}
-            reportId={reportId}
-            t={t}
-            dialogRef={summaryRef}
-            autoOpen={initialArea === null}
-          />
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_420px]">
+        <section aria-labelledby="assessment" className="flex flex-col gap-3">
+          <h2 id="assessment" className={SECTION_LABEL}>
+            {t.assessmentByArea}
+          </h2>
 
-          {view.approved && (
-            <p role="status" className="rounded-lg border border-success px-4 py-2 font-semibold text-success">
-              {t.approved}
-            </p>
-          )}
-
-          <section aria-labelledby="your-idea" className="rounded-lg border p-4">
-            <h2 id="your-idea" className="text-base font-semibold">
-              {t.yourIdea}
-            </h2>
-            <p className="mt-2 whitespace-pre-wrap break-words italic">{view.idea}</p>
-          </section>
-
-          {view.contradictions.length > 0 && (
-            <section aria-labelledby="contradictions" className="rounded-lg border border-danger p-4">
-              <h2 id="contradictions" className="text-base font-semibold text-danger">
-                {t.contradictionsTitle}
-              </h2>
-              <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
-                {view.contradictions.map((c) => (
-                  <li key={c.id}>
-                    {t.contradiction[c.id]} {c.estimated && <span className="text-muted-foreground">{t.includesEstimate}</span>}
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {view.areas.map((card) => {
+              const expanded = selected === card.area;
+              return [
+                <li
+                  key={card.area}
+                  className={cn("rounded-[1rem] bg-surface shadow-soft transition-shadow", expanded && "ring-2 ring-accent")}
+                >
+                  <h3>
+                    <CardButton
+                      id={cardButtonId(card.area)}
+                      expanded={expanded}
+                      controls={panelId}
+                      onClick={() => toggle(card.area)}
+                    >
+                      <VerdictIcon verdict={card.verdict} />
+                      <span className="flex-1">{t.area[card.area]}</span>
+                      <VerdictLabel verdict={card.verdict}>{t.verdict[card.verdict]}</VerdictLabel>
+                    </CardButton>
+                  </h3>
+                  <p className="line-clamp-2 px-4 pb-4 pl-[50px] text-sm text-muted-foreground">{card.sentence}</p>
+                </li>,
+                // En móvil, el panel va justo debajo de la tarjeta abierta.
+                isMobile && expanded && (
+                  <li key={`${card.area}-panel`} className="rounded-[1rem] bg-surface p-5 shadow-soft sm:col-span-2">
+                    {panel}
                   </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section aria-labelledby="assessment" className="flex flex-col gap-3">
-            <h2 id="assessment" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              {t.assessmentByArea}
-            </h2>
-
-            <div>
-              <p className="sr-only">{t.verdicts}</p>
-              <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-                {LEGEND.map((verdict) => (
-                  <li key={verdict} className="flex items-center gap-2">
-                    <VerdictIcon verdict={verdict} />
-                    {t.verdict[verdict]}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <ul className="flex flex-col gap-2">
-              {view.areas.map((card) => {
-                const expanded = selected === card.area;
-                return [
-                  <li key={card.area} className={cn("rounded-lg border", expanded && "border-primary")}>
-                    <h3>
-                      <CardButton
-                        id={cardButtonId(card.area)}
-                        expanded={expanded}
-                        controls={panelId}
-                        onClick={() => toggle(card.area)}
-                      >
-                        <VerdictIcon verdict={card.verdict} />
-                        <span className="flex-1">{t.area[card.area]}</span>
-                        <VerdictLabel verdict={card.verdict}>{t.verdict[card.verdict]}</VerdictLabel>
-                      </CardButton>
-                    </h3>
-                    <p className="truncate px-3.5 pb-2.5 pl-[48px] text-sm text-muted-foreground">{card.sentence}</p>
-                  </li>,
-                  // En móvil, el panel va justo debajo de la tarjeta abierta.
-                  isMobile && expanded && (
-                    <li key={`${card.area}-panel`} className="rounded-lg border p-5">
-                      {panel}
-                    </li>
-                  ),
-                ];
-              })}
-            </ul>
-          </section>
-
-          <section aria-labelledby="main-risks" className={cn("rounded-lg border", selected === "risks" && "border-primary")}>
-            <h2 id="main-risks">
-              <CardButton expanded={selected === "risks"} controls={panelId} onClick={() => toggle("risks")}>
-                <span className="flex-1">{t.mainRisks}</span>
-                {view.risks.length > 0 && (
-                  <span className="text-sm font-normal text-muted-foreground">{t.riskCount(view.risks.length)}</span>
-                )}
-              </CardButton>
-            </h2>
-            {isMobile && selected === "risks" && <div className="border-t p-5">{panel}</div>}
-          </section>
+                ),
+              ];
+            })}
+          </ul>
 
           <p className="text-sm text-muted-foreground">{t.disclaimer}</p>
-        </div>
+        </section>
 
         {!isMobile && (
-          <aside className="min-h-60 self-start overflow-y-auto rounded-lg border p-5 md:sticky md:top-4 md:max-h-[calc(100vh-2rem)]">
+          <aside className="min-h-60 self-start overflow-y-auto rounded-[1.25rem] bg-surface p-6 shadow-soft md:sticky md:top-20 md:max-h-[calc(100vh-11rem)]">
             {panel}
           </aside>
         )}
       </div>
 
-      <Footer view={view} reportId={reportId} t={t} onFocusArea={focusArea} />
+      <ActionBar view={view} reportId={reportId} t={t} onFocusArea={focusArea} />
     </div>
+  );
+}
+
+function ReportHeader({
+  view,
+  reportId,
+  t,
+  onOpenSummary,
+}: {
+  view: ReportView;
+  reportId: string;
+  t: ReportTexts;
+  onOpenSummary: () => void;
+}) {
+  const count = (verdict: AreaCard["verdict"]) => view.areas.filter((a) => a.verdict === verdict).length;
+  const strong = count("strong");
+  const risk = count("risk");
+  const unknown = count("needs_info");
+
+  return (
+    <header className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="flex min-w-0 flex-col gap-2">
+          <span className="text-sm font-medium text-muted-foreground">{t.title}</span>
+          <span className="text-4xl font-bold tracking-tighter [overflow-wrap:anywhere]">{view.idea}</span>
+        </h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="accent" className="min-h-11" onClick={onOpenSummary}>
+            {t.summary.open}
+          </Button>
+          {/* Sin función todavía: aria-disabled (no disabled) para que teclado y lector lleguen y lean "Próximamente". */}
+          <button
+            type="button"
+            aria-disabled="true"
+            className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-md border px-4 text-sm font-medium text-muted-foreground"
+          >
+            {t.summary.generate}
+            <span className="rounded-full bg-muted px-2 text-[11px]">{t.summary.soon}</span>
+          </button>
+          {/* Aprobado = solo lectura. */}
+          {!view.approved && (
+            <Link href={`/informe/${reportId}/editar`} className={buttonStyles("secondary", "min-h-11")}>
+              {t.editData}
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-[1.25rem] bg-surface p-5 shadow-soft">
+        <div aria-hidden="true" className="flex h-2.5 gap-1 overflow-hidden rounded-full">
+          <span className="bg-success" style={{ flex: strong }} />
+          <span className="bg-danger" style={{ flex: risk }} />
+          <span className="bg-muted-foreground/40" style={{ flex: unknown }} />
+        </div>
+        <p className="text-sm text-muted-foreground">{t.summary.counts(strong, risk, unknown)}</p>
+      </div>
+
+      {view.contradictions.length > 0 && (
+        <section
+          aria-labelledby="contradictions"
+          className="flex items-start gap-3 rounded-[1.25rem] border border-danger/50 bg-danger/10 p-5"
+        >
+          <span
+            aria-hidden="true"
+            className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-danger text-xs font-bold text-danger-foreground"
+          >
+            !
+          </span>
+          <div className="flex flex-col gap-1 text-sm">
+            <h2 id="contradictions" className="font-semibold">
+              {t.contradictionsTitle}
+            </h2>
+            <ul className="flex flex-col gap-1">
+              {view.contradictions.map((c) => (
+                <li key={c.id}>
+                  {t.contradiction[c.id]} {c.estimated && <span className="text-muted-foreground">{t.includesEstimate}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+    </header>
   );
 }
 
 const ACTION_INITIAL: ApproveState = { error: null };
 
-function Footer({
+/** Barra fija abajo: las acciones del informe siempre a mano. */
+function ActionBar({
   view,
   reportId,
   t,
@@ -211,70 +223,72 @@ function Footer({
   const [reopenState, reopenAction, reopening] = useActionState(reopen, ACTION_INITIAL);
   const error = approveState.error ?? reopenState.error;
 
-  const startOver = (
-    <Link href="/" className={buttonStyles("secondary", "min-h-11")}>
-      {t.startOver}
-    </Link>
-  );
-
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        {startOver}
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/85 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {view.approved && (
+            <p role="status" className="mr-auto flex items-center gap-2 font-semibold text-success">
+              <span aria-hidden="true">✓</span>
+              {t.approved}
+            </p>
+          )}
 
-        {view.approved ? (
-          <>
-            <form action={reopenAction}>
-              <Button type="submit" variant="secondary" disabled={reopening} className="min-h-11 w-full">
-                {t.reopen}
-              </Button>
-            </form>
-            <Link href={`/informe/${reportId}/plan`} className={buttonStyles("primary", "min-h-11")}>
-              {t.plan}
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link href={`/informe/${reportId}/editar`} className={buttonStyles("secondary", "min-h-11")}>
-              {t.editData}
-            </Link>
+          <Link href="/" className={buttonStyles("secondary", "min-h-11")}>
+            {t.startOver}
+          </Link>
 
-            {view.footer === "contradictions" && (
-              <Link href={`/informe/${reportId}/editar`} className={buttonStyles("primary", "min-h-11")}>
-                {t.footer.contradictions}
-              </Link>
-            )}
-
-            {(view.footer === "risks" || view.footer === "missing_data") && (
-              <>
-                <form action={approveAction}>
-                  <Button type="submit" variant="secondary" disabled={approving} className="min-h-11 w-full">
-                    {t.continueAnyway}
-                  </Button>
-                </form>
-                <Button
-                  className="min-h-11"
-                  onClick={() => view.focusArea && onFocusArea(view.focusArea)}
-                >
-                  {t.footer[view.footer]}
-                </Button>
-              </>
-            )}
-
-            {view.footer === "all_good" && (
-              <form action={approveAction}>
-                <Button type="submit" disabled={approving} className="min-h-11 w-full">
-                  {t.footer.all_good}
+          {view.approved ? (
+            <>
+              <form action={reopenAction}>
+                <Button type="submit" variant="secondary" disabled={reopening} className="min-h-11 w-full">
+                  {t.reopen}
                 </Button>
               </form>
-            )}
-          </>
-        )}
-      </div>
+              <Link href={`/informe/${reportId}/plan`} className={buttonStyles("accent", "min-h-11")}>
+                {t.plan} <span aria-hidden="true">→</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              {view.footer === "contradictions" && (
+                <Link href={`/informe/${reportId}/editar`} className={buttonStyles("accent", "min-h-11")}>
+                  {t.footer.contradictions}
+                </Link>
+              )}
 
-      <p aria-live="polite" className="text-sm text-danger sm:text-right">
-        {error ? t.approveError[error] : null}
-      </p>
+              {(view.footer === "risks" || view.footer === "missing_data") && (
+                <>
+                  <form action={approveAction}>
+                    <Button type="submit" variant="secondary" disabled={approving} className="min-h-11 w-full">
+                      {t.continueAnyway}
+                    </Button>
+                  </form>
+                  <Button
+                    variant="accent"
+                    className="min-h-11"
+                    onClick={() => view.focusArea && onFocusArea(view.focusArea)}
+                  >
+                    {t.footer[view.footer]}
+                  </Button>
+                </>
+              )}
+
+              {view.footer === "all_good" && (
+                <form action={approveAction}>
+                  <Button type="submit" variant="accent" disabled={approving} className="min-h-11 w-full">
+                    {t.footer.all_good}
+                  </Button>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+
+        <p aria-live="polite" className="text-sm text-danger empty:hidden sm:text-right">
+          {error ? t.approveError[error] : null}
+        </p>
+      </div>
     </div>
   );
 }
@@ -300,7 +314,7 @@ function CardButton({
       // Solo apunta al panel cuando existe: en móvil no se pinta hasta que la tarjeta se abre.
       aria-controls={expanded ? controls : undefined}
       onClick={onClick}
-      className="flex min-h-[52px] w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-base font-semibold"
+      className="flex min-h-[52px] w-full items-center gap-2.5 rounded-[1rem] px-4 py-3 text-left text-base font-semibold"
     >
       {children}
       <span
@@ -323,31 +337,14 @@ function DetailPanel({
   id: string;
   view: ReportView;
   reportId: string;
-  selected: Selection;
+  selected: AreaKey | null;
   t: ReportTexts;
 }) {
   return (
-    <div id={id} aria-live="polite" className="flex flex-col gap-3">
-      {selected === null && <p className="text-sm text-muted-foreground">{t.panelHelp}</p>}
-
-      {selected === "risks" && (
-        <>
-          <p className="text-base font-semibold">{t.mainRisks}</p>
-          {view.risks.length > 0 ? (
-            <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
-              {view.risks.map((risk) => (
-                <li key={risk.area}>
-                  <span className="font-semibold">{t.area[risk.area]}:</span> {risk.sentence}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t.noRisks}</p>
-          )}
-        </>
-      )}
-
-      {selected !== null && selected !== "risks" && (
+    <div id={id} aria-live="polite" className="flex flex-col gap-5">
+      {selected === null ? (
+        <p className="text-sm text-muted-foreground">{t.panelHelp}</p>
+      ) : (
         <AreaDetail
           card={view.areas.find((a) => a.area === selected)}
           reportId={reportId}
@@ -373,61 +370,60 @@ function AreaDetail({
   if (!card) return null;
   return (
     <>
-      <p className="flex items-center gap-2.5 text-base font-semibold">
+      <div className="flex items-center gap-2.5">
         <VerdictIcon verdict={card.verdict} />
-        <span className="flex-1">{t.area[card.area]}</span>
+        <p className="flex-1 text-xl font-bold tracking-tight">{t.area[card.area]}</p>
         <VerdictLabel verdict={card.verdict}>{t.verdict[card.verdict]}</VerdictLabel>
-      </p>
+      </div>
 
       <p className={cn("text-base", card.verdict === "needs_info" && "italic text-muted-foreground")}>{card.sentence}</p>
 
       {card.data.length > 0 && (
-        <div className="flex flex-col gap-2 text-sm">
-          <p className="font-semibold">{t.dataTitle}</p>
-          <ul className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
+          <p className={SECTION_LABEL}>{t.dataTitle}</p>
+          <dl className="flex flex-col divide-y divide-border rounded-lg bg-background text-sm">
             {card.data.map((item) => (
-              <li key={item.key} className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-muted-foreground">{item.label}:</span>
-                <span>{item.value}</span>
-                <span
-                  className={cn(
-                    "rounded-full px-2 text-xs",
-                    item.estimated
-                      ? "border border-dashed border-muted-foreground text-muted-foreground"
-                      : "bg-muted text-foreground",
-                  )}
-                >
+              <div key={item.key} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5">
+                <dt className="text-muted-foreground">{item.label}</dt>
+                <dd className="ml-auto">{item.value}</dd>
+                <span className={item.estimated ? ESTIMATED_TAG : "rounded-full bg-muted px-2 text-xs"}>
                   {item.estimated ? t.estimated : t.fromYou}
                 </span>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {card.pending.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className={SECTION_LABEL}>{t.pendingTitle}</p>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {card.pending.map((item) => (
+              <li key={item.key} className="flex items-center gap-2">
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full border border-muted-foreground" />
+                {item.label}
               </li>
             ))}
           </ul>
         </div>
       )}
-            {card.pending.length > 0 && (
-        <div className="flex flex-col gap-2 text-sm">
-          <p className="font-semibold">{t.pendingTitle}</p>
-          <ul className="list-disc pl-5 text-muted-foreground">
-            {card.pending.map((item) => (
-              <li key={item.key}>{item.label}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+
       {card.estimated ? (
         <div className="flex flex-col gap-2 text-sm">
-          <span className="self-start rounded-full border border-dashed border-muted-foreground px-2 text-xs text-muted-foreground">
-            {t.estimated}
-          </span>
+          <span className={cn("self-start", ESTIMATED_TAG)}>{t.estimated}</span>
           {card.assumptions.length > 0 && (
-            <div>
-              <p className="font-semibold">{t.assumptions}</p>
-              <ul className="list-disc pl-5">
+            <details className="rounded-lg bg-background px-3">
+              <summary className="flex min-h-11 cursor-pointer items-center gap-1 font-medium">
+                <span>{t.assumptions}</span>
+                <span className="text-muted-foreground">({card.assumptions.length})</span>
+              </summary>
+              <ul className="list-disc pb-3 pl-5 text-muted-foreground">
                 {card.assumptions.map((assumption) => (
                   <li key={assumption}>{assumption}</li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </div>
       ) : (
@@ -457,17 +453,17 @@ function ImproveSection({ card, reportId, t }: { card: AreaCard; reportId: strin
         aria-expanded={open}
         aria-controls={formId}
         onClick={() => setOpen((value) => !value)}
-        className={buttonStyles("secondary", "min-h-9 self-start")}
+        className="inline-flex min-h-11 items-center justify-center self-start rounded-full border border-accent px-4 text-sm font-semibold text-accent hover:bg-accent/10"
       >
         {t.improveArea(card.questions.length)}
       </button>
 
       {open && (
-        <form id={formId} action={formAction} className="flex flex-col gap-4 rounded-md border border-dashed bg-muted p-3">
+        <form id={formId} action={formAction} className="flex flex-col gap-4 rounded-lg bg-background p-4">
           {card.questions.map((question) => (
             <ChoiceGroup key={question.key} name={question.key} legend={question.prompt} options={question.options} required />
           ))}
-          <Button type="submit" disabled={pending} className="self-end">
+          <Button type="submit" variant="accent" disabled={pending} className="min-h-11 self-end">
             {pending ? t.saving : t.save}
           </Button>
           <p aria-live="polite" className="text-sm text-danger">

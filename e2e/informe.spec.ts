@@ -31,9 +31,9 @@ test.describe("crear informe", () => {
     await page.getByRole("button", { name: "Empezar" }).click();
 
     await expect(page).toHaveURL(new RegExp(`^${BASE_URL}/informe/[0-9a-f-]{36}$`));
-    await expect(page.getByRole("heading", { name: "Your idea", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your idea report" })).toBeVisible();
     // Se guarda recortada.
-    await expect(page.getByText("Un bar de tapas en Malasaña", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 }).getByText("Un bar de tapas en Malasaña", { exact: true })).toBeVisible();
   });
 
   test("otro usuario no puede ver el informe", async ({ page, request, browser }) => {
@@ -424,7 +424,7 @@ test.describe("pantalla del informe", () => {
     await submitIdea(page, "Una app de facturación");
     await page.getByRole("button", { name: /Money/ }).click();
     await expect(page.getByText("Data for this area")).toBeVisible();
-    await expect(page.getByText("Startup cost:")).toBeVisible();
+    await expect(page.getByText("Startup cost", { exact: true })).toBeVisible();
     await expect(page.getByText("From you").first()).toBeVisible();
   });
 });

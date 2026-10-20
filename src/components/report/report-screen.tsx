@@ -13,7 +13,7 @@ export function ReportScreen({
   initialArea: AreaKey | null;
 }) {
   return (
-    <div lang={view.language} className="mx-auto w-full max-w-[960px]">
+    <div lang={view.language} className="w-full">
       <ReportInteractive view={view} reportId={reportId} initialArea={initialArea} />
     </div>
   );
