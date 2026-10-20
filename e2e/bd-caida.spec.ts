@@ -31,7 +31,7 @@ test("con la base de datos caída, la página principal muestra la página de er
   await page.locator("section:not([inert])").getByLabel("Email").fill(email);
   await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("heading", { name: "Hola, Eva Prueba" })).toBeVisible();
+  await expect(page.getByText("Hola, Eva Prueba")).toBeVisible();
 
   await page.goto(`${DOWN_URL}/`);
   await expect(page.getByRole("heading", { name: "Algo ha fallado" })).toBeVisible();

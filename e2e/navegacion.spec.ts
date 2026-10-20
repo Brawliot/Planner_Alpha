@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("sin sesión, la página principal muestra la portada", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Mando" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "¿Qué negocio quieres montar?" })).toBeVisible();
 });
 
 test("desde la portada, el login se abre en un popup y se cierra con Escape", async ({ page }) => {

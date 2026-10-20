@@ -80,14 +80,14 @@ test.describe("login y logout", () => {
     await createUser(request, email, "Luis Prueba");
 
     await login(page, email, PASSWORD);
-    await expect(page.getByRole("heading", { name: "Hola, Luis Prueba" })).toBeVisible();
+    await expect(page.getByText("Hola, Luis Prueba")).toBeVisible();
 
     const avatar = page.getByRole("banner").getByRole("button", { name: "Cuenta de Luis Prueba Prueba" });
     await expect(avatar).toHaveText("LP");
     await avatar.click();
     await expect(page.getByText(email)).toBeVisible();
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
-    await expect(page.getByRole("heading", { name: "Mando" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "¿Qué negocio quieres montar?" })).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
@@ -104,7 +104,7 @@ test.describe("login y logout", () => {
     await card.getByLabel("Contraseña").fill(PASSWORD);
     await card.getByRole("button", { name: "Entrar" }).click();
 
-    await expect(page.getByRole("heading", { name: "Hola, Pia Prueba" })).toBeVisible();
+    await expect(page.getByText("Hola, Pia Prueba")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
