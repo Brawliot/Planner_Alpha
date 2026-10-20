@@ -20,6 +20,7 @@ test.describe("registro", () => {
   test("crea la cuenta y entra en la app", async ({ page }) => {
     await page.goto("/registro");
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
+    await page.locator("section:not([inert])").getByLabel("Apellidos").fill("Prueba");
     await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
     await page.getByRole("button", { name: "Crear Cuenta" }).click();
@@ -33,7 +34,8 @@ test.describe("registro", () => {
     await createUser(request, email);
 
     await page.goto("/registro");
-    await page.locator("section:not([inert])").getByLabel("Nombre").fill("Otra Persona");
+    await page.locator("section:not([inert])").getByLabel("Nombre").fill("Otra");
+    await page.locator("section:not([inert])").getByLabel("Apellidos").fill("Persona");
     await page.locator("section:not([inert])").getByLabel("Email").fill(email);
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill(PASSWORD);
     await page.getByRole("button", { name: "Crear Cuenta" }).click();
@@ -45,6 +47,7 @@ test.describe("registro", () => {
   test("rechaza contraseñas filtradas", async ({ page }) => {
     await page.goto("/registro");
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
+    await page.locator("section:not([inert])").getByLabel("Apellidos").fill("Prueba");
     await page.locator("section:not([inert])").getByLabel("Email").fill(uniqueEmail());
     await page.locator("section:not([inert])").getByLabel("Contraseña").fill("password1234");
     await page.getByRole("button", { name: "Crear Cuenta" }).click();
@@ -55,9 +58,19 @@ test.describe("registro", () => {
   test("la API rechaza un nombre de más de 100 caracteres", async ({ request }) => {
     const res = await request.post("/api/auth/sign-up/email", {
       headers: { Origin: BASE_URL },
-      data: { name: "a".repeat(101), email: uniqueEmail(), password: PASSWORD },
+      data: { name: "a".repeat(101), lastName: "Prueba", email: uniqueEmail(), password: PASSWORD },
     });
     expect(res.status()).toBe(400);
+  });
+
+  test("la API rechaza registrarse sin apellidos o con más de 100 caracteres", async ({ request }) => {
+    for (const lastName of [undefined, "   ", "a".repeat(101)]) {
+      const res = await request.post("/api/auth/sign-up/email", {
+        headers: { Origin: BASE_URL },
+        data: { name: "Ana", lastName, email: uniqueEmail(), password: PASSWORD },
+      });
+      expect(res.status()).toBe(400);
+    }
   });
 });
 

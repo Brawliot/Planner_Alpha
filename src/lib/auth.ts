@@ -8,6 +8,11 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
+  user: {
+    additionalFields: {
+      lastName: { type: "string", required: true, input: true },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 10,
@@ -28,7 +33,15 @@ export const auth = betterAuth({
     if (ctx.path !== "/sign-up/email" && ctx.path !== "/update-user") {
         return;
     }
-    const { name, email, image } = ctx.body ?? {};
+    const { name, lastName, email, image } = ctx.body ?? {};
+
+    if (ctx.path === "/sign-up/email" || lastName !== undefined) {
+        if (typeof lastName !== "string" || lastName.trim().length === 0 || lastName.length > 100) {
+        throw new APIError("BAD_REQUEST", {
+            message: "Los apellidos deben tener entre 1 y 100 caracteres",
+        });
+        }
+    }
 
     if (ctx.path === "/sign-up/email" || name !== undefined) {
         if (typeof name !== "string" || name.trim().length === 0 || name.length > 100) {

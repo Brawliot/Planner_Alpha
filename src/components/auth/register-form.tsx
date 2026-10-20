@@ -20,6 +20,7 @@ export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     const form = new FormData(e.currentTarget);
     const { error } = await authClient.signUp.email({
       name: String(form.get("name")),
+      lastName: String(form.get("lastName")),
       email: String(form.get("email")),
       password: String(form.get("password")),
     });
@@ -40,7 +41,8 @@ export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <Field label="Nombre" name="name" required maxLength={100} autoComplete="name" />
+        <Field label="Nombre" name="name" required maxLength={100} autoComplete="given-name" />
+        <Field label="Apellidos" name="lastName" required maxLength={100} autoComplete="family-name" />
         <Field label="Email" name="email" type="email" required maxLength={254} autoComplete="email" />
         <Field label="Contraseña" name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" />
 

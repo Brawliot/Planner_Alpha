@@ -26,7 +26,7 @@ export async function deleteTestUsers() {
 export async function createUser(request: APIRequestContext, email: string, name = "Usuario E2E") {
   const res = await request.post("/api/auth/sign-up/email", {
     headers: { Origin: BASE_URL },
-    data: { name, email, password: PASSWORD },
+    data: { name, lastName: "Prueba", email, password: PASSWORD },
   });
   if (!res.ok()) {
     throw new Error(`No se pudo crear el usuario de prueba: ${res.status()}`);
