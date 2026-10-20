@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,14 @@ export function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
         <Button type="submit" disabled={loading}>
           {loading ? "Creando cuenta..." : "Crear Cuenta"}
         </Button>
+
+        <p className="text-xs text-muted-foreground">
+          Al crear la cuenta aceptas el{" "}
+          <Link href="/legal/aviso" target="_blank" rel="noopener" className="underline underline-offset-4 hover:opacity-80">
+            Aviso legal<span className="sr-only"> (se abre en otra pestaña)</span>
+          </Link>
+          .
+        </p>
       </form>
 
       <p className="text-sm">

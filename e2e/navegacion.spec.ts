@@ -43,3 +43,12 @@ test("la tarjeta gira entre login y registro y actualiza la URL", async ({ page 
   await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("el registro enlaza al aviso legal y la página existe", async ({ page }) => {
+  await page.goto("/registro");
+  const link = page.locator("section:not([inert])").getByRole("link", { name: /Aviso legal/ });
+  await expect(link).toHaveAttribute("href", "/legal/aviso");
+
+  await page.goto("/legal/aviso");
+  await expect(page.getByRole("heading", { name: "Aviso legal" })).toBeVisible();
+});
