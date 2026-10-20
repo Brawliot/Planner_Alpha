@@ -70,8 +70,9 @@ describe("buildSummary", () => {
   });
 
   it("si una cifra está en un dato estimado y en uno sabido, se marca estimada", () => {
-    const idea = "Un bar con 45.000 €";
-    const summary = buildSummary(fullResult({ lead: "Tienes 45.000 €." }), idea, [startup], areaVerdicts([startup]));
+    // Con presupuesto y coste, Money tiene veredicto: el 45.000 está en la idea (sabido) y en la estimación.
+    const idea = "Un bar; he visto locales que cuestan 45.000 €";
+    const summary = buildSummary(fullResult({ lead: "Abrir puede costar 45.000 €." }), idea, FACTS, verdicts);
     assert.deepEqual(summary?.lead[1], { text: "45.000 €", certainty: "estimated" });
   });
 
