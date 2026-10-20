@@ -82,6 +82,10 @@ test.describe("login y logout", () => {
     await login(page, email, PASSWORD);
     await expect(page.getByRole("heading", { name: "Hola, Luis Prueba" })).toBeVisible();
 
+    const avatar = page.getByRole("banner").getByRole("button", { name: "Cuenta de Luis Prueba Prueba" });
+    await expect(avatar).toHaveText("LP");
+    await avatar.click();
+    await expect(page.getByText(email)).toBeVisible();
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await expect(page.getByRole("heading", { name: "Mando" })).toBeVisible();
 

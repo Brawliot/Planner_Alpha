@@ -32,7 +32,7 @@ test.describe("portada", () => {
   test("sin sesión, la cabecera tiene los enlaces y Iniciar sesión abre el popup", async ({ page }) => {
     await page.goto("/");
     const cabecera = page.getByRole("banner");
-    await expect(cabecera.getByRole("link", { name: "Crear cuenta" })).toBeVisible();
+    await expect(cabecera.getByRole("link", { name: "Empezar" })).toBeVisible();
 
     await cabecera.getByRole("link", { name: "Iniciar sesión" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();

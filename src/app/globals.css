@@ -105,6 +105,11 @@
     border-color: var(--color-border);
   }
 
+  /* Las anclas (#tarea-…) no quedan tapadas por la cabecera fija (h-14 + aire). */
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
   body {
     @apply bg-background font-sans text-foreground;
   }
