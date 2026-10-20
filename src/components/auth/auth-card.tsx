@@ -30,7 +30,8 @@ export function AuthCard({ initialSide }: { initialSide: Side }) {
         onTransitionEnd={(e) => {
           if (e.target === e.currentTarget) setFlipping(false);
         }}
-        className={`grid transition-transform duration-500 ease-in-out [transform-style:preserve-3d] motion-reduce:transition-none ${
+        // grid-cols-1 = minmax(0, 1fr): la columna no crece con el contenido (ideas largas sin espacios).
+        className={`grid grid-cols-1 transition-transform duration-500 ease-in-out [transform-style:preserve-3d] motion-reduce:transition-none ${
           side === "registro" ? "[transform:rotateY(180deg)]" : ""
         }`}
       >
@@ -67,7 +68,7 @@ function FaceHeader({ title, subtitle, idea }: { title: string; subtitle: string
         <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
       </div>
       {idea && (
-        <p className="line-clamp-2 rounded-md bg-background px-3 py-2 text-sm">
+        <p className="line-clamp-2 rounded-md bg-background px-3 py-2 text-sm [overflow-wrap:anywhere]">
           <span className="text-muted-foreground">Tu idea: </span>«{idea}»
         </p>
       )}
