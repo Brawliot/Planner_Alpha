@@ -16,7 +16,7 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole("button", { name: "Entrar" }).click();
 }
 
-test.describe("registro", () => {
+test.describe("registaro", () => {
   test("crea la cuenta y entra en la app", async ({ page }) => {
     await page.goto("/registro");
     await page.locator("section:not([inert])").getByLabel("Nombre").fill("Ana Prueba");
@@ -26,7 +26,8 @@ test.describe("registro", () => {
     await page.getByRole("button", { name: "Crear Cuenta" }).click();
 
     await expect(page).toHaveURL(`${BASE_URL}/`);
-    await expect(page.getByRole("heading", { name: "Hola, Ana Prueba" })).toBeVisible();
+    await expect(page.getByText("Hola, Ana Prueba")).toBeVisible();
+    await expect(page.getByRole("region", { name: "De idea a plan, sin humo" })).toHaveCount(0);
   });
 
   test("no permite registrar un email que ya existe", async ({ page, request }) => {

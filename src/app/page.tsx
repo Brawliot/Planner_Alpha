@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getUser } from "@/lib/session";
 import { PageContainer } from "@/components/ui/page-container";
 import { PromptForm } from "@/components/prompt-form";
-
+import { LandingBento } from "@/components/home/landing-bento";
 export default function Home() {
   return (
     <PageContainer size="lg" className="relative overflow-hidden">
@@ -32,6 +32,10 @@ export default function Home() {
           </Suspense>
         </div>
       </div>
+
+      <Suspense fallback={null}>
+        <GuestSections />
+      </Suspense>
     </PageContainer>
   );
 }
@@ -50,6 +54,12 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 async function Greeting() {
   const user = await getUser();
   return <Eyebrow>{user ? `Hola, ${user.name}` : DEFAULT_EYEBROW}</Eyebrow>;
+}
+
+/** Lo que vende el producto: solo para quien aún no tiene cuenta. */
+async function GuestSections() {
+  const user = await getUser();
+  return user ? null : <LandingBento />;
 }
 
 async function HomeForm() {

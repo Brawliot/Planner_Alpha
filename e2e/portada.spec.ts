@@ -32,6 +32,13 @@ test.describe("portada", () => {
     await expect(page.getByLabel("Tu idea")).toBeFocused();
   });
 
+  test("sin sesión, se ve la sección De idea a plan con los ejemplos marcados", async ({ page }) => {
+    await page.goto("/");
+    const seccion = page.getByRole("region", { name: "De idea a plan, sin humo" });
+    await expect(seccion).toBeVisible();
+    await expect(seccion.getByText("Ejemplo")).toHaveCount(2);
+  });
+
   test("sin sesión, la idea escrita se conserva al volver a la portada", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Tu idea").fill("Un bar de tapas en Madrid");
