@@ -22,7 +22,7 @@ test("se abre solo la primera vez, marcado como texto de la IA, y se reabre con 
   await createReport(page, request, "Una tienda online de cerámica");
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("Written by AI")).toBeVisible();
+  await expect(dialog.getByText("✦ Written by AI", { exact: true })).toBeVisible();
   await expect(dialog.getByRole("tab").first()).toHaveAttribute("aria-selected", "true");
 
   await dialog.getByRole("button", { name: "Close" }).click();
