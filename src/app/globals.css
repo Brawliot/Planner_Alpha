@@ -130,6 +130,12 @@
     scroll-padding-top: 4.5rem;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   body {
     @apply bg-background font-sans text-foreground;
   }

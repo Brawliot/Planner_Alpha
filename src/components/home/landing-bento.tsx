@@ -5,7 +5,8 @@ import { cn } from "@/lib/cn";
 /** Sección de la portada para quien aún no tiene cuenta. Todo es un ejemplo marcado como tal. */
 export function LandingBento() {
   return (
-    <section aria-labelledby="bento-title" className="rounded-[1.5rem] bg-surface px-6 py-16 sm:px-10">
+    // relative: queda por encima de los puntos decorativos del fondo (que van en absolute).
+    <section aria-labelledby="bento-title" className="relative rounded-[1.5rem] bg-surface px-6 py-16 sm:px-10">
       <div className="flex flex-col items-center gap-3 text-center">
         <h2 id="bento-title" className="text-4xl font-bold tracking-tighter sm:text-5xl">
           De idea a plan, <span className="mark-accent">sin humo</span>

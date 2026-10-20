@@ -3,6 +3,9 @@ import { getUser } from "@/lib/session";
 import { PageContainer } from "@/components/ui/page-container";
 import { PromptForm } from "@/components/prompt-form";
 import { LandingBento } from "@/components/home/landing-bento";
+import { LandingFaq } from "@/components/home/landing-faq";
+import { LandingCta } from "@/components/home/landing-cta";
+
 export default function Home() {
   return (
     <PageContainer size="lg" className="relative overflow-hidden">
@@ -59,7 +62,14 @@ async function Greeting() {
 /** Lo que vende el producto: solo para quien aún no tiene cuenta. */
 async function GuestSections() {
   const user = await getUser();
-  return user ? null : <LandingBento />;
+  if (user) return null;
+  return (
+    <>
+      <LandingBento />
+      <LandingFaq />
+      <LandingCta />
+    </>
+  );
 }
 
 async function HomeForm() {

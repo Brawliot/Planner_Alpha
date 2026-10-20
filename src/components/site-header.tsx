@@ -11,8 +11,8 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2 font-semibold">
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6">
-            <rect width="24" height="24" rx="6" className="fill-foreground" />
-            <path d="M12 6l6 6-6 6-6-6z" className="fill-accent" />
+            <rect width="24" height="24" rx="6" className="fill-accent" />
+            <path d="M12 6l6 6-6 6-6-6z" className="fill-accent-foreground" />
           </svg>
           Mando
         </Link>

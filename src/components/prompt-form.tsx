@@ -66,12 +66,13 @@ export function PromptForm({ signedIn }: { signedIn: boolean }) {
         className="w-full max-w-2xl text-left"
       >
         <div className="glow-border flex flex-col gap-3 rounded-[1.25rem] bg-background p-5">
-          <label htmlFor={`${id}-idea`} className="sr-only">
+          <label htmlFor="idea" className="sr-only">
             Tu idea
           </label>
           <textarea
             ref={textareaRef}
-            id={`${id}-idea`}
+            // Id fijo: la llamada final de la portada enlaza a #idea (solo hay una caja por página).
+            id="idea"
             name="idea"
             value={text}
             onChange={(e) => change(e.target.value)}

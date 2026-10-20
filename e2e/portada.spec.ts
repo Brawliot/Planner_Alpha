@@ -39,6 +39,22 @@ test.describe("portada", () => {
     await expect(seccion.getByText("Ejemplo")).toHaveCount(2);
   });
 
+  test("sin sesión, se ven las preguntas frecuentes y la llamada final lleva a la caja", async ({ page }) => {
+    await page.goto("/");
+    const faq = page.getByRole("region", { name: "Preguntas frecuentes" });
+    await faq.getByText("¿Lo hace una IA?").click();
+    await expect(faq.getByText("Las cifras y las fechas las calcula el código", { exact: false })).toBeVisible();
+
+    await page.getByRole("link", { name: "Escribir mi idea" }).click();
+    await expect(page).toHaveURL(/#idea$/);
+    await expect(page.getByLabel("Tu idea")).toBeInViewport();
+  });
+
+  test("el pie enlaza al aviso legal", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("contentinfo").getByRole("link", { name: "Aviso legal" })).toHaveAttribute("href", "/legal/aviso");
+  });
+
   test("sin sesión, la idea escrita se conserva al volver a la portada", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Tu idea").fill("Un bar de tapas en Madrid");
