@@ -494,9 +494,13 @@ export function pendingQuestions(facts: readonly Fact[]): QuestionKey[] {
   });
 }
 
+export type TopicState = "done" | "current" | "todo";
+
 export interface QuestionStep {
   topic: AskTopic;
   title: string;
+  /** Temas del recorrido (solo los que el usuario tiene o tuvo que responder), con su estado. */
+  topics: { topic: AskTopic; title: string; state: TopicState }[];
   /** Solo las preguntas pendientes de ese tema. */
   keys: QuestionKey[];
   /** Números de las preguntas de esta pantalla (from–to) sobre el total del recorrido. */
@@ -526,6 +530,12 @@ export function currentStep(facts: readonly Fact[]): QuestionStep | null {
   return {
     topic,
     title: TOPIC_TITLES[topic],
+    // El actual es el primero con pendientes: los anteriores están hechos y los siguientes, por hacer.
+    topics: involved.map((t) => ({
+      topic: t,
+      title: TOPIC_TITLES[t],
+      state: t === topic ? "current" : askKeysOf(t).some((key) => pending.includes(key)) ? "todo" : "done",
+    })),
     keys,
     from: answered + 1,
     to: answered + keys.length,

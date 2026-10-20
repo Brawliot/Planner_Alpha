@@ -65,7 +65,36 @@ describe("currentStep", () => {
 
   it("devuelve el primer tema con pendientes, solo con sus preguntas pendientes", () => {
     const step = currentStep(classified(["time_commitment", "budget_band"]));
-    assert.deepEqual(step, { topic: "founder", title: "You", keys: ["time_commitment"], from: 1, to: 1, totalQuestions: 2 });
+    assert.deepEqual(step, {
+      topic: "founder",
+      title: "You",
+      topics: [
+        { topic: "founder", title: "You", state: "current" },
+        { topic: "resources", title: "Resources and timing", state: "todo" },
+      ],
+      keys: ["time_commitment"],
+      from: 1,
+      to: 1,
+      totalQuestions: 2,
+    });
+  });
+
+  it("los temas que Jev sabía enteros no salen en el progreso; los respondidos quedan hechos", () => {
+    const facts = mergeFacts(classified(["time_commitment", "budget_band"]), [userFact("time_commitment")]);
+    assert.deepEqual(
+      currentStep(facts)?.topics.map((t) => [t.topic, t.state]),
+      [
+        ["founder", "done"],
+        ["resources", "current"],
+      ],
+    );
+  });
+
+  it("sin datos, los 4 temas: el primero actual y el resto por hacer", () => {
+    assert.deepEqual(
+      currentStep([])?.topics.map((t) => t.state),
+      ["current", "todo", "todo", "todo"],
+    );
   });
 
   it("el progreso cuenta preguntas: al responder la primera, la siguiente es la 2 de 2", () => {

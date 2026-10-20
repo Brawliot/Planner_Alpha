@@ -79,6 +79,7 @@ function ReportStep({ report }: { report: Report }) {
           from={step.from}
           to={step.to}
           totalQuestions={step.totalQuestions}
+          topics={step.topics}
           questions={step.keys.map((key) => ({ key, prompt: promptFor(key), options: answerOptions(key) }))}
         />
       );
