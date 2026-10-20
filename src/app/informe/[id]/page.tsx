@@ -46,12 +46,35 @@ async function ReportContent({ id, area }: { id: string; area: string | null }) 
     return <ReportScreen view={view} reportId={report.id} initialArea={initialArea} />;
   }
 
+  // Antes del informe: columna estrecha (modo concentración) con la idea en una tira compacta.
   return (
-    <>
-      <h1 className="text-2xl font-semibold">Tu idea</h1>
-      <p className="whitespace-pre-wrap break-words">{idea}</p>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 pt-4 pb-16">
+      <IdeaStrip idea={report.idea} />
       <ReportStep report={report} />
-    </>
+    </div>
+  );
+}
+
+function IdeaStrip({ idea }: { idea: string }) {
+  return (
+    <div className="rise flex items-start gap-3 rounded-[1rem] bg-surface px-4 py-3 text-sm shadow-soft">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="mt-0.5 size-4 shrink-0 text-accent"
+      >
+        <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />
+      </svg>
+      <p className="min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
+        <span className="text-muted-foreground">Your idea · </span>
+        <span>{idea}</span>
+      </p>
+    </div>
   );
 }
 
