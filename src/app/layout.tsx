@@ -22,13 +22,10 @@ export const metadata: Metadata = {
   applicationName: "Mando",
 };
 
-// Deben coincidir con --background de globals.css (las <meta> no leen variables CSS).
+// La app es oscura por defecto. Debe coincidir con --background de globals.css (las <meta> no leen variables CSS).
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  colorScheme: "dark",
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({ children, auth }: LayoutProps<"/">) {

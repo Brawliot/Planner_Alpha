@@ -14,8 +14,8 @@ test("títulos de página con la plantilla de la marca", async ({ page }) => {
   await expect(page).toHaveTitle("Página no encontrada · Mando");
 });
 
-test("theme-color y color-scheme para claro y oscuro", async ({ page }) => {
+test("la app es oscura por defecto: un theme-color y color-scheme dark", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('meta[name="theme-color"]')).toHaveCount(2);
-  await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute("content", "light dark");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#0a0a0a");
+  await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute("content", "dark");
 });

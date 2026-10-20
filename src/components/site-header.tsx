@@ -12,7 +12,7 @@ export function SiteHeader() {
         <Link href="/" className="flex min-h-11 items-center gap-2 font-semibold">
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6">
             <rect width="24" height="24" rx="6" className="fill-foreground" />
-            <path d="M12 6l6 6-6 6-6-6z" className="fill-background" />
+            <path d="M12 6l6 6-6 6-6-6z" className="fill-accent" />
           </svg>
           Mando
         </Link>
@@ -47,7 +47,7 @@ function AuthLinks() {
       <Link href="/login" className="inline-flex min-h-11 items-center px-3 text-sm font-medium underline-offset-4 hover:underline">
         Iniciar sesión
       </Link>
-      <Link href="/registro" className={buttonStyles("primary", "min-h-11")}>
+      <Link href="/registro" className={buttonStyles("accent", "min-h-11")}>
         Empezar
       </Link>
     </div>

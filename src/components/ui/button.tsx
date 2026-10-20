@@ -7,6 +7,9 @@ const variants = {
   secondary:
     "rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-muted",
   link: "underline underline-offset-4 hover:opacity-80",
+  /** Llamada a la acción de marca (lima). Una por pantalla. */
+  accent:
+    "rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground hover:brightness-95",
 } as const;
 
 export type ButtonVariant = keyof typeof variants;

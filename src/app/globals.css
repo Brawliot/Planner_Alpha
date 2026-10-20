@@ -4,11 +4,48 @@
    Se cambian aquí; los componentes solo usan los nombres
    (bg-primary, text-muted-foreground, border-border...). */
 
+/* Mando es oscuro por defecto (decisión de producto). El claro queda definido
+   para un futuro selector de tema: <html data-theme="light">. */
 :root {
+  color-scheme: dark;
+
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  --surface: #121212; /* secciones y tarjetas sin borde */
+
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa;
+
+  --border: #27272a;
+  --input: #3f3f46;
+  --ring: #60a5fa;
+
+  --primary: #ededed;
+  --primary-foreground: #0a0a0a;
+
+  /* Marca: lima. Relleno con texto accent-foreground (AA de sobra); en oscuro también vale como texto. */
+  --accent: #d4f84a;
+  --accent-foreground: #0a0a0a;
+
+  --danger: #f87171;
+  --danger-foreground: #0a0a0a;
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+
+  --overlay: rgb(0 0 0 / 0.7);
+  /* En oscuro la sombra negra no se ve: un filo de luz casi invisible marca el borde. */
+  --elevation: 0 0 0 1px rgb(255 255 255 / 0.05), 0 8px 24px -6px rgb(0 0 0 / 0.6);
+}
+
+:root[data-theme="light"] {
   color-scheme: light;
 
   --background: #ffffff;
   --foreground: #171717;
+
+  --surface: #f7f7f5;
 
   --muted: #f4f4f5;
   --muted-foreground: #52525b; /* contraste AA sobre background */
@@ -20,6 +57,10 @@
   --primary: #171717;
   --primary-foreground: #fafafa;
 
+  /* En claro la lima NUNCA va como texto sobre blanco (no llega a AA): solo relleno. */
+  --accent: #c8f031;
+  --accent-foreground: #0a0a0a;
+
   --danger: #b91c1c;
   --danger-foreground: #ffffff;
 
@@ -27,33 +68,7 @@
   --warning: #b45309; /* contraste AA sobre background */
 
   --overlay: rgb(0 0 0 / 0.5);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --background: #0a0a0a;
-    --foreground: #ededed;
-
-    --muted: #1c1c1f;
-    --muted-foreground: #a1a1aa;
-
-    --border: #27272a;
-    --input: #3f3f46;
-    --ring: #60a5fa;
-
-    --primary: #ededed;
-    --primary-foreground: #0a0a0a;
-
-    --danger: #f87171;
-    --danger-foreground: #0a0a0a;
-
-    --success: #4ade80;
-    --warning: #fbbf24;
-
-    --overlay: rgb(0 0 0 / 0.7);
-  }
+  --elevation: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -6px rgb(0 0 0 / 0.08);
 }
 
 /* Expone los tokens a Tailwind como utilidades (bg-*, text-*, border-*, ring-*...) */
@@ -71,6 +86,11 @@
   --color-danger-foreground: var(--danger-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-surface: var(--surface);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --shadow-soft: var(--elevation);
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
