@@ -39,6 +39,10 @@ export interface PlanStepView {
   effort: Range;
   wait: Range | null;
   cost: Range | null;
+  /** Cuándo se da por hecho (del catálogo o de la tarea personalizada). */
+  doneWhen: string;
+  /** Quién es el tercero, si lo hace un tercero. */
+  thirdParty: ThirdParty | null;
 }
 
 export interface DoneTaskView {
@@ -106,6 +110,8 @@ function stepView(step: Task["steps"][number]): PlanStepView {
     effort: step.effort,
     wait: step.wait ?? null,
     cost: step.cost ?? null,
+    doneWhen: step.doneWhen,
+    thirdParty: step.thirdParty ?? null,
   };
 }
 
