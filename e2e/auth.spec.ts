@@ -88,7 +88,8 @@ test.describe("login y logout", () => {
     await avatar.click();
     await expect(page.getByText(email)).toBeVisible();
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
-    await expect(page.getByRole("heading", { name: "¿Qué negocio quieres montar?" })).toBeVisible();
+    // Señal que solo existe sin sesión: espera a que el cierre de sesión termine antes de navegar.
+    await expect(page.getByRole("banner").getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
