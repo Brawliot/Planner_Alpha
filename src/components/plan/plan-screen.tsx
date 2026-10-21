@@ -1,10 +1,15 @@
 import Link from "next/link";
-import type { PlanTexts } from "@/lib/plan/i18n";
-import type { Range } from "@/lib/plan/task";
-import type { PlanStepView, PlanView } from "@/lib/plan/view";
+import { fillText, type PlanTexts } from "@/lib/plan/i18n";
+import type { Department } from "@/lib/plan/line";
+import { metroLayout } from "@/lib/plan/metro";
+import type { DoneTaskView, PlanTaskView, PlanView } from "@/lib/plan/view";
+import { cn } from "@/lib/cn";
 import { ConfigForm } from "./config-form";
+import { MetroMap, type MetroTask } from "./metro-map";
 import { StepActions } from "./step-actions";
-import { TaskGenerate } from "./task-generate";
+
+const LABEL = "font-mono text-[10px] uppercase tracking-[0.14em]";
+const deptColor = (department: Department | null) => (department ? `var(--dept-${department})` : "var(--muted-foreground)");
 
 function formatDate(iso: string, language: PlanView["language"]) {
   return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(
@@ -12,159 +17,218 @@ function formatDate(iso: string, language: PlanView["language"]) {
   );
 }
 
-function range(r: Range, unit: string, language: PlanView["language"]) {
-  const n = (v: number) => v.toLocaleString(language === "es" ? "es-ES" : "en-GB", { maximumFractionDigits: 2 });
-  return r.min === r.max ? `${n(r.min)} ${unit}` : `${n(r.min)}–${n(r.max)} ${unit}`;
-}
+// Tono de cada aviso: verde si va bien, ámbar si hay riesgo, rojo si no llega.
+const MONEY_TONE = { fits: "success", at_risk: "warning", over: "danger" } as const;
+const DEADLINE_TONE = { on_track: "success", at_risk: "warning", late: "danger" } as const;
+const TONE_CLASS = {
+  success: { card: "border-success/40 bg-success/5", label: "text-success" },
+  warning: { card: "border-warning/40 bg-warning/5", label: "text-warning" },
+  danger: { card: "border-danger/40 bg-danger/5", label: "text-danger" },
+} as const;
 
 export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: PlanTexts; reportId: string; version: number }) {
   const { language } = view;
-  const dates = (d: { from: string; to: string }) => `${formatDate(d.from, language)} – ${formatDate(d.to, language)}`;
+  const all: (PlanTaskView | DoneTaskView)[] = view.phases.flatMap((p) => [...p.tasks, ...p.done]);
+  const byId = new Map(all.map((task) => [task.id, task]));
+  const doneCount = view.phases.reduce((sum, p) => sum + p.done.length, 0);
+  const taskHref = (id: string) => `/informe/${reportId}/plan/tarea/${encodeURIComponent(id)}`;
 
-  const steps = (taskId: string, list: PlanStepView[]) => (
-    <ul className="mt-2 flex flex-col gap-2 pl-1 text-sm">
-      {list.map((step) => (
-        <li key={step.id}>
-          <span className={step.status === "done" || step.status === "skipped" ? "text-muted-foreground line-through" : ""}>
-            {step.text}
-          </span>{" "}
-          <span className="text-muted-foreground">
-            ({t.actor[step.actor]}; {range(step.effort, "h", language)}
-            {step.wait ? `; ${t.wait} ${range(step.wait, "d", language)}` : ""}
-            {step.cost ? `; ${range(step.cost, "€", language)}` : ""}) · {t.status[step.status]}
-          </span>
-          <StepActions reportId={reportId} taskId={taskId} version={version} step={step} t={t} />
-        </li>
-      ))}
-    </ul>
-  );
+  const metroTasks: MetroTask[] = all.map((task) => ({
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    progress: task.progress,
+    line: task.line,
+    dependsOn: task.dependsOn,
+    weeks: "weeks" in task ? task.weeks : null,
+    estimated: "estimated" in task ? task.estimated : false,
+  }));
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
-        {view.opening && (
-          <p className="text-base">
-            {t.opening}: {t.weeks} {view.opening.weeks.from}–{view.opening.weeks.to} · {dates(view.opening.dates)}{" "}
-            <span className="text-sm text-muted-foreground">({t.estimated})</span>
-          </p>
-        )}
-        {view.money && <p className="text-sm">{t.money[view.money]}</p>}
-        {view.deadline && <p className="text-sm">{t.deadline[view.deadline]}</p>}
-      </header>
+    <div lang={language} className="flex flex-col gap-8 pb-16">
+      <h1 className="text-4xl font-bold tracking-tighter">{t.title}</h1>
 
-      <section aria-labelledby="now" className="flex flex-col gap-2 rounded-md border border-border p-4">
-        <h2 id="now" className="text-lg font-semibold">
+      <section className="grid gap-4 md:grid-cols-[1.3fr_1fr_1fr]">
+        <div className="hud flex flex-col gap-2 rounded-[1.25rem] bg-surface p-6 shadow-soft">
+          {view.opening ? (
+            <>
+              <p className="flex flex-col gap-1">
+                <span className={cn(LABEL, "text-muted-foreground")}>{t.opening}:</span>{" "}
+                <span className="text-5xl font-bold tracking-tighter">
+                  {t.weeks} {view.opening.weeks.from}–{view.opening.weeks.to}
+                </span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(view.opening.dates.from, language)} – {formatDate(view.opening.dates.to, language)}{" "}
+                <span className="rounded-full border border-dashed border-muted-foreground px-2 text-[11px]">{t.estimated}</span>
+              </p>
+            </>
+          ) : null}
+          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-accent" style={{ width: `${all.length ? (doneCount / all.length) * 100 : 0}%` }} />
+            </div>
+            {fillText(t.overview.tasksDone, { done: doneCount, total: all.length })}
+          </div>
+        </div>
+
+        {view.money && (
+          <StatusCard tone={MONEY_TONE[view.money]} label={t.overview.money} text={t.money[view.money]} />
+        )}
+        {view.deadline && (
+          <StatusCard tone={DEADLINE_TONE[view.deadline]} label={t.overview.deadline} text={t.deadline[view.deadline]} />
+        )}
+      </section>
+
+      <section aria-labelledby="now" className="flex flex-col gap-3">
+        <h2 id="now" className={cn(LABEL, "text-muted-foreground")}>
           {t.now}
         </h2>
         {view.now.length === 0 ? (
-          <p className="text-sm">{t.nowEmpty}</p>
+          <p className="text-sm text-muted-foreground">{t.nowEmpty}</p>
         ) : (
-          <ol className="flex flex-col gap-3">
-            {view.now.map((item) => (
-              <li key={item.taskId} className="text-sm">
-                <a href={`#tarea-${item.taskId}`} className="font-medium underline">
-                  {item.title}
-                </a>
-                {item.step ? (
-                  <div>
-                    {t.nextStep}: {item.step.text}
-                    <StepActions reportId={reportId} taskId={item.taskId} version={version} step={item.step} t={t} />
-                  </div>
-                ) : item.waitingFor ? (
-                  <p>
-                    {t.waitingFor} {t.thirdParty[item.waitingFor]}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ol>
+          <ul className="grid gap-3 md:grid-cols-3">
+            {view.now.map((item) => {
+              const task = byId.get(item.taskId);
+              const color = deptColor(task?.department ?? null);
+              return (
+                <li
+                  key={item.taskId}
+                  className="flex flex-col gap-2 rounded-[1.25rem] bg-surface p-5"
+                  style={{ boxShadow: `inset 3px 0 0 ${color}, var(--elevation)` }}
+                >
+                  {task?.department && (
+                    <p className={LABEL} style={{ color }}>
+                      {t.department[task.department]}
+                    </p>
+                  )}
+                  <Link href={taskHref(item.taskId)} className="font-semibold underline-offset-4 hover:underline">
+                    {item.title}
+                  </Link>
+                  {item.step ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        {t.nextStep}: {item.step.text}
+                      </p>
+                      <StepActions reportId={reportId} taskId={item.taskId} version={version} step={item.step} t={t} />
+                    </>
+                  ) : item.waitingFor ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t.waitingFor} {t.thirdParty[item.waitingFor]}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
       {view.decisions.length > 0 && (
-        <section aria-labelledby="decisions" className="flex flex-col gap-2">
-          <h2 id="decisions" className="text-lg font-semibold">
+        <section aria-labelledby="decisions" className="flex flex-col gap-3">
+          <h2 id="decisions" className={cn(LABEL, "text-muted-foreground")}>
             {t.decisions}
           </h2>
-          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
+          <ul className="grid gap-3 md:grid-cols-2">
             {view.decisions.map((d) => (
-              <li key={d.label}>
-                {d.label}: {d.options.join(" / ")} ({t.provisional}: {d.chosen})
+              <li key={d.label} className="flex flex-col gap-1 rounded-[1.25rem] border border-dashed p-5 text-sm">
+                <p className="font-semibold">{d.label}</p>
+                <p className="text-muted-foreground">{d.options.join(" / ")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t.provisional}: <span className="text-foreground">{d.chosen}</span>
+                </p>
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      <details className="rounded-md border border-border p-4">
+      <nav aria-label={t.overview.viewsLabel} className="flex flex-wrap gap-1 self-start rounded-full bg-surface p-1 text-sm font-semibold">
+        <span aria-current="page" className="rounded-full bg-accent px-4 py-2 text-accent-foreground">
+          {t.overview.views.phases}
+        </span>
+        {[t.overview.views.areas, t.overview.views.timeline].map((name) => (
+          <span key={name} aria-disabled="true" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-muted-foreground">
+            {name}
+            <span className="rounded-full bg-muted px-2 text-[10px] font-medium">{t.overview.soon}</span>
+          </span>
+        ))}
+      </nav>
+
+      <section className="hud map-canvas rounded-[1.5rem] border bg-surface/60 p-4">
+        <MetroMap
+          layout={metroLayout(view)}
+          lines={view.lines}
+          tasks={metroTasks}
+          t={t}
+          reportId={reportId}
+          initialTaskId={view.now[0]?.taskId ?? null}
+        />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {view.phases.map((group) => {
+          const tasks = [...group.tasks, ...group.done];
+          return (
+            <div key={group.phase} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">{t.phase[group.phase]}</h3>
+                <span className={cn(LABEL, "text-muted-foreground")}>
+                  {group.done.length}/{tasks.length}
+                </span>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {tasks.map((task) => (
+                  <li key={task.id}>
+                    <CompactRow task={task} href={taskHref(task.id)} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
+
+      <details className="rounded-[1.25rem] bg-surface p-5 shadow-soft">
         <summary className="cursor-pointer font-medium">{t.adjust}</summary>
         <div className="mt-4">
           <ConfigForm reportId={reportId} version={version} values={view.form} t={t} />
         </div>
       </details>
-
-      {view.phases.map((group) => (
-        <section key={group.phase} aria-labelledby={`phase-${group.phase}`} className="flex flex-col gap-3">
-          <h2 id={`phase-${group.phase}`} className="text-xl font-semibold">
-            {t.phase[group.phase]}
-          </h2>
-          <ul className="flex flex-col gap-3">
-            {group.tasks.map((task) => (
-              <li key={task.id} id={`tarea-${task.id}`} tabIndex={-1} className="rounded-md border border-border p-4">
-                <h3 className="font-medium">
-                  <Link
-                    href={`/informe/${reportId}/plan/tarea/${encodeURIComponent(task.id)}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {task.title}
-                  </Link>
-                  {task.personalized && (
-                    <span className="ml-2 rounded-sm border border-border px-1.5 py-0.5 text-xs font-normal">{t.personalized}</span>
-                  )}
-                  {task.outOfOrder && (
-                    <span className="ml-2 rounded-sm border border-border px-1.5 py-0.5 text-xs font-normal">{t.outOfOrder}</span>
-                  )}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {task.department ? t.department[task.department] : ""} · {t.weeks} {task.weeks.from}–{task.weeks.to} ·{" "}
-                  {dates(task.dates)}
-                  {task.estimated ? ` · ${t.estimated}` : ""}
-                </p>
-                {task.blockedBy.length > 0 ? (
-                  <p className="text-sm">
-                    {t.blockedBy}: {task.blockedBy.join(", ")}
-                  </p>
-                ) : task.after.length > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {t.after}: {task.after.join(", ")}
-                  </p>
-                ) : null}
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-sm">{t.steps}</summary>
-                  {steps(task.id, task.steps)}
-                </details>
-                <TaskGenerate reportId={reportId} version={version} task={task} mold={task.mold} t={t} />
-              </li>
-            ))}
-          </ul>
-          {group.done.length > 0 && (
-            <details className="rounded-md border border-border p-4">
-              <summary className="cursor-pointer text-sm">
-                {t.doneGroup} ({group.done.length})
-              </summary>
-              <ul className="mt-2 flex flex-col gap-3">
-                {group.done.map((task) => (
-                  <li key={task.id} id={`tarea-${task.id}`} tabIndex={-1}>
-                    <h3 className="text-sm font-medium text-muted-foreground line-through">{task.title}</h3>
-                    {steps(task.id, task.steps)}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </section>
-      ))}
     </div>
+  );
+}
+
+function StatusCard({ tone, label, text }: { tone: keyof typeof TONE_CLASS; label: string; text: string }) {
+  return (
+    <div className={cn("flex flex-col gap-2 rounded-[1.25rem] border p-6", TONE_CLASS[tone].card)}>
+      <p className={cn(LABEL, TONE_CLASS[tone].label)}>{label}</p>
+      <p className="text-lg font-semibold">{text}</p>
+    </div>
+  );
+}
+
+/** Fila compacta: franja del área, punto de quién hace el siguiente paso, título y progreso. */
+function CompactRow({ task, href }: { task: PlanTaskView | DoneTaskView; href: string }) {
+  const done = task.status === "done";
+  const color = deptColor(task.department);
+  const who =
+    task.nextActor === "ai" ? "var(--accent)" : task.nextActor === "third_party" ? "var(--info)" : "var(--foreground)";
+  return (
+    <Link
+      href={href}
+      className="flex min-h-11 items-center gap-3 rounded-[0.75rem] bg-surface px-3 py-2 text-sm hover:ring-1 hover:ring-accent"
+      style={{ boxShadow: `inset 3px 0 0 ${color}` }}
+    >
+      <span
+        aria-hidden="true"
+        className={cn("size-2.5 shrink-0 rounded-full", task.status === "waiting" && "border-dashed")}
+        style={done ? { background: color } : { border: `2px solid ${who}` }}
+      />
+      <span className={cn("flex-1", done && "text-muted-foreground line-through decoration-muted-foreground/50")}>{task.title}</span>
+      <span className="font-mono text-[11px] text-muted-foreground">
+        {done ? "✓" : `${task.progress.done}/${task.progress.total}`}
+      </span>
+    </Link>
   );
 }

@@ -35,6 +35,15 @@
   --warning: #fbbf24;
   --info: #93c5fd; /* terceros (gestor, organismo...) */
 
+  /* Un color por departamento (mapas del plan). Ninguno es el verde/rojo de los veredictos. */
+  --dept-founder: #c4b5fd;
+  --dept-product: #d4f84a;
+  --dept-sales: #93c5fd;
+  --dept-finance: #f9a8d4;
+  --dept-legal: #fbbf24;
+  --dept-operations: #5eead4;
+  --dept-team: #fdba74;
+
   --overlay: rgb(0 0 0 / 0.7);
   /* En oscuro la sombra negra no se ve: un filo de luz casi invisible marca el borde. */
   --elevation: 0 0 0 1px rgb(255 255 255 / 0.05), 0 8px 24px -6px rgb(0 0 0 / 0.6);
@@ -69,6 +78,14 @@
   --warning: #b45309; /* contraste AA sobre background */
   --info: #1d4ed8; /* contraste AA sobre background */
 
+  --dept-founder: #6d28d9;
+  --dept-product: #4d7c0f;
+  --dept-sales: #1d4ed8;
+  --dept-finance: #be185d;
+  --dept-legal: #b45309;
+  --dept-operations: #0f766e;
+  --dept-team: #c2410c;
+
   --overlay: rgb(0 0 0 / 0.5);
   --elevation: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -6px rgb(0 0 0 / 0.08);
 }
@@ -89,6 +106,13 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-dept-founder: var(--dept-founder);
+  --color-dept-product: var(--dept-product);
+  --color-dept-sales: var(--dept-sales);
+  --color-dept-finance: var(--dept-finance);
+  --color-dept-legal: var(--dept-legal);
+  --color-dept-operations: var(--dept-operations);
+  --color-dept-team: var(--dept-team);
   --color-surface: var(--surface);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -211,6 +235,60 @@
   to { --border-angle: 360deg; }
 }
 
+/* ========== Mapas del plan ========== */
+.map-canvas {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-foreground) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-foreground) 5%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+/* Esquinas tipo HUD */
+.hud {
+  position: relative;
+}
+.hud::before,
+.hud::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+  pointer-events: none;
+}
+.hud::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+  border-top-left-radius: 6px;
+}
+.hud::after {
+  right: -1px;
+  bottom: -1px;
+  border-right: 1.5px solid;
+  border-bottom: 1.5px solid;
+  border-bottom-right-radius: 6px;
+}
+.map-glow {
+  filter: drop-shadow(0 0 6px color-mix(in oklab, currentColor 70%, transparent));
+}
+.map-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-pulse 2s ease-out infinite;
+}
+@keyframes map-pulse {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(2.2); opacity: 0; }
+}
+.map-flow {
+  stroke-dasharray: 4 4;
+  animation: map-flow 1.2s linear infinite;
+}
+@keyframes map-flow {
+  to { stroke-dashoffset: -16; }
+}
+
 /* ========== Resumen ejecutivo ========== */
 .summary-panel {
   animation: summary-panel 350ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -287,7 +365,9 @@
   .analysis-bar::after,
   .analysis-spinner,
   .analysis-step,
-  .summary-panel {
+  .summary-panel,
+  .map-pulse,
+  .map-flow {
     animation: none;
   }
 }

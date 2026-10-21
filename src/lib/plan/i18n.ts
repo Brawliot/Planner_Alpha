@@ -60,6 +60,19 @@ export interface PlanTexts {
   status: Record<"todo" | "ai_draft" | "requested" | "received" | "done" | "skipped", string>;
   action: Record<"done" | "skipped" | "requested" | "received" | "todo", string>;
   progressError: Record<"stale" | "invalid" | "failed", string>;
+  overview: {
+    money: string;
+    deadline: string;
+    tasksDone: string;
+    views: { phases: string; areas: string; timeline: string };
+    viewsLabel: string;
+    soon: string;
+    phaseDone: string;
+    groupTitle: string;
+    openTask: string;
+    hint: string;
+    taskStatus: Record<"done" | "doing" | "waiting" | "todo" | "blocked", string>;
+  };
   /** Solo textos (sin funciones): t se pasa a componentes de cliente. Las plantillas se rellenan con fillText. */
   task: {
     position: string;
@@ -199,6 +212,25 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       alternative: "Camino alternativo",
       allDone: "Tarea terminada",
     },
+    overview: {
+      money: "Dinero",
+      deadline: "Fecha límite",
+      tasksDone: "{done} de {total} tareas",
+      views: { phases: "Fases", areas: "Áreas", timeline: "Cronograma" },
+      viewsLabel: "Vistas del plan",
+      soon: "Próximamente",
+      phaseDone: "{done}/{total} hechas",
+      groupTitle: "{n} tareas en {phase}",
+      openTask: "Abrir tarea",
+      hint: "Pasa el ratón por una estación para ver su tarea.",
+      taskStatus: {
+        done: "Hecha",
+        doing: "En curso",
+        waiting: "Esperando a un tercero",
+        todo: "Por hacer",
+        blocked: "Esperando a otra tarea",
+      },
+    },
     progressError: {
       stale: "Este plan ha cambiado. Recarga la página.",
       invalid: "Ese cambio ya no se puede hacer. Recarga la página.",
@@ -313,6 +345,25 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       thisTask: "This task",
       alternative: "Alternative path",
       allDone: "Task finished",
+    },
+    overview: {
+      money: "Money",
+      deadline: "Deadline",
+      tasksDone: "{done} of {total} tasks",
+      views: { phases: "Phases", areas: "Areas", timeline: "Timeline" },
+      viewsLabel: "Plan views",
+      soon: "Coming soon",
+      phaseDone: "{done}/{total} done",
+      groupTitle: "{n} tasks in {phase}",
+      openTask: "Open task",
+      hint: "Hover over a station to see its task.",
+      taskStatus: {
+        done: "Done",
+        doing: "In progress",
+        waiting: "Waiting for a third party",
+        todo: "To do",
+        blocked: "Waiting for another task",
+      },
     },
     progressError: {
       stale: "This plan has changed. Reload the page.",
