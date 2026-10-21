@@ -19,10 +19,16 @@ async function approvedReport(page: Page, idea = "Una app de facturación") {
   return page.url();
 }
 
-/** Entra en la primera tarea de "Now" (los pasos y "Personalize" viven en la página de cada tarea). */
-async function openFirstNowTask(page: Page) {
-  await page.getByRole("region", { name: "Now" }).getByRole("link").first().click();
-  await expect(page).toHaveURL(/\/plan\/tarea\//);
+/** Entra en la primera tarea que se puede personalizar (las de decisión, por ejemplo, no). */
+async function openPersonalizableTask(page: Page) {
+  const hrefs = await page
+    .locator('a[href*="/plan/tarea/"]')
+    .evaluateAll((links) => [...new Set(links.map((a) => a.getAttribute("href") ?? ""))]);
+  for (const href of hrefs) {
+    await page.goto(href);
+    if ((await page.getByRole("button", { name: "Personalize with AI" }).count()) > 0) return;
+  }
+  throw new Error("Ninguna tarea del plan se puede personalizar");
 }
 
 /** Abre "Adjust" cuando la página ya ha cargado del todo y comprueba que se ve el formulario. */
@@ -114,7 +120,7 @@ test.describe("plan", () => {
 
   test("personalizar una tarea con IA la sustituye por la personalizada", async ({ page }) => {
     await createPlanFor(page);
-    await openFirstNowTask(page);
+    await openPersonalizableTask(page);
     await page.getByRole("button", { name: "Personalize with AI" }).click();
     await expect(page.getByRole("heading", { name: /Personalized task/ }).first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText("Personalized", { exact: true }).first()).toBeVisible();
@@ -123,7 +129,7 @@ test.describe("plan", () => {
 
   test("si la IA pregunta antes, se responde en la tarea y se personaliza", async ({ page }) => {
     await createPlanFor(page, "Una app de facturación [gpt:ask]");
-    await openFirstNowTask(page);
+    await openPersonalizableTask(page);
     await page.getByRole("button", { name: "Personalize with AI" }).click();
     await expect(page.getByText("Fake question?")).toBeVisible({ timeout: 20_000 });
     await page.getByRole("radio", { name: "Option A" }).check();
@@ -133,7 +139,7 @@ test.describe("plan", () => {
 
   test("si la IA cae, se avisa y la tarea se queda como estaba", async ({ page }) => {
     await createPlanFor(page, "Una app de facturación [gpt:down-plan]");
-    await openFirstNowTask(page);
+    await openPersonalizableTask(page);
     await page.getByRole("button", { name: "Personalize with AI" }).click();
     await expect(page.getByText("The AI is not available right now. Try again in a few minutes.")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("heading", { name: /Personalized task/ })).toHaveCount(0);

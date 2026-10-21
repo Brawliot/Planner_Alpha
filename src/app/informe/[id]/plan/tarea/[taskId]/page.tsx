@@ -21,7 +21,7 @@ export default function TaskRoute({ params }: { params: Promise<{ id: string; ta
       {/* Sin generateStaticParams, params es dato de la petición: va dentro de Suspense (cacheComponents). */}
       <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando...</p>}>
         {params.then(({ id, taskId }) => (
-          <TaskContent id={id} taskId={taskId} />
+          <TaskContent id={id} taskId={decodeTaskId(taskId)} />
         ))}
       </Suspense>
     </PageContainer>
@@ -45,4 +45,13 @@ async function TaskContent({ id, taskId }: { id: string; taskId: string }) {
   if (!page) notFound();
 
   return <TaskPage page={page} t={t} reportId={report.id} version={plan.version} />;
+}
+
+/** El id llega codificado en la URL ("decide%3Atime_secured"); si viene mal formado, no existe. */
+function decodeTaskId(raw: string) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return "";
+  }
 }
