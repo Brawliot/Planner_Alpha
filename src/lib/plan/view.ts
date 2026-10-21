@@ -65,6 +65,8 @@ export interface DoneTaskView {
 
 export interface PlanTaskView extends DoneTaskView {
   weeks: { from: number; to: number };
+  /** Días desde el inicio del plan: empieza, termina (mejor caso) y termina (peor caso). Estimado. */
+  schedule: { start: number; endMin: number; endMax: number };
   dates: { from: string; to: string };
   estimated: boolean;
   /** Tareas que van antes (títulos). */
@@ -171,6 +173,7 @@ export function planView(input: {
     pending.push({
       ...base(task),
       weeks: weeksOf(s),
+      schedule: { start: s.start.min, endMin: s.end.min, endMax: s.end.max },
       dates: { from: addDays(config.startDate, s.start.min), to: addDays(config.startDate, s.end.max) },
       estimated: taskCertainty(task, facts) === "estimated",
       after: titles(task.dependsOn),
