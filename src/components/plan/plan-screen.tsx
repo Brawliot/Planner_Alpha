@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { fillText, type PlanTexts } from "@/lib/plan/i18n";
 import type { Department } from "@/lib/plan/line";
-import { metroLayout } from "@/lib/plan/metro";
 import type { DoneTaskView, PlanTaskView, PlanView } from "@/lib/plan/view";
 import { cn } from "@/lib/cn";
 import { ConfigForm } from "./config-form";
@@ -168,8 +167,7 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
         t={t}
         phases={
           <MetroMap
-            layout={metroLayout(view)}
-            lines={view.lines}
+            view={view}
             tasks={metroTasks}
             t={t}
             reportId={reportId}

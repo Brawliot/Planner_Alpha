@@ -31,7 +31,9 @@ export function AreasMap({
   const activeId = hovered ?? selected;
   const active = activeId ? byId.get(activeId) : undefined;
   const unlocksOf = (id: string) => tasks.filter((task) => task.dependsOn.includes(id));
-  const related = active ? new Set([active.id, ...active.dependsOn, ...unlocksOf(active.id).map((x) => x.id)]) : null;
+  // Solo se atenúa el resto al pasar el ratón; la tarea fijada en el panel no apaga el mapa.
+  const hoveredTask = hovered ? byId.get(hovered) : undefined;
+  const related = hoveredTask ? new Set([hoveredTask.id, ...hoveredTask.dependsOn, ...unlocksOf(hoveredTask.id).map((x) => x.id)]) : null;
   const { center } = layout;
 
   return (

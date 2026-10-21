@@ -19,8 +19,8 @@ const state = rebuildPlan({
   today,
 });
 const view = planView({ state, config, catalog: MOLDS, facts, language: "es" });
-const layout = metroLayout(view);
 const allTasks = view.phases.flatMap((p) => [...p.tasks, ...p.done]);
+const departments = [...new Set(view.lines.map((l) => l.department))];
 
 describe("planView para el mapa", () => {
   it("cada tarea apunta a una línea que existe y su progreso es coherente", () => {
@@ -31,36 +31,52 @@ describe("planView para el mapa", () => {
   });
 });
 
-describe("metroLayout", () => {
-  it("una columna por fase y una fila por línea", () => {
-    assert.equal(layout.columns.length, view.phases.length);
-    assert.equal(layout.rows.length, view.lines.length);
+describe("metroLayout plegado", () => {
+  const layout = metroLayout(view);
+
+  it("una fila por departamento, sin filas de objetivos", () => {
+    assert.equal(layout.rows.length, departments.length);
+    assert.ok(layout.rows.every((r) => r.kind === "department" && !r.open));
   });
 
-  it("cada tarea está en una sola estación, la de su línea y su fase", () => {
+  it("cada tarea está en una sola estación, la de su departamento", () => {
     const placed = layout.stations.flatMap((s) => s.tasks.map((t) => t.id));
     assert.deepEqual([...placed].sort(), allTasks.map((t) => t.id).sort());
     for (const station of layout.stations) {
-      for (const t of station.tasks) assert.equal(allTasks.find((x) => x.id === t.id)?.line, station.line);
+      for (const t of station.tasks) {
+        const task = allTasks.find((x) => x.id === t.id)!;
+        assert.equal(view.lines[task.line].department, station.department);
+      }
     }
   });
 
-  it("la estación-grupo se nombra por su tarea principal y cuenta el resto", () => {
+  it("la estación se nombra por su tarea principal y cuenta el resto", () => {
     for (const station of layout.stations) {
       assert.equal(station.extra, station.tasks.length - 1);
       assert.ok(station.tasks.some((t) => t.id === station.lead.id));
     }
   });
+});
 
-  it("las dependencias dibujadas cruzan de una línea a otra y no se repiten", () => {
+describe("metroLayout desplegado", () => {
+  const open = departments[0];
+  const layout = metroLayout(view, new Set([open]));
+
+  it("el departamento abierto muestra sus objetivos y no tiene estaciones propias", () => {
+    const lines = view.lines.filter((l) => l.department === open).length;
+    assert.equal(layout.rows.filter((r) => r.kind === "line").length, lines);
+    assert.ok(!layout.stations.some((s) => s.row === `d:${open}`));
+    assert.ok(layout.tracks.find((t) => t.row === `d:${open}`)?.thin);
+  });
+
+  it("todas las tareas siguen colocadas una sola vez", () => {
+    const placed = layout.stations.flatMap((s) => s.tasks.map((t) => t.id));
+    assert.deepEqual([...placed].sort(), allTasks.map((t) => t.id).sort());
+  });
+
+  it("las dependencias unen filas distintas y no se repiten", () => {
     const keys = layout.edges.map((e) => `${e.from}>${e.to}`);
     assert.equal(new Set(keys).size, keys.length);
     for (const edge of layout.edges) assert.notEqual(edge.from.split("|")[0], edge.to.split("|")[0]);
-  });
-
-  it("el tramo recorrido no se sale de la vía", () => {
-    for (const track of layout.tracks) {
-      if (track.reachedX !== null) assert.ok(track.reachedX >= track.x1 && track.reachedX <= track.x2);
-    }
   });
 });

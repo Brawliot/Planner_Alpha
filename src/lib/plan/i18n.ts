@@ -72,6 +72,8 @@ export interface PlanTexts {
     openTask: string;
     hint: string;
     weekShort: string;
+    objectiveOne: string;
+    objectiveMany: string;
     today: string;
     openingBand: string;
     sure: string;
@@ -229,6 +231,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       openTask: "Abrir tarea",
       hint: "Pasa el ratón por una estación para ver su tarea.",
       weekShort: "S",
+      objectiveOne: "1 objetivo",
+      objectiveMany: "{n} objetivos",      weekShort: "S",
       today: "HOY",
       openingBand: "Apertura",
       sure: "seguro",
@@ -368,6 +372,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       openTask: "Open task",
       hint: "Hover over a station to see its task.",
       weekShort: "W",
+      objectiveOne: "1 goal",
+      objectiveMany: "{n} goals",
       today: "TODAY",
       openingBand: "Opening",
       sure: "certain",
