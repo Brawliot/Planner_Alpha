@@ -59,6 +59,7 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
 
       <section className="grid gap-4 lg:grid-cols-[minmax(320px,0.9fr)_1.6fr]">
         <div className="hud flex flex-col gap-3 rounded-[1.25rem] bg-surface p-6 shadow-soft">
+          {view.opening ? (
             <>
               <p className="flex flex-col gap-1">
                 <span className={cn(LABEL, "text-muted-foreground")}>{t.opening}:</span>{" "}
