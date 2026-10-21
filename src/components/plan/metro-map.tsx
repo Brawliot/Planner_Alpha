@@ -261,7 +261,7 @@ function GroupStation({ x, y, tasks, color }: { x: number; y: number; tasks: Met
   );
 }
 
-function ActivePanel({
+export function ActivePanel({
   task,
   line,
   before,

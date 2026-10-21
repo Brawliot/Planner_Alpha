@@ -85,6 +85,19 @@ test.describe("plan", () => {
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });
 
+    test("el cronograma se abre desde el selector y marca la apertura", async ({ page }) => {
+    const reportUrl = await approvedReport(page);
+    await page.goto(`${reportUrl}/plan`);
+    await page.getByRole("button", { name: "Create my plan" }).click();
+    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("button", { name: "Timeline" }).click();
+    await expect(page.getByRole("button", { name: "Timeline" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText(/◆ Opening/)).toBeVisible();
+  });
+
+
   test("ajustar las horas se guarda", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);

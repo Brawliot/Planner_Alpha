@@ -6,6 +6,9 @@ import type { DoneTaskView, PlanTaskView, PlanView } from "@/lib/plan/view";
 import { cn } from "@/lib/cn";
 import { ConfigForm } from "./config-form";
 import { MetroMap, type MetroTask } from "./metro-map";
+import { PlanViews } from "./plan-views";
+import { TimelineChart } from "./timeline-chart";
+import { timelineLayout } from "@/lib/plan/timeline-chart";
 import { StepActions } from "./step-actions";
 
 const LABEL = "font-mono text-[10px] uppercase tracking-[0.14em]";
@@ -32,6 +35,9 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
   const byId = new Map(all.map((task) => [task.id, task]));
   const doneCount = view.phases.reduce((sum, p) => sum + p.done.length, 0);
   const taskHref = (id: string) => `/informe/${reportId}/plan/tarea/${encodeURIComponent(id)}`;
+  const initialTaskId = view.now[0]?.taskId ?? null;
+  // La página ya se pinta en cada petición (sesión y plan): "hoy" es el día de la petición.
+  const today = new Date().toISOString().slice(0, 10);
 
   const metroTasks: MetroTask[] = all.map((task) => ({
     id: task.id,
@@ -143,28 +149,29 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
         </section>
       )}
 
-      <nav aria-label={t.overview.viewsLabel} className="flex flex-wrap gap-1 self-start rounded-full bg-surface p-1 text-sm font-semibold">
-        <span aria-current="page" className="rounded-full bg-accent px-4 py-2 text-accent-foreground">
-          {t.overview.views.phases}
-        </span>
-        {[t.overview.views.areas, t.overview.views.timeline].map((name) => (
-          <span key={name} aria-disabled="true" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-muted-foreground">
-            {name}
-            <span className="rounded-full bg-muted px-2 text-[10px] font-medium">{t.overview.soon}</span>
-          </span>
-        ))}
-      </nav>
-
-      <section className="hud map-canvas rounded-[1.5rem] border bg-surface/60 p-4">
-        <MetroMap
-          layout={metroLayout(view)}
-          lines={view.lines}
-          tasks={metroTasks}
-          t={t}
-          reportId={reportId}
-          initialTaskId={view.now[0]?.taskId ?? null}
-        />
-      </section>
+      <PlanViews
+        t={t}
+        phases={
+          <MetroMap
+            layout={metroLayout(view)}
+            lines={view.lines}
+            tasks={metroTasks}
+            t={t}
+            reportId={reportId}
+            initialTaskId={initialTaskId}
+          />
+        }
+        timeline={
+          <TimelineChart
+            layout={timelineLayout(view, today)}
+            lines={view.lines}
+            tasks={metroTasks}
+            t={t}
+            reportId={reportId}
+            initialTaskId={initialTaskId}
+          />
+        }
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {view.phases.map((group) => {

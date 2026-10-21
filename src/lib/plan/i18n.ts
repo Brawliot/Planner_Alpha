@@ -71,6 +71,11 @@ export interface PlanTexts {
     groupTitle: string;
     openTask: string;
     hint: string;
+    weekShort: string;
+    today: string;
+    openingBand: string;
+    sure: string;
+    estimatedRange: string;
     taskStatus: Record<"done" | "doing" | "waiting" | "todo" | "blocked", string>;
   };
   /** Solo textos (sin funciones): t se pasa a componentes de cliente. Las plantillas se rellenan con fillText. */
@@ -223,6 +228,11 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       groupTitle: "{n} tareas en {phase}",
       openTask: "Abrir tarea",
       hint: "Pasa el ratón por una estación para ver su tarea.",
+      weekShort: "S",
+      today: "HOY",
+      openingBand: "Apertura",
+      sure: "seguro",
+      estimatedRange: "rango estimado",
       taskStatus: {
         done: "Hecha",
         doing: "En curso",
@@ -357,6 +367,11 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       groupTitle: "{n} tasks in {phase}",
       openTask: "Open task",
       hint: "Hover over a station to see its task.",
+      weekShort: "W",
+      today: "TODAY",
+      openingBand: "Opening",
+      sure: "certain",
+      estimatedRange: "estimated range",
       taskStatus: {
         done: "Done",
         doing: "In progress",
