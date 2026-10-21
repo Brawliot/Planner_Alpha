@@ -14,6 +14,7 @@ export function StepActions({
   t,
   returnTo,
   emphasis = false,
+  only,
 }: {
   reportId: string;
   taskId: string;
@@ -24,6 +25,8 @@ export function StepActions({
   returnTo?: "task";
   /** Paso actual: el primer botón es el principal (lima) y todos miden 44 px. */
   emphasis?: boolean;
+  /** "primary": solo la acción principal (filas compactas como "Ahora"). */
+  only?: "primary";
 }) {
   const action = useMemo(() => markStepAction.bind(null, reportId, taskId, step.id), [reportId, taskId, step.id]);
   const [state, formAction, pending] = useActionState<ProgressState, FormData>(action, { error: null });
@@ -33,8 +36,7 @@ export function StepActions({
     <form action={formAction} className="mt-1 flex flex-wrap items-center gap-2">
       <input type="hidden" name="version" value={version} />
       {returnTo && <input type="hidden" name="return" value={returnTo} />}
-      {step.actions.map((to, index) => (
-        <Button
+      {(only === "primary" ? step.actions.slice(0, 1) : step.actions).map((to, index) => (        <Button
           key={to}
           type="submit"
           name="to"

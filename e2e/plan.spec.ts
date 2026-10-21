@@ -54,6 +54,14 @@ test.describe("plan", () => {
     await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Validate" })).toBeVisible();
     await expect(page.getByText(/You open: weeks \d+–\d+/)).toBeVisible();
+
+    // El header muestra "Plan" en el plan y en sus tareas, y lleva de vuelta al plan.
+    const headerPlan = page.getByRole("banner").getByRole("link", { name: "Plan", exact: true });
+    await expect(headerPlan).toBeVisible();
+    await page.getByRole("region", { name: "Now" }).getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/plan\/tarea\//);
+    await headerPlan.click();
+    await expect(page).toHaveURL(`${reportUrl}/plan`);
   });
 
     test("cada tarea tiene su página: se ve el paso actual y al marcarlo se queda en ella", async ({ page }) => {
