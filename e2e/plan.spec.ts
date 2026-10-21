@@ -79,6 +79,7 @@ test.describe("plan", () => {
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });
 
+  test("ajustar las horas se guarda", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
     await page.getByRole("button", { name: "Create my plan" }).click();
