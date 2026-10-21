@@ -115,6 +115,13 @@ test.describe("plan", () => {
 
     await page.getByRole("button", { name: "Areas" }).click();
     await expect(page.getByRole("button", { name: "Areas" })).toHaveAttribute("aria-pressed", "true");
+
+    // Pulsar un área la enfoca; "All areas" vuelve a la vista de conjunto.
+    await page.locator("[data-area]").first().click();
+    const back = page.getByRole("button", { name: /All areas/ });
+    await expect(back).toBeVisible();
+    await back.click();
+    await expect(page.getByText("Click an area to see it in detail")).toBeVisible();
     await page.getByRole("link", { name: /Open task/ }).click();
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });

@@ -8,7 +8,6 @@ import { MetroMap, type MetroTask } from "./metro-map";
 import { PlanViews } from "./plan-views";
 import { TimelineChart } from "./timeline-chart";
 import { timelineLayout } from "@/lib/plan/timeline-chart";
-import { areasLayout } from "@/lib/plan/areas";
 import { AreasMap } from "./areas-map";
 import { StepActions } from "./step-actions";
 
@@ -176,8 +175,7 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
         }
         areas={
           <AreasMap
-            layout={areasLayout(view)}
-            lines={view.lines}
+            view={view}
             tasks={metroTasks}
             t={t}
             reportId={reportId}

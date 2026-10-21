@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { areasFocus, areasLayout, areasOverview } from "../../src/lib/plan/areas.ts";
+import { areasFocus, areasOverview } from "../../src/lib/plan/areas.ts";
 import { MOLDS } from "../../src/lib/plan/catalog.ts";
 import { rebuildPlan } from "../../src/lib/plan/orchestrator.ts";
 import { prefillConfig } from "../../src/lib/plan/prefill.ts";
@@ -19,48 +19,21 @@ const state = rebuildPlan({
   today,
 });
 const view = planView({ state, config, catalog: MOLDS, facts, language: "es" });
-const layout = areasLayout(view);
 const allTasks = view.phases.flatMap((p) => [...p.tasks, ...p.done]);
-
-describe("areasLayout", () => {
-  it("un nodo por departamento, por línea y por tarea", () => {
-    assert.equal(layout.departments.length, new Set(view.lines.map((l) => l.department)).size);
-    assert.equal(layout.lines.length, view.lines.length);
-    assert.deepEqual(layout.tasks.map((t) => t.id).sort(), allTasks.map((t) => t.id).sort());
-  });
-
-  it("el progreso de los departamentos suma el del plan", () => {
-    assert.equal(layout.departments.reduce((sum, d) => sum + d.total, 0), layout.center.total);
-    assert.equal(layout.departments.reduce((sum, d) => sum + d.done, 0), layout.center.done);
-  });
-
-  it("cada tarea cuelga de su línea", () => {
-    for (const task of layout.tasks) {
-      const line = layout.lines.find((l) => l.line === task.line);
-      assert.ok(line);
-      assert.equal(task.fromX, line.x);
-      assert.equal(task.fromY, line.y);
-    }
-  });
-
-  it("los arcos solo unen departamentos distintos", () => {
-    for (const edge of layout.edges) {
-      const from = layout.tasks.find((t) => t.id === edge.from)!;
-      const to = layout.tasks.find((t) => t.id === edge.to)!;
-      assert.notEqual(view.lines[from.line].department, view.lines[to.line].department);
-    }
-  });
-});
-
+const departments = [...new Set(view.lines.map((l) => l.department))];
 
 describe("areasOverview (todas las áreas)", () => {
   const overview = areasOverview(view);
-  const departments = [...new Set(view.lines.map((l) => l.department))];
 
   it("un nodo por departamento, más grande cuantas más tareas", () => {
     assert.equal(overview.departments.length, departments.length);
     const sorted = [...overview.departments].sort((a, b) => a.total - b.total);
     for (let i = 1; i < sorted.length; i++) assert.ok(sorted[i].r >= sorted[i - 1].r);
+  });
+
+  it("los departamentos suman las tareas del plan", () => {
+    assert.equal(overview.departments.reduce((sum, d) => sum + d.total, 0), overview.center.total);
+    assert.equal(overview.departments.reduce((sum, d) => sum + d.done, 0), overview.center.done);
   });
 
   it("el desglose de estados suma las tareas de cada departamento", () => {
@@ -78,7 +51,7 @@ describe("areasOverview (todas las áreas)", () => {
 });
 
 describe("areasFocus (un departamento)", () => {
-  const department = [...new Set(view.lines.map((l) => l.department))][0];
+  const department = departments[0];
   const focus = areasFocus(view, department);
   const own = allTasks.filter((t) => view.lines[t.line].department === department);
 
@@ -88,16 +61,17 @@ describe("areasFocus (un departamento)", () => {
 
   it("una pastilla por cada otro departamento", () => {
     assert.ok(focus.pills.every((p) => p.department !== department));
-    assert.equal(focus.pills.length, new Set(view.lines.map((l) => l.department)).size - 1);
+    assert.equal(focus.pills.length, departments.length - 1);
   });
 
-  it("nada invade el hueco de arriba", () => {
-    for (const task of focus.tasks) assert.ok(task.y > focus.pills[0]?.y ?? 0);
+  it("nada invade la fila de pastillas", () => {
+    const pillY = focus.pills[0]?.y ?? 0;
+    for (const task of focus.tasks) assert.ok(task.y > pillY);
   });
 
   it("una línea exterior por departamento conectado", () => {
-    const departments = focus.outer.map((o) => o.department);
-    assert.equal(new Set(departments).size, departments.length);
+    const connected = focus.outer.map((o) => o.department);
+    assert.equal(new Set(connected).size, connected.length);
     assert.ok(focus.outer.every((o) => o.count > 0));
   });
 });
