@@ -23,10 +23,9 @@ const layout = metroLayout(view);
 const allTasks = view.phases.flatMap((p) => [...p.tasks, ...p.done]);
 
 describe("planView para el mapa", () => {
-  it("cada tarea sabe su línea, su estado y su progreso", () => {
-    const lineIds = new Set(view.lines.map((l) => l.id));
+  it("cada tarea apunta a una línea que existe y su progreso es coherente", () => {
     for (const task of allTasks) {
-      assert.ok(lineIds.has(task.lineId), `línea ${task.lineId} sin datos`);
+      assert.ok(task.line >= 0 && task.line < view.lines.length, `línea ${task.line} fuera de rango`);
       assert.ok(task.progress.done <= task.progress.total);
     }
   });
@@ -42,7 +41,7 @@ describe("metroLayout", () => {
     const placed = layout.stations.flatMap((s) => s.tasks.map((t) => t.id));
     assert.deepEqual([...placed].sort(), allTasks.map((t) => t.id).sort());
     for (const station of layout.stations) {
-      for (const t of station.tasks) assert.equal(allTasks.find((x) => x.id === t.id)?.lineId, station.lineId);
+      for (const t of station.tasks) assert.equal(allTasks.find((x) => x.id === t.id)?.line, station.line);
     }
   });
 

@@ -13,7 +13,8 @@ type Phase = PlanView["phases"][number]["phase"];
 
 export interface MetroStation {
   key: string;
-  lineId: string;
+  /** Posición de la línea en PlanView.lines. */
+  line: number;
   phase: Phase;
   x: number;
   y: number;
@@ -29,9 +30,9 @@ export interface MetroLayout {
   width: number;
   height: number;
   columns: { phase: Phase; x: number; done: number; total: number; started: boolean }[];
-  rows: { lineId: string; y: number }[];
+  rows: { line: number; y: number }[];
   /** Vía de cada línea: de su primera a su última estación; reachedX = hasta dónde se ha avanzado. */
-  tracks: { lineId: string; y: number; x1: number; x2: number; reachedX: number | null }[];
+  tracks: { line: number; y: number; x1: number; x2: number; reachedX: number | null }[];
   stations: MetroStation[];
   /** Dependencias entre líneas distintas (de la estación de la que se depende a la que depende). */
   edges: { from: string; to: string; x1: number; y1: number; x2: number; y2: number }[];
@@ -67,20 +68,19 @@ export function metroLayout(view: PlanView): MetroLayout {
     };
   });
 
-  const rows = view.lines.map((line, i) => ({ lineId: line.id, y: top + i * rowHeight }));
-  const yOf = new Map(rows.map((r) => [r.lineId, r.y]));
+  const rows = view.lines.map((_, line) => ({ line, y: top + line * rowHeight }));
 
   const stations: MetroStation[] = [];
   for (const row of rows) {
     for (const [phaseIndex, group] of groups.entries()) {
       const tasks = all
-        .filter((t) => t.lineId === row.lineId && t.phaseIndex === phaseIndex)
+        .filter((t) => t.line === row.line && t.phaseIndex === phaseIndex)
         .map((t) => ({ id: t.id, title: t.title, status: t.status }));
       if (tasks.length === 0) continue;
       const lead = leadOf(tasks);
       stations.push({
-        key: `${row.lineId}|${group.phase}`,
-        lineId: row.lineId,
+        key: `${row.line}|${group.phase}`,
+        line: row.line,
         phase: group.phase,
         x: left + phaseIndex * colWidth,
         y: row.y,
@@ -92,10 +92,10 @@ export function metroLayout(view: PlanView): MetroLayout {
   }
 
   const tracks = rows.flatMap((row) => {
-    const own = stations.filter((s) => s.lineId === row.lineId);
+    const own = stations.filter((s) => s.line === row.line);
     if (own.length === 0) return [];
     const reached = own.filter((s) => s.tasks.some((t) => STARTED.includes(t.status)));
-    return [{ lineId: row.lineId, y: row.y, x1: own[0].x, x2: own.at(-1)!.x, reachedX: reached.at(-1)?.x ?? null }];
+    return [{ line: row.line, y: row.y, x1: own[0].x, x2: own.at(-1)!.x, reachedX: reached.at(-1)?.x ?? null }];
   });
 
   const stationOf = new Map(stations.flatMap((s) => s.tasks.map((t) => [t.id, s] as const)));
@@ -105,7 +105,7 @@ export function metroLayout(view: PlanView): MetroLayout {
     const to = stationOf.get(task.id);
     for (const dependency of task.dependsOn) {
       const from = stationOf.get(dependency);
-      if (!from || !to || from.lineId === to.lineId) continue;
+      if (!from || !to || from.line === to.line) continue;
       const key = `${from.key}>${to.key}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -117,7 +117,7 @@ export function metroLayout(view: PlanView): MetroLayout {
     width: left + Math.max(groups.length, 1) * colWidth,
     height: top + Math.max(rows.length - 1, 0) * rowHeight + bottom + rowHeight / 2,
     columns,
-    rows: rows.filter((r) => yOf.has(r.lineId)),
+    rows,
     tracks,
     stations,
     edges,

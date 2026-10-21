@@ -52,8 +52,8 @@ export interface DoneTaskView {
   department: Department | null;
   personalized: boolean;
   steps: PlanStepView[];
-  /** Línea de trabajo a la que pertenece. */
-  lineId: string;
+  /** Línea de trabajo: posición en PlanView.lines (no el id interno de la línea). */
+  line: number;
   status: TaskStatus;
   /** Pasos resueltos (hechos o saltados) sobre el total. */
   progress: { done: number; total: number };
@@ -93,7 +93,7 @@ export interface NowItem {
 export interface PlanView {
   language: Language;
   /** Líneas de trabajo con tareas: su departamento y su objetivo. */
-  lines: { id: string; department: Department; goal: string }[];
+  lines: { department: Department; goal: string }[];
   opening: { weeks: { from: number; to: number }; dates: { from: string; to: string } } | null;
   money: MoneyStatus | null;
   deadline: DeadlineStatus | null;
@@ -143,13 +143,17 @@ export function planView(input: {
   const titles = (ids: readonly string[]) => ids.flatMap((id) => (titleOf.has(id) ? [titleOf.get(id)!] : []));
 
   const activeIds = new Set(tasks.map((t) => t.id));
+  // Líneas con tareas, en su orden; las tareas apuntan a su posición, no al id interno.
+  const usedLineIds = new Set(tasks.map((t) => t.lineId));
+  const shownLines = state.lines.filter((line) => usedLineIds.has(line.id));
+  const lineIndex = new Map(shownLines.map((line, index) => [line.id, index]));
   const base = (task: Task): DoneTaskView => ({
     id: task.id,
     title: task.title,
     department: departmentOf.get(task.lineId) ?? null,
     personalized: task.origin === "ai",
     steps: task.steps.map(stepView),
-    lineId: task.lineId,
+    line: lineIndex.get(task.lineId) ?? -1,
     status: taskStatus(task, tasks),
     progress: { done: task.steps.filter(isStepResolved).length, total: task.steps.length },
     dependsOn: task.dependsOn.filter((id) => activeIds.has(id)),
@@ -212,12 +216,9 @@ export function planView(input: {
     return copy;
   };
 
-  const usedLines = new Set(tasks.map((t) => t.lineId));
   return {
     language,
-    lines: state.lines
-      .filter((line) => usedLines.has(line.id))
-      .map((line) => ({ id: line.id, department: line.department, goal: line.goal })),
+    lines: shownLines.map((line) => ({ department: line.department, goal: line.goal })),
     opening,
     money: state.money.status,
     deadline: state.deadline,
