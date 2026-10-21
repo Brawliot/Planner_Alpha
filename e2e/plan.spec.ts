@@ -98,7 +98,19 @@ test.describe("plan", () => {
   });
 
 
-  test("ajustar las horas se guarda", async ({ page }) => {
+  test("la vista de áreas muestra la constelación y lleva a las tareas", async ({ page }) => {
+    const reportUrl = await approvedReport(page);
+    await page.goto(`${reportUrl}/plan`);
+    await page.getByRole("button", { name: "Create my plan" }).click();
+    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("button", { name: "Areas" }).click();
+    await expect(page.getByRole("button", { name: "Areas" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("link", { name: /Open task/ }).click();
+    await expect(page).toHaveURL(/\/plan\/tarea\//);
+  });
+
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
     await page.getByRole("button", { name: "Create my plan" }).click();

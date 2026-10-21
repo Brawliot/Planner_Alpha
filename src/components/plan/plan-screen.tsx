@@ -9,6 +9,8 @@ import { MetroMap, type MetroTask } from "./metro-map";
 import { PlanViews } from "./plan-views";
 import { TimelineChart } from "./timeline-chart";
 import { timelineLayout } from "@/lib/plan/timeline-chart";
+import { areasLayout } from "@/lib/plan/areas";
+import { AreasMap } from "./areas-map";
 import { StepActions } from "./step-actions";
 
 const LABEL = "font-mono text-[10px] uppercase tracking-[0.14em]";
@@ -154,6 +156,16 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
         phases={
           <MetroMap
             layout={metroLayout(view)}
+            lines={view.lines}
+            tasks={metroTasks}
+            t={t}
+            reportId={reportId}
+            initialTaskId={initialTaskId}
+          />
+        }
+        areas={
+          <AreasMap
+            layout={areasLayout(view)}
             lines={view.lines}
             tasks={metroTasks}
             t={t}
