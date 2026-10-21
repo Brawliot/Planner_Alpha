@@ -12,6 +12,7 @@ import { stepActions, type StepAction } from "./progress.ts";
 import type { Actor, StepStatus, ThirdParty } from "./step.ts";
 import {
   PHASES,
+  type TaskStatus,
   isStepResolved,
   isTaskResolved,
   pendingDependencies,
@@ -51,6 +52,15 @@ export interface DoneTaskView {
   department: Department | null;
   personalized: boolean;
   steps: PlanStepView[];
+  /** Línea de trabajo a la que pertenece. */
+  lineId: string;
+  status: TaskStatus;
+  /** Pasos resueltos (hechos o saltados) sobre el total. */
+  progress: { done: number; total: number };
+  /** Ids de las tareas de las que depende (solo las que siguen en el plan). */
+  dependsOn: string[];
+  /** Quién hace el siguiente paso sin resolver; null si no queda ninguno. */
+  nextActor: Actor | null;
 }
 
 export interface PlanTaskView extends DoneTaskView {
@@ -82,6 +92,8 @@ export interface NowItem {
 
 export interface PlanView {
   language: Language;
+  /** Líneas de trabajo con tareas: su departamento y su objetivo. */
+  lines: { id: string; department: Department; goal: string }[];
   opening: { weeks: { from: number; to: number }; dates: { from: string; to: string } } | null;
   money: MoneyStatus | null;
   deadline: DeadlineStatus | null;
@@ -130,12 +142,18 @@ export function planView(input: {
   const moldTitle = (id: string) => catalog.find((m) => m.id === id)?.title[language] ?? id;
   const titles = (ids: readonly string[]) => ids.flatMap((id) => (titleOf.has(id) ? [titleOf.get(id)!] : []));
 
+  const activeIds = new Set(tasks.map((t) => t.id));
   const base = (task: Task): DoneTaskView => ({
     id: task.id,
     title: task.title,
     department: departmentOf.get(task.lineId) ?? null,
     personalized: task.origin === "ai",
     steps: task.steps.map(stepView),
+    lineId: task.lineId,
+    status: taskStatus(task, tasks),
+    progress: { done: task.steps.filter(isStepResolved).length, total: task.steps.length },
+    dependsOn: task.dependsOn.filter((id) => activeIds.has(id)),
+    nextActor: task.steps.find((s) => !isStepResolved(s))?.actor ?? null,
   });
 
   const pending: (PlanTaskView & { phase: Phase; start: number })[] = [];
@@ -194,8 +212,12 @@ export function planView(input: {
     return copy;
   };
 
+  const usedLines = new Set(tasks.map((t) => t.lineId));
   return {
     language,
+    lines: state.lines
+      .filter((line) => usedLines.has(line.id))
+      .map((line) => ({ id: line.id, department: line.department, goal: line.goal })),
     opening,
     money: state.money.status,
     deadline: state.deadline,
