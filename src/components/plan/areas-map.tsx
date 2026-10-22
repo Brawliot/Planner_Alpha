@@ -419,7 +419,7 @@ function Tree({
 /** Etiqueta discontinua con el área y la tarea de la que se espera; al pulsarla se va a esa área. */
 function BlockerTag({ x, y, text, title, color, onClick }: { x: number; y: number; text: string; title: string; color: string; onClick: () => void }) {
   const estimate = text.length * 6.2 + 34;
-  const fit = useFitText(24, false);
+  const { text: textRef, rect: rectRef } = useFitText(24, false);
   return (
     <g
       onClick={(event) => {
@@ -430,8 +430,8 @@ function BlockerTag({ x, y, text, title, color, onClick }: { x: number; y: numbe
     >
       <title>{title}</title>
       <path d={`M${x} ${y} H ${x + 14}`} stroke={color} strokeDasharray="3 3" />
-      <rect ref={fit.rect} x={x + 14} y={y - 13} width={estimate} height={26} rx={13} fill="var(--background)" stroke={color} strokeOpacity={0.6} strokeDasharray="3 3" />
-      <text ref={fit.text} x={x + 26} y={y + 4} fontSize={11} fill={color}>
+      <rect ref={rectRef} x={x + 14} y={y - 13} width={estimate} height={26} rx={13} fill="var(--background)" stroke={color} strokeOpacity={0.6} strokeDasharray="3 3" />
+      <text ref={textRef} x={x + 26} y={y + 4} fontSize={11} fill={color}>
         ⛓ {text}
       </text>
     </g>
