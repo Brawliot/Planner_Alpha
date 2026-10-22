@@ -82,6 +82,10 @@ export interface PlanTexts {
     pickTask: string;
     areasHint: string;
     areaNow: string;
+    rangeLabel: string;
+    rangeNext: string;
+    rangeAll: string;
+    startsAt: string;
     areaWaiting: string;
     areaDoing: string;
     areaTodo: string;
@@ -257,6 +261,10 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       pickTask: "Pulsa una tarea en el mapa para verla aquí.",
       areasHint: "Pulsa un área para verla en detalle",
       areaNow: "{n} ahora",
+      rangeLabel: "Ver",
+      rangeNext: "Próximas 12 semanas",
+      rangeAll: "Todo el plan",
+      startsAt: "empieza {week}",
       areaWaiting: "{n} esperando",
       areaDoing: "{n} en curso",
       areaTodo: "{n} por hacer",
@@ -267,8 +275,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       objectiveMany: "{n} objetivos",
       today: "HOY",
       openingBand: "Apertura",
-      sure: "seguro",
-      estimatedRange: "rango estimado",
+      sure: "lo más probable",
+      estimatedRange: "puede alargarse hasta",
       taskStatus: {
         done: "Hecha",
         doing: "En curso",
@@ -414,6 +422,10 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       pickTask: "Click a task on the map to see it here.",
       areasHint: "Click an area to see it in detail",
       areaNow: "{n} now",
+      rangeLabel: "Show",
+      rangeNext: "Next 12 weeks",
+      rangeAll: "Whole plan",
+      startsAt: "starts {week}",
       areaWaiting: "{n} waiting",
       areaDoing: "{n} in progress",
       areaTodo: "{n} to do",
@@ -424,8 +436,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       objectiveMany: "{n} goals",
       today: "TODAY",
       openingBand: "Opening",
-      sure: "certain",
-      estimatedRange: "estimated range",
+      sure: "most likely",
+      estimatedRange: "may stretch to",
       taskStatus: {
         done: "Done",
         doing: "In progress",
