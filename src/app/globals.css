@@ -294,6 +294,35 @@
 @keyframes map-fade-in {
   from { opacity: 0; }
 }
+/* Vista Áreas: ramas que se trazan (con pathLength=1), piezas que entran y halo del área enfocada. */
+.map-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: map-draw 0.5s ease forwards;
+}
+@keyframes map-draw {
+  to { stroke-dashoffset: 0; }
+}
+.map-pop {
+  transform-box: fill-box;
+  animation: map-pop 0.35s ease both;
+}
+@keyframes map-pop {
+  from { opacity: 0; transform: translateX(-8px); }
+}
+.map-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-halo 2.4s ease-in-out infinite;
+}
+@keyframes map-halo {
+  50% { opacity: 0.15; transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-draw { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+  .map-pop,
+  .map-halo { animation: none; }
+}
 
 /* ========== Resumen ejecutivo ========== */
 .summary-panel {

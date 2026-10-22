@@ -6,7 +6,6 @@ import { DEPARTMENTS, type Department } from "@/lib/plan/line";
 import { timelineTrack, type TrackBar, type TrackRange, type TrackRow } from "@/lib/plan/timeline-track";
 import type { PlanView } from "@/lib/plan/view";
 import { cn } from "@/lib/cn";
-import type { MetroTask } from "./metro-map";
 import { useOpenDepartments } from "./use-open-departments";
 
 const deptColor = (department: Department) => `var(--dept-${department})`;
@@ -33,7 +32,6 @@ export function TimelineChart({
 }: {
   view: PlanView;
   today: string;
-  tasks: MetroTask[];
   t: PlanTexts;
   reportId: string;
   hovered: string | null;

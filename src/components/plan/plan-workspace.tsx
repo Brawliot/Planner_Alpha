@@ -82,7 +82,7 @@ export function PlanWorkspace({
     setSelected(id);
     openTab("task");
   };
-  const mapProps = { view, tasks, t, hovered, onHover: setHovered, onSelect: select };
+  const mapProps = { view, t, hovered, onHover: setHovered, onSelect: select };
 
   const viewTab = (id: MapView, label: string) => (
     <button
@@ -105,7 +105,7 @@ export function PlanWorkspace({
         className="absolute inset-0 overflow-auto pt-20 pb-16 pl-6 transition-[padding] duration-200 motion-reduce:transition-none"
         style={{ paddingRight: sheetWidth + 24 }}
       >
-        {mapView === "phases" && <MetroMap {...mapProps} reportId={reportId} />}
+        {mapView === "phases" && <MetroMap {...mapProps} tasks={tasks} reportId={reportId} />}
         {mapView === "areas" && <AreasMap {...mapProps} />}
         {mapView === "timeline" && <TimelineChart {...mapProps} reportId={reportId} today={today} />}
       </div>

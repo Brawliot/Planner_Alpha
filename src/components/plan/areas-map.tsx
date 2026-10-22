@@ -1,12 +1,11 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { fillText, type PlanTexts } from "@/lib/plan/i18n";
 import { areasTree, areasWheel, type AreaSignal, type AreasTree } from "@/lib/plan/areas-tree";
 import type { Department } from "@/lib/plan/line";
 import type { TaskStatus } from "@/lib/plan/task";
 import type { PlanView } from "@/lib/plan/view";
-import type { MetroTask } from "./metro-map";
 
 const deptColor = (department: Department | undefined) => (department ? `var(--dept-${department})` : "var(--muted-foreground)");
 const short = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
@@ -16,6 +15,35 @@ type Pose = { tx: number; ty: number; rot: number };
 const DURATION = 750;
 const CARD = 270;
 const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+/** Cascada del árbol (ms): cada objetivo y cada tarea entran un poco después; a partir de 12 tareas no crece más. */
+const delayOfObjective = (i: number) => 100 + i * 90;
+const delayOfTask = (k: number) => 520 + Math.min(k, 12) * 60;
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Ajusta el ancho de una píldora al de su texto ya pintado (la estimación por letras queda de reserva).
+ * Toca el DOM directamente: no provoca otro render.
+ */
+function useFitText(padding: number, centered: boolean) {
+  const text = useRef<SVGTextElement>(null);
+  const rect = useRef<SVGRectElement>(null);
+  useLayoutEffect(() => {
+    const label = text.current;
+    const box = rect.current;
+    if (!label || !box) return;
+    let length = 0;
+    try {
+      length = label.getComputedTextLength();
+    } catch {
+      return;
+    }
+    if (!length) return;
+    const width = length + padding;
+    box.setAttribute("width", String(width));
+    if (centered) box.setAttribute("x", String(Number(label.getAttribute("x")) - width / 2));
+  });
+  return { text, rect };
+}
 
 export function AreasMap({
   view,
@@ -25,7 +53,6 @@ export function AreasMap({
   onSelect,
 }: {
   view: PlanView;
-  tasks: MetroTask[];
   t: PlanTexts;
   hovered: string | null;
   onHover: (id: string | null) => void;
@@ -39,6 +66,7 @@ export function AreasMap({
   const [pose, setPose] = useState<Pose>({ tx: 0, ty: 0, rot: 0 });
   const poseRef = useRef(pose);
   const frame = useRef<number | null>(null);
+  const anchor = useRef<SVGCircleElement>(null);
 
   useEffect(
     () => () => {
@@ -64,7 +92,7 @@ export function AreasMap({
     }
     // Una animación nueva cancela la anterior: así nunca se dibujan dos árboles a la vez.
     if (frame.current !== null) cancelAnimationFrame(frame.current);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reducedMotion();
     const start = performance.now();
     const step = (now: number) => {
       const k = reduce ? 1 : ease(Math.min(1, (now - start) / DURATION));
@@ -83,6 +111,12 @@ export function AreasMap({
 
   const tree = focus ? areasTree(view, focus) : null;
   const height = Math.max(wheel.height, tree?.height ?? 0);
+  const tall = !!tree && tree.height > wheel.height;
+
+  // Árbol más alto que la rueda: al abrirlo, el área queda centrada en vertical.
+  useEffect(() => {
+    if (shown && tall) anchor.current?.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+  }, [shown, tall]);
 
   return (
     <div className="flex flex-col gap-2 overflow-x-auto">
@@ -102,7 +136,7 @@ export function AreasMap({
 
       <svg viewBox={`0 0 ${wheel.width} ${height}`} width="100%" style={{ minWidth: wheel.width * 0.75 }} className="block" aria-hidden="true">
         <Wheel wheel={wheel} pose={pose} focus={focus} t={t} onFocus={go} />
-        {tree && shown === focus && <Tree tree={tree} t={t} hovered={hovered} onHover={onHover} onSelect={onSelect} onFocus={go} />}
+        {tree && shown === focus && <Tree tree={tree} t={t} hovered={hovered} anchor={anchor} onHover={onHover} onSelect={onSelect} onFocus={go} />}
         {!focus && (
           <text x={wheel.center.x} y={height - 12} textAnchor="middle" fill="var(--muted-foreground)" fontSize={12}>
             {t.overview.areasHint}
@@ -155,6 +189,20 @@ function ProgressRing({ x, y, r, frac, color, width }: { x: number; y: number; r
   );
 }
 
+/** Una píldora de señal, centrada en x; su ancho se ajusta al texto. */
+function SignalPill({ x, y, label, fill }: { x: number; y: number; label: string; fill: string }) {
+  const estimate = label.length * 6.4 + 14;
+  const { text, rect } = useFitText(14, true);
+  return (
+    <g>
+      <rect ref={rect} x={x - estimate / 2} y={y} width={estimate} height={20} rx={10} fill={fill} />
+      <text ref={text} x={x} y={y + 14} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--background)">
+        {label}
+      </text>
+    </g>
+  );
+}
+
 /** Píldoras "N ahora" y "N esperando", centradas bajo un punto. */
 function Signals({ x, y, now, waiting, t }: { x: number; y: number; now: number; waiting: number; t: PlanTexts }) {
   const parts = [
@@ -166,16 +214,9 @@ function Signals({ x, y, now, waiting, t }: { x: number; y: number; now: number;
   return (
     <>
       {parts.map((part, i) => {
-        const left = offset;
+        const center = offset + widths[i] / 2;
         offset += widths[i] + 6;
-        return (
-          <g key={part.label}>
-            <rect x={left} y={y} width={widths[i]} height={20} rx={10} fill={part.fill} />
-            <text x={left + widths[i] / 2} y={y + 14} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--background)">
-              {part.label}
-            </text>
-          </g>
-        );
+        return <SignalPill key={part.label} x={center} y={y} label={part.label} fill={part.fill} />;
       })}
     </>
   );
@@ -243,6 +284,7 @@ function Tree({
   tree,
   t,
   hovered,
+  anchor,
   onHover,
   onSelect,
   onFocus,
@@ -250,6 +292,7 @@ function Tree({
   tree: AreasTree;
   t: PlanTexts;
   hovered: string | null;
+  anchor: RefObject<SVGCircleElement | null>;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
   onFocus: (department: Department) => void;
@@ -261,48 +304,62 @@ function Tree({
     node.counts.waiting > 0 && fillText(t.overview.areaWaiting, { n: node.counts.waiting }),
     node.counts.todo > 0 && fillText(t.overview.areaTodo, { n: node.counts.todo }),
   ].filter(Boolean);
+  // Al pasar el ratón por una tarea (aquí o en el panel) se queda encendido su objetivo; el resto se atenúa.
+  const litLine = tree.tasks.find((task) => task.id === hovered)?.line ?? null;
+  const dim = (line: number) => (litLine !== null && line !== litLine ? 0.25 : 1);
 
   return (
-    <g className="map-fade-in">
+    <g>
+      <circle ref={anchor} cx={node.x} cy={node.y} r={node.r + 10} fill="none" stroke={color} strokeWidth={1} opacity={0.5} className="map-halo" />
       {summary.length > 0 && (
-        <text x={node.x} y={node.y + node.r + 26} textAnchor="middle" fill="var(--muted-foreground)" fontSize={11}>
+        <text x={node.x} y={node.y + node.r + 26} textAnchor="middle" fill="var(--muted-foreground)" fontSize={11} className="map-pop" style={{ animationDelay: "150ms" }}>
           {summary.join(" · ")}
         </text>
       )}
 
-      {tree.objectives.map((o) => (
-        <path
-          key={`b-${o.line}`}
-          d={`M${node.x + node.r + 8} ${node.y} C ${node.x + 130} ${node.y}, ${o.x - 110} ${o.y}, ${o.x - 12} ${o.y}`}
-          fill="none"
-          stroke={color}
-          strokeWidth={1.5}
-          opacity={0.7}
-        />
+      {tree.objectives.map((o, i) => (
+        <g key={`b-${o.line}`} opacity={dim(o.line)} className="transition-opacity">
+          <path
+            d={`M${node.x + node.r + 8} ${node.y} C ${node.x + 130} ${node.y}, ${o.x - 110} ${o.y}, ${o.x - 12} ${o.y}`}
+            fill="none"
+            stroke={color}
+            strokeWidth={1.5}
+            opacity={0.7}
+            pathLength={1}
+            className="map-draw"
+            style={{ animationDelay: `${delayOfObjective(i)}ms` }}
+          />
+        </g>
       ))}
-      {tree.tasks.map((task) => (
-        <path
-          key={`l-${task.id}`}
-          d={`M${task.from.x + 12} ${task.from.y} C ${task.from.x + 140} ${task.from.y}, ${task.x - 130} ${task.y}, ${task.x - 18} ${task.y}`}
-          fill="none"
-          stroke={color}
-          opacity={0.4}
-        />
-      ))}
-
-      {tree.objectives.map((o) => (
-        <g key={`o-${o.line}`}>
-          <ProgressRing x={o.x} y={o.y} r={11} frac={o.total === 0 ? 0 : o.done / o.total} color={color} width={3} />
-          <text x={o.x + 20} y={o.y - 3} fill="var(--foreground)" fontSize={13} fontWeight={600}>
-            {short(o.goal, 26)}
-          </text>
-          <text x={o.x + 20} y={o.y + 13} fill="var(--muted-foreground)" fontSize={10} fontFamily="var(--font-mono)">
-            {fillText(t.overview.objectiveTasks, { done: o.done, total: o.total })}
-          </text>
+      {tree.tasks.map((task, k) => (
+        <g key={`l-${task.id}`} opacity={dim(task.line)} className="transition-opacity">
+          <path
+            d={`M${task.from.x + 12} ${task.from.y} C ${task.from.x + 140} ${task.from.y}, ${task.x - 130} ${task.y}, ${task.x - 18} ${task.y}`}
+            fill="none"
+            stroke={color}
+            opacity={0.4}
+            pathLength={1}
+            className="map-draw"
+            style={{ animationDelay: `${delayOfTask(k)}ms` }}
+          />
         </g>
       ))}
 
-      {tree.tasks.map((task) => {
+      {tree.objectives.map((o, i) => (
+        <g key={`o-${o.line}`} opacity={dim(o.line)} className="transition-opacity">
+          <g className="map-pop" style={{ animationDelay: `${delayOfObjective(i) + 280}ms` }}>
+            <ProgressRing x={o.x} y={o.y} r={11} frac={o.total === 0 ? 0 : o.done / o.total} color={color} width={3} />
+            <text x={o.x + 20} y={o.y - 3} fill="var(--foreground)" fontSize={13} fontWeight={600}>
+              {short(o.goal, 26)}
+            </text>
+            <text x={o.x + 20} y={o.y + 13} fill="var(--muted-foreground)" fontSize={10} fontFamily="var(--font-mono)">
+              {fillText(t.overview.objectiveTasks, { done: o.done, total: o.total })}
+            </text>
+          </g>
+        </g>
+      ))}
+
+      {tree.tasks.map((task, k) => {
         const blocker = task.blockedBy[0];
         const label = task.now !== null ? t.overview.nowTag : t.overview.areaStatus[task.status];
         const labelColor = task.now !== null ? "var(--accent)" : task.status === "waiting" || task.status === "blocked" ? "var(--warning)" : "var(--muted-foreground)";
@@ -313,42 +370,45 @@ function Tree({
             onMouseEnter={() => onHover(task.id)}
             onMouseLeave={() => onHover(null)}
             onClick={() => onSelect(task.id)}
-            className="cursor-pointer"
+            opacity={dim(task.line)}
+            className="cursor-pointer transition-opacity"
           >
-            <rect
-              x={task.x - 18}
-              y={task.y - 18}
-              width={CARD}
-              height={36}
-              rx={18}
-              fill="var(--surface)"
-              stroke={hovered === task.id ? "var(--foreground)" : task.now !== null ? "var(--accent)" : "var(--border)"}
-            />
-            <TaskDot x={task.x} y={task.y} status={task.status} color={color} />
-            <text x={task.x + 20} y={task.y + 4} fontSize={13} fill={task.status === "done" ? "var(--muted-foreground)" : "var(--foreground)"}>
-              {short(task.title, 24)}
-            </text>
-            <text x={right - 14} y={task.y + 4} textAnchor="end" fontSize={9} letterSpacing="0.08em" fontFamily="var(--font-mono)" fill={labelColor}>
-              {label.toUpperCase()}
-            </text>
-            {task.now !== null && (
-              <>
-                <circle cx={right} cy={task.y - 16} r={8} fill="var(--accent)" />
-                <text x={right} y={task.y - 12.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--accent-foreground)">
-                  {task.now}
-                </text>
-              </>
-            )}
-            {blocker && (
-              <BlockerTag
-                x={right}
-                y={task.y}
-                text={`${t.department[blocker.department]}: ${short(blocker.title, 26)}${task.blockedBy.length > 1 ? ` +${task.blockedBy.length - 1}` : ""}`}
-                title={fillText(t.overview.waitsFor, { area: t.department[blocker.department], task: blocker.title })}
-                color={deptColor(blocker.department)}
-                onClick={() => onFocus(blocker.department)}
+            <g className="map-pop" style={{ animationDelay: `${delayOfTask(k) + 240}ms` }}>
+              <rect
+                x={task.x - 18}
+                y={task.y - 18}
+                width={CARD}
+                height={36}
+                rx={18}
+                fill="var(--surface)"
+                stroke={hovered === task.id ? "var(--foreground)" : task.now !== null ? "var(--accent)" : "var(--border)"}
               />
-            )}
+              <TaskDot x={task.x} y={task.y} status={task.status} color={color} />
+              <text x={task.x + 20} y={task.y + 4} fontSize={13} fill={task.status === "done" ? "var(--muted-foreground)" : "var(--foreground)"}>
+                {short(task.title, 24)}
+              </text>
+              <text x={right - 14} y={task.y + 4} textAnchor="end" fontSize={9} letterSpacing="0.08em" fontFamily="var(--font-mono)" fill={labelColor}>
+                {label.toUpperCase()}
+              </text>
+              {task.now !== null && (
+                <>
+                  <circle cx={right} cy={task.y - 16} r={8} fill="var(--accent)" />
+                  <text x={right} y={task.y - 12.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--accent-foreground)">
+                    {task.now}
+                  </text>
+                </>
+              )}
+              {blocker && (
+                <BlockerTag
+                  x={right}
+                  y={task.y}
+                  text={`${t.department[blocker.department]}: ${short(blocker.title, 26)}${task.blockedBy.length > 1 ? ` +${task.blockedBy.length - 1}` : ""}`}
+                  title={fillText(t.overview.waitsFor, { area: t.department[blocker.department], task: blocker.title })}
+                  color={deptColor(blocker.department)}
+                  onClick={() => onFocus(blocker.department)}
+                />
+              )}
+            </g>
           </g>
         );
       })}
@@ -358,7 +418,8 @@ function Tree({
 
 /** Etiqueta discontinua con el área y la tarea de la que se espera; al pulsarla se va a esa área. */
 function BlockerTag({ x, y, text, title, color, onClick }: { x: number; y: number; text: string; title: string; color: string; onClick: () => void }) {
-  const width = text.length * 6.2 + 34;
+  const estimate = text.length * 6.2 + 34;
+  const fit = useFitText(24, false);
   return (
     <g
       onClick={(event) => {
@@ -369,8 +430,8 @@ function BlockerTag({ x, y, text, title, color, onClick }: { x: number; y: numbe
     >
       <title>{title}</title>
       <path d={`M${x} ${y} H ${x + 14}`} stroke={color} strokeDasharray="3 3" />
-      <rect x={x + 14} y={y - 13} width={width} height={26} rx={13} fill="var(--background)" stroke={color} strokeOpacity={0.6} strokeDasharray="3 3" />
-      <text x={x + 26} y={y + 4} fontSize={11} fill={color}>
+      <rect ref={fit.rect} x={x + 14} y={y - 13} width={estimate} height={26} rx={13} fill="var(--background)" stroke={color} strokeOpacity={0.6} strokeDasharray="3 3" />
+      <text ref={fit.text} x={x + 26} y={y + 4} fontSize={11} fill={color}>
         ⛓ {text}
       </text>
     </g>
