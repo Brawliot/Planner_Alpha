@@ -1,14 +1,19 @@
 import { Suspense } from "react";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { getUser } from "@/lib/session";
+import { hasOwnProjects } from "@/lib/projects/repository";
 import { PageContainer } from "@/components/ui/page-container";
 import { PromptForm } from "@/components/prompt-form";
 import { LandingBento } from "@/components/home/landing-bento";
 import { LandingFaq } from "@/components/home/landing-faq";
 import { LandingCta } from "@/components/home/landing-cta";
 
-export default function Home() {
+export default function Home({ searchParams }: { searchParams: Promise<{ nueva?: string | string[] }> }) {
   return (
     <PageContainer size="lg" className="relative overflow-hidden">
+      <Suspense fallback={null}>
+        <ProjectsRedirect searchParams={searchParams} />
+      </Suspense>
       <div aria-hidden="true" className="hero-dots pointer-events-none absolute inset-0" />
       <div
         aria-hidden="true"
@@ -70,6 +75,25 @@ async function GuestSections() {
       <LandingCta />
     </>
   );
+}
+
+/** Con sesión y alguna idea, la portada lleva a "Mis proyectos" (salvo "Nueva idea": ?nueva). */
+async function ProjectsRedirect({ searchParams }: { searchParams: Promise<{ nueva?: string | string[] }> }) {
+  const { nueva } = await searchParams;
+  if (nueva !== undefined) return null;
+  const user = await getUser();
+  if (!user) return null;
+
+  let has = false;
+  try {
+    has = await hasOwnProjects(user.id);
+  } catch (err) {
+    unstable_rethrow(err);
+    // No es crítico: si la BD falla, se queda en la portada.
+    console.error("home: no se pudo comprobar si hay proyectos", err instanceof Error ? err.name : "desconocido");
+  }
+  if (has) redirect("/proyectos");
+  return null;
 }
 
 async function HomeForm() {

@@ -43,7 +43,17 @@ async function HeaderUser() {
 
   if (!user) return <AuthLinks />;
 
-  return <UserMenu name={user.name} lastName={user.lastName} email={user.email} />;
+  return (
+    <div className="flex items-center gap-1">
+      <Link
+        href="/proyectos"
+        className="inline-flex min-h-11 items-center px-3 text-sm font-medium underline-offset-4 hover:underline"
+      >
+        Mis proyectos
+      </Link>
+      <UserMenu name={user.name} lastName={user.lastName} email={user.email} />
+    </div>
+  );
 }
 
 function AuthLinks() {
