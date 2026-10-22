@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { fillText, type PlanTexts } from "@/lib/plan/i18n";
+import type { PlanTexts } from "@/lib/plan/i18n";
 import { areasFocus, areasOverview, type StatusCounts } from "@/lib/plan/areas";
 import type { Department } from "@/lib/plan/line";
 import type { TaskStatus } from "@/lib/plan/task";

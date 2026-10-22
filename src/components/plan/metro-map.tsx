@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
-import { fillText, type PlanTexts } from "@/lib/plan/i18n";
-import { DEPARTMENTS, type Department } from "@/lib/plan/line";
+import { useState } from "react";
+import type { PlanTexts } from "@/lib/plan/i18n";
+import type { Department } from "@/lib/plan/line";
+import { useOpenDepartments } from "./use-open-departments";
 import { metroLayout, type MetroStation } from "@/lib/plan/metro";
 import type { TaskStatus } from "@/lib/plan/task";
 import type { PlanView } from "@/lib/plan/view";
@@ -25,29 +26,6 @@ const deptColor = (department: Department) => `var(--dept-${department})`;
 const short = (text: string, max = 24) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 const LABEL = "font-mono text-[10px] uppercase tracking-[0.14em]";
 
-// Departamentos abiertos, recordados en este navegador por informe. Sin nada guardado: todos plegados.
-const openKey = (reportId: string) => `mando:plan-abiertos:${reportId}`;
-function readOpen(reportId: string) {
-  try {
-    return window.localStorage.getItem(openKey(reportId)) ?? "";
-  } catch {
-    return "";
-  }
-}
-function writeOpen(reportId: string, value: string) {
-  try {
-    window.localStorage.setItem(openKey(reportId), value);
-  } catch {
-    // Almacenamiento bloqueado: se abre y se cierra igual, solo que no se recuerda.
-  }
-}
-const subscribe = (onChange: () => void) => {
-  window.addEventListener("storage", onChange);
-  return () => window.removeEventListener("storage", onChange);
-};
-const parseOpen = (value: string) =>
-  new Set(value.split(",").filter((d): d is Department => (DEPARTMENTS as readonly string[]).includes(d)));
-
 export function MetroMap({
   view,
   tasks,
@@ -61,17 +39,7 @@ export function MetroMap({
   reportId: string;
   initialTaskId: string | null;
 }) {
-  const stored = useSyncExternalStore(subscribe, () => readOpen(reportId), () => "");
-  const [override, setOverride] = useState<string | null>(null);
-  const expanded = parseOpen(override ?? stored);
-  const toggle = (department: Department) => {
-    const next = new Set(expanded);
-    if (next.has(department)) next.delete(department);
-    else next.add(department);
-    const value = [...next].join(",");
-    setOverride(value);
-    writeOpen(reportId, value);
-  };
+  const [expanded, toggle] = useOpenDepartments(reportId);
 
   const layout = metroLayout(view, expanded);
   const lines = view.lines;

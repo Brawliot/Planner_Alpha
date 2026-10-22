@@ -102,7 +102,14 @@ test.describe("plan", () => {
 
     await page.getByRole("button", { name: "Timeline" }).click();
     await expect(page.getByRole("button", { name: "Timeline" })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByText(/◆ Opening/)).toBeVisible();
+    await expect(page.getByText(/◆ Opening · weeks \d+–\d+/)).toBeVisible();
+
+    // Un departamento se despliega en sus objetivos y tareas, y se pliega de nuevo.
+    const department = page.locator("[data-dept]").first();
+    await department.click();
+    await expect(department).toContainText("▾");
+    await department.click();
+    await expect(department).toContainText("▸");
   });
 
 

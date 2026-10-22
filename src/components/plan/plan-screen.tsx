@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fillText, type PlanTexts } from "@/lib/plan/i18n";
+import type { PlanTexts } from "@/lib/plan/i18n";
 import type { Department } from "@/lib/plan/line";
 import type { DoneTaskView, PlanTaskView, PlanView } from "@/lib/plan/view";
 import { cn } from "@/lib/cn";
@@ -7,7 +7,6 @@ import { ConfigForm } from "./config-form";
 import { MetroMap, type MetroTask } from "./metro-map";
 import { PlanViews } from "./plan-views";
 import { TimelineChart } from "./timeline-chart";
-import { timelineLayout } from "@/lib/plan/timeline-chart";
 import { AreasMap } from "./areas-map";
 import { StepActions } from "./step-actions";
 
@@ -184,8 +183,8 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
         }
         timeline={
           <TimelineChart
-            layout={timelineLayout(view, today)}
-            lines={view.lines}
+            view={view}
+            today={today}
             tasks={metroTasks}
             t={t}
             reportId={reportId}

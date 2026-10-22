@@ -244,7 +244,7 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       inspectorLabel: "Panel del plan",
       pickTask: "Pulsa una tarea en el mapa para verla aquí.",
       areasHint: "Pulsa un área para verla en detalle",
-      objectiveMany: "{n} objetivos",      weekShort: "S",
+      objectiveMany: "{n} objetivos",
       today: "HOY",
       openingBand: "Apertura",
       sure: "seguro",
