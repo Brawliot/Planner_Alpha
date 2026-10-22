@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push nuevo cancela la ejecución anterior de la misma rama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, tipos y unitarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      # next-env.d.ts y los tipos de rutas no están en el repo: se generan antes de tsc.
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run test:unit
+
+  e2e:
+    name: E2E
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Crear .env.test desde el secreto
+        run: printf '%s\n' "$ENV_TEST" > .env.test
+        env:
+          ENV_TEST: ${{ secrets.ENV_TEST }}
+      - name: Migraciones en la BD de CI
+        run: npx drizzle-kit migrate
+        env:
+          DRIZZLE_ENV_FILE: .env.test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Trazas de los E2E que fallen
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
