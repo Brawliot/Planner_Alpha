@@ -74,6 +74,10 @@ export interface PlanTexts {
     weekShort: string;
     objectiveOne: string;
     allAreas: string;
+    tabTask: string;
+    tabDecisions: string;
+    inspectorLabel: string;
+    pickTask: string;
     areasHint: string;
     objectiveMany: string;
     today: string;
@@ -235,6 +239,10 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       weekShort: "S",
       objectiveOne: "1 objetivo",
       allAreas: "Todas las áreas",
+      tabTask: "Tarea",
+      tabDecisions: "Decisiones",
+      inspectorLabel: "Panel del plan",
+      pickTask: "Pulsa una tarea en el mapa para verla aquí.",
       areasHint: "Pulsa un área para verla en detalle",
       objectiveMany: "{n} objetivos",      weekShort: "S",
       today: "HOY",
@@ -378,6 +386,10 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       weekShort: "W",
       objectiveOne: "1 goal",
       allAreas: "All areas",
+      tabTask: "Task",
+      tabDecisions: "Decisions",
+      inspectorLabel: "Plan panel",
+      pickTask: "Click a task on the map to see it here.",
       areasHint: "Click an area to see it in detail",
       objectiveMany: "{n} goals",
       today: "TODAY",
