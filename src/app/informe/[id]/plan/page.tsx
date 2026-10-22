@@ -10,7 +10,6 @@ import { planInput } from "@/lib/plan/input";
 import { rebuildPlan } from "@/lib/plan/orchestrator";
 import { getOwnPlanByReport } from "@/lib/plan/repository";
 import { planView } from "@/lib/plan/view";
-import { PageContainer } from "@/components/ui/page-container";
 import { buttonStyles } from "@/components/ui/button";
 import { CreatePlanForm } from "@/components/plan/create-plan-form";
 import { PlanScreen } from "@/components/plan/plan-screen";
@@ -19,14 +18,15 @@ export const metadata: Metadata = { title: "Tu plan" };
 
 export default function PlanPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <PageContainer size="lg">
+    // A todo el ancho: el plan es un lienzo de borde a borde (sin el contenedor con márgenes de otras páginas).
+    <main id="contenido" tabIndex={-1} className="flex w-full flex-1 flex-col outline-none">
       {/* Sin generateStaticParams, params es dato de la petición: va dentro de Suspense (cacheComponents). */}
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando...</p>}>
+      <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Cargando...</p>}>
         {params.then(({ id }) => (
           <PlanContent id={id} />
         ))}
       </Suspense>
-    </PageContainer>
+    </main>
   );
 }
 
@@ -42,7 +42,7 @@ async function PlanContent({ id }: { id: string }) {
 
   if (!plan) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-6">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
         {report.status === "approved" ? (
           <>

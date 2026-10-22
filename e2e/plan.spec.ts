@@ -134,6 +134,20 @@ test.describe("plan", () => {
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });
 
+  test("el panel se pliega a un riel y se vuelve a abrir desde él", async ({ page }) => {
+    const reportUrl = await approvedReport(page);
+    await page.goto(`${reportUrl}/plan`);
+    await page.getByRole("button", { name: "Create my plan" }).click();
+    await expect(page.getByRole("region", { name: "Now" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("button", { name: "Collapse panel" }).click();
+    await expect(page.getByRole("region", { name: "Now" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Now" }).click();
+    await expect(page.getByRole("region", { name: "Now" })).toBeVisible();
+  });
+
   test("ajustar las horas se guarda", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);

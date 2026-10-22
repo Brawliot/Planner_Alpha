@@ -35,13 +35,8 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
     estimated: "estimated" in task ? task.estimated : false,
   }));
 
-  return (
-    <div lang={language} className="flex flex-col gap-4 pb-6">
-      {/* El título se ve en el header ("Mando / Plan"); aquí queda para lectores de pantalla y la estructura. */}
-      <h1 className="sr-only">{t.title}</h1>
-
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
-        {view.opening && (
+  const status = (
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">        {view.opening && (
           <p className="flex flex-wrap items-baseline gap-2">
             <span className={cn(LABEL, "text-muted-foreground")}>{t.opening}:</span>{" "}
             <span className="text-2xl font-bold tracking-tighter">
@@ -62,8 +57,13 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
           {fillText(t.overview.tasksDone, { done: doneCount, total: all.length })}
         </p>
       </div>
+  );
 
-      <PlanWorkspace view={view} tasks={tasks} today={today} t={t} reportId={reportId} version={version} />
+  return (
+    <div lang={language}>
+      {/* El título se ve en el header ("Mando / Plan"); aquí queda para lectores de pantalla y la estructura. */}
+      <h1 className="sr-only">{t.title}</h1>
+      <PlanWorkspace view={view} tasks={tasks} today={today} t={t} reportId={reportId} version={version} status={status} />
     </div>
   );
 }
