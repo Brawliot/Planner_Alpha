@@ -17,6 +17,8 @@ import { buildTimeline, deadlineStatus, type DeadlineStatus, type Timeline } fro
 
 /** Lo que se guarda de un plan entre cálculos. */
 export interface StoredPlan {
+  /** Versión de la forma de este objeto (sin ella = formato 0, anterior a numerarlo). */
+  formatVersion?: number;
   lines: Line[];
   tasks: Task[];
   /** Sugerencias que el usuario quitó: no vuelven. */

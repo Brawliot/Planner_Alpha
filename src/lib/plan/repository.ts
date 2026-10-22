@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { plan } from "@/db/schema";
 import type { PlanConfig } from "./config";
 import type { StoredPlan } from "./orchestrator";
+import { readConfig, readStored } from "./stored";
 
 /**
  * Persistencia del plan. La autorización va en la propia consulta (userId), como en el informe.
@@ -25,14 +26,24 @@ export async function insertPlan(
   return row?.id ?? null;
 }
 
-/** El plan del informe, solo si es del usuario. */
+/**
+ * El plan del informe, solo si es del usuario. El JSON guardado se migra y se revisa al leerlo:
+ * lo dañado se descarta (repaired) en vez de romper la página.
+ */
 export async function getOwnPlanByReport(userId: string, reportId: string) {
   const [row] = await db
     .select()
     .from(plan)
     .where(and(eq(plan.reportId, reportId), eq(plan.userId, userId)))
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+
+  const read = readStored(row.stored);
+  const config = readConfig(row.config, new Date().toISOString().slice(0, 10));
+  if (read.repaired || config.repaired) {
+    console.error(`plan: datos guardados reparados al leer (${row.id})`, [...read.problems, ...(config.repaired ? ["config"] : [])]);
+  }
+  return { ...row, stored: read.stored, config: config.config, repaired: read.repaired || config.repaired };
 }
 
 /**

@@ -64,5 +64,17 @@ async function PlanContent({ id }: { id: string }) {
   const today = new Date().toISOString().slice(0, 10);
   const state = rebuildPlan({ report: input, config: plan.config, catalog: MOLDS, stored: plan.stored, today });
   const view = planView({ state, config: plan.config, catalog: MOLDS, facts: report.facts, language: input.language });
-  return <PlanScreen view={view} t={t} reportId={report.id} version={plan.version} />;
+  return (
+    <>
+      {plan.repaired && (
+        <p
+          role="status"
+          className="fixed inset-x-0 top-16 z-50 mx-auto w-fit max-w-[90vw] rounded-md border border-warning bg-background px-3 py-2 text-sm shadow"
+        >
+          {t.repaired}
+        </p>
+      )}
+      <PlanScreen view={view} t={t} reportId={report.id} version={plan.version} />
+    </>
+  );
 }

@@ -38,6 +38,7 @@ export interface PlanTexts {
   createIntro: string;
   notApproved: string;
   backToReport: string;
+  repaired: string;
   generate: string;
   regenerate: string;
   generating: string;
@@ -177,6 +178,7 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     createIntro: "Tu plan sale de tu informe aprobado. Podrás ajustarlo después.",
     notApproved: "Aprueba tu informe para crear el plan.",
     backToReport: "Volver al informe",
+    repaired: "Hemos actualizado tu plan. Si echas algo en falta, revisa tus tareas.",
     generate: "Personalizar con IA",
     regenerate: "Volver a generar",
     generating: "Generando… puede tardar hasta un minuto",
@@ -338,6 +340,7 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
     createIntro: "Your plan comes from your approved report. You can adjust it later.",
     notApproved: "Approve your report to create the plan.",
     backToReport: "Back to the report",
+    repaired: "We have updated your plan. If something is missing, check your tasks.",
     generate: "Personalize with AI",
     regenerate: "Generate again",
     generating: "Generating… it can take up to a minute",
