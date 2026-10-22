@@ -100,6 +100,12 @@ function context(view: PlanView) {
   return { all, departmentOf, departments, nowOf, signal };
 }
 
+/** Señales de cada área ("ahora", "esperando", progreso): las mismas en Áreas y en el Cronograma. */
+export function areaSignals(view: PlanView): AreaSignal[] {
+  const { departments, signal } = context(view);
+  return departments.map(signal);
+}
+
 export function areasWheel(view: PlanView): AreasWheel {
   const { width, height, ring } = AREAS_WHEEL;
   const center = { x: width / 2, y: height / 2 };
