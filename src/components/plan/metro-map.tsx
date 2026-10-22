@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import type { PlanTexts } from "@/lib/plan/i18n";
+import { fillText, type PlanTexts } from "@/lib/plan/i18n";
 import type { Department } from "@/lib/plan/line";
 import { useOpenDepartments } from "./use-open-departments";
 import { metroLayout, type MetroStation } from "@/lib/plan/metro";
@@ -31,22 +30,22 @@ export function MetroMap({
   tasks,
   t,
   reportId,
-  initialTaskId,
+  hovered,
+  onHover,
+  onSelect,
 }: {
   view: PlanView;
   tasks: MetroTask[];
   t: PlanTexts;
   reportId: string;
-  initialTaskId: string | null;
+  hovered: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
 }) {
   const [expanded, toggle] = useOpenDepartments(reportId);
 
   const layout = metroLayout(view, expanded);
-  const lines = view.lines;
   const byId = new Map(tasks.map((task) => [task.id, task]));
-  const [selected, setSelected] = useState<string | null>(initialTaskId);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const active = byId.get(hovered ?? selected ?? "");
   const unlocksOf = (id: string) => tasks.filter((task) => task.dependsOn.includes(id));
   // Solo se atenúa el resto al pasar el ratón; la tarea fijada en el panel no apaga el mapa.
   const hoveredTask = hovered ? byId.get(hovered) : undefined;
@@ -55,7 +54,7 @@ export function MetroMap({
   const isRelated = (station: MetroStation | undefined) => !related || !station || station.tasks.some((x) => related.has(x.id));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div>
       <div className="overflow-x-auto">
         <svg viewBox={`0 0 ${layout.width} ${layout.height}`} width="100%" style={{ minWidth: layout.width * 0.75 }} className="block" aria-hidden="true">
           {layout.columns.map((column) => (
@@ -158,28 +157,13 @@ export function MetroMap({
               station={station}
               color={deptColor(station.department)}
               dimmed={!isRelated(station)}
-              onEnter={() => setHovered(station.lead.id)}
-              onLeave={() => setHovered(null)}
-              onSelect={() => setSelected(station.lead.id)}
+              onEnter={() => onHover(station.lead.id)}
+              onLeave={() => onHover(null)}
+              onSelect={() => onSelect(station.lead.id)}
             />
           ))}
         </svg>
       </div>
-
-      <aside className="flex flex-col gap-3 self-start rounded-[1rem] border bg-background/80 p-5 backdrop-blur">
-        {active ? (
-          <ActivePanel
-            task={active}
-            line={lines[active.line]}
-            before={active.dependsOn.flatMap((id) => byId.get(id) ?? [])}
-            unlocks={unlocksOf(active.id)}
-            t={t}
-            reportId={reportId}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">{t.overview.hint}</p>
-        )}
-      </aside>
     </div>
   );
 }

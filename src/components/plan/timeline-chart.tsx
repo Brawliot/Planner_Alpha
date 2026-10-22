@@ -1,11 +1,10 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
-import type { PlanTexts } from "@/lib/plan/i18n";
+import { fillText, type PlanTexts } from "@/lib/plan/i18n";
 import { DEPARTMENTS, type Department } from "@/lib/plan/line";
 import { timelineGroups } from "@/lib/plan/timeline-chart";
 import type { PlanView } from "@/lib/plan/view";
-import { ActivePanel, type MetroTask } from "./metro-map";
+import type { MetroTask } from "./metro-map";
 import { useOpenDepartments } from "./use-open-departments";
 
 const deptColor = (department: Department) => `var(--dept-${department})`;
@@ -17,21 +16,22 @@ export function TimelineChart({
   tasks,
   t,
   reportId,
-  initialTaskId,
+  hovered,
+  onHover,
+  onSelect,
 }: {
   view: PlanView;
   today: string;
   tasks: MetroTask[];
   t: PlanTexts;
   reportId: string;
-  initialTaskId: string | null;
+  hovered: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
 }) {
   const [expanded, toggle] = useOpenDepartments(reportId);
   const layout = timelineGroups(view, today, expanded);
   const byId = new Map(tasks.map((task) => [task.id, task]));
-  const [selected, setSelected] = useState<string | null>(initialTaskId);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const active = byId.get(hovered ?? selected ?? "");
   const unlocksOf = (id: string) => tasks.filter((task) => task.dependsOn.includes(id));
   // Solo se atenúa el resto al pasar el ratón; la tarea fijada en el panel no apaga el mapa.
   const hoveredTask = hovered ? byId.get(hovered) : undefined;
@@ -41,7 +41,7 @@ export function TimelineChart({
   const firstRowY = layout.rows[0]?.y ?? 64;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div>
       <div className="flex flex-col gap-3 overflow-x-auto">
         <svg viewBox={`0 0 ${layout.width} ${layout.height}`} width={layout.width} className="block" aria-hidden="true">
           <defs>
@@ -167,9 +167,9 @@ export function TimelineChart({
             return (
               <g
                 key={row.key}
-                onMouseEnter={() => setHovered(task.id)}
-                onMouseLeave={() => setHovered(null)}
-                onClick={() => setSelected(task.id)}
+                onMouseEnter={() => onHover(task.id)}
+                onMouseLeave={() => onHover(null)}
+                onClick={() => onSelect(task.id)}
                 className="cursor-pointer transition-opacity"
                 opacity={dimmed ? 0.18 : 1}
               >
@@ -225,21 +225,6 @@ export function TimelineChart({
           </span>
         </div>
       </div>
-
-      <aside className="flex flex-col gap-3 self-start rounded-[1rem] border bg-background/80 p-5 backdrop-blur">
-        {active ? (
-          <ActivePanel
-            task={active}
-            line={view.lines[active.line]}
-            before={active.dependsOn.flatMap((id) => byId.get(id) ?? [])}
-            unlocks={unlocksOf(active.id)}
-            t={t}
-            reportId={reportId}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">{t.overview.hint}</p>
-        )}
-      </aside>
     </div>
   );
 }

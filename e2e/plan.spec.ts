@@ -34,7 +34,7 @@ async function openPersonalizableTask(page: Page) {
 /** Abre "Adjust" cuando la página ya ha cargado del todo y comprueba que se ve el formulario. */
 async function openAdjust(page: Page) {
   await page.waitForLoadState("networkidle");
-  await page.locator("summary", { hasText: "Adjust" }).click();
+  await page.getByRole("tab", { name: "Adjust" }).click();
   await expect(page.getByLabel("Hours per week")).toBeVisible();
 }
 
@@ -52,7 +52,7 @@ test.describe("plan", () => {
 
     await page.getByRole("button", { name: "Create my plan" }).click();
     await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Validate" })).toBeVisible();
+    await expect(page.getByText("Validate", { exact: true })).toBeVisible();
     await expect(page.getByText(/You open: weeks \d+–\d+/)).toBeVisible();
 
     // El header muestra "Plan" en el plan y en sus tareas, y lleva de vuelta al plan.
@@ -89,6 +89,7 @@ test.describe("plan", () => {
     await page.getByRole("button", { name: "Create my plan" }).click();
     await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
 
+    await page.getByRole("tab", { name: "Task" }).click();
     await page.getByRole("link", { name: /Open task/ }).click();
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });

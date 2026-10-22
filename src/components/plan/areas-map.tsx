@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import type { PlanTexts } from "@/lib/plan/i18n";
@@ -6,7 +6,7 @@ import { areasFocus, areasOverview, type StatusCounts } from "@/lib/plan/areas";
 import type { Department } from "@/lib/plan/line";
 import type { TaskStatus } from "@/lib/plan/task";
 import type { PlanView } from "@/lib/plan/view";
-import { ActivePanel, type MetroTask } from "./metro-map";
+import type { MetroTask } from "./metro-map";
 
 const deptColor = (department: Department | undefined) => (department ? `var(--dept-${department})` : "var(--muted-foreground)");
 const short = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
@@ -15,75 +15,52 @@ export function AreasMap({
   view,
   tasks,
   t,
-  reportId,
-  initialTaskId,
+  hovered,
+  onHover,
+  onSelect,
 }: {
   view: PlanView;
   tasks: MetroTask[];
   t: PlanTexts;
-  reportId: string;
-  initialTaskId: string | null;
+  hovered: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
 }) {
   // El enfoque no se recuerda: cada vez empieza por todas las áreas.
   const [focus, setFocus] = useState<Department | null>(null);
-  const [selected, setSelected] = useState<string | null>(initialTaskId);
-  const [hovered, setHovered] = useState<string | null>(null);
   const byId = new Map(tasks.map((task) => [task.id, task]));
-  const active = byId.get(hovered ?? selected ?? "");
   const unlocksOf = (id: string) => tasks.filter((task) => task.dependsOn.includes(id));
-  // Solo se atenúa el resto al pasar el ratón; la tarea fijada en el panel no apaga el mapa.
+  // Solo se atenúa el resto al pasar el ratón.
   const hoveredTask = hovered ? byId.get(hovered) : undefined;
   const related = hoveredTask ? new Set([hoveredTask.id, ...hoveredTask.dependsOn, ...unlocksOf(hoveredTask.id).map((x) => x.id)]) : null;
 
   const enter = (department: Department | null) => {
     setFocus(department);
-    setHovered(null);
-    if (department) {
-      // Al enfocar, el panel muestra la primera tarea pendiente del departamento.
-      const first = tasks.find((task) => view.lines[task.line]?.department === department && task.status !== "done");
-      if (first) setSelected(first.id);
-    }
+    onHover(null);
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="flex flex-col gap-2 overflow-x-auto">
-        {focus && (
-          <button type="button" onClick={() => enter(null)} className="inline-flex min-h-11 items-center self-start rounded-full px-3 text-sm hover:bg-muted">
-            <span aria-hidden="true">←&nbsp;</span>
-            {t.overview.allAreas}
-          </button>
-        )}
-        {focus ? (
-          <Focus
-            view={view}
-            department={focus}
-            t={t}
-            related={related}
-            hovered={hovered}
-            onHover={setHovered}
-            onSelect={setSelected}
-            onFocus={enter}
-          />
-        ) : (
-          <Overview view={view} t={t} onFocus={enter} />
-        )}
-      </div>
-
-      <aside className="flex flex-col gap-3 self-start rounded-[1rem] border bg-background/80 p-5 backdrop-blur">
-        {active ? (
-          <ActivePanel
-            task={active}
-            line={view.lines[active.line]}
-            before={active.dependsOn.flatMap((id) => byId.get(id) ?? [])}
-            unlocks={unlocksOf(active.id)}
-            t={t}
-            reportId={reportId}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">{t.overview.hint}</p>
-        )}
-      </aside>
+    <div className="flex flex-col gap-2 overflow-x-auto">
+      {focus && (
+        <button type="button" onClick={() => enter(null)} className="inline-flex min-h-11 items-center self-start rounded-full px-3 text-sm hover:bg-muted">
+          <span aria-hidden="true">←&nbsp;</span>
+          {t.overview.allAreas}
+        </button>
+      )}
+      {focus ? (
+        <Focus
+          view={view}
+          department={focus}
+          t={t}
+          related={related}
+          hovered={hovered}
+          onHover={onHover}
+          onSelect={onSelect}
+          onFocus={enter}
+        />
+      ) : (
+        <Overview view={view} t={t} onFocus={enter} />
+      )}
     </div>
   );
 }

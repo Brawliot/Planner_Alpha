@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import type { PlanTexts } from "@/lib/plan/i18n";
