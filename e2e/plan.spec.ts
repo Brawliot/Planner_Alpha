@@ -124,10 +124,16 @@ test.describe("plan", () => {
     await page.getByRole("button", { name: "Areas" }).click();
     await expect(page.getByRole("button", { name: "Areas" })).toHaveAttribute("aria-pressed", "true");
 
-    // Pulsar un área la enfoca; "All areas" vuelve a la vista de conjunto.
+    // Pulsar un área la enfoca y muestra el riel; desde el riel se salta a otra; "All areas" vuelve a la rueda.
     await page.locator("[data-area]").first().click();
     const back = page.getByRole("button", { name: /All areas/ });
     await expect(back).toBeVisible();
+    const rail = page.locator("[data-rail]");
+    await expect(rail.locator("button[aria-pressed=true]")).toHaveCount(1);
+    const first = await rail.locator("button[aria-pressed=true]").innerText();
+    await rail.locator("button[aria-pressed=false]").first().click();
+    await expect(rail.locator("button[aria-pressed=true]")).toHaveCount(1);
+    await expect(rail.locator("button[aria-pressed=true]")).not.toHaveText(first);
     await back.click();
     await expect(page.getByText("Click an area to see it in detail")).toBeVisible();
     await page.getByRole("link", { name: /Open task/ }).click();

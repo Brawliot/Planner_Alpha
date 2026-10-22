@@ -81,6 +81,14 @@ export interface PlanTexts {
     openPanel: string;
     pickTask: string;
     areasHint: string;
+    areaNow: string;
+    areaWaiting: string;
+    areaDoing: string;
+    areaTodo: string;
+    objectiveTasks: string;
+    nowTag: string;
+    waitsFor: string;
+    areaStatus: Record<"done" | "doing" | "waiting" | "todo" | "blocked", string>;
     objectiveMany: string;
     today: string;
     openingBand: string;
@@ -248,6 +256,14 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       openPanel: "Abrir panel",
       pickTask: "Pulsa una tarea en el mapa para verla aquí.",
       areasHint: "Pulsa un área para verla en detalle",
+      areaNow: "{n} ahora",
+      areaWaiting: "{n} esperando",
+      areaDoing: "{n} en curso",
+      areaTodo: "{n} por hacer",
+      objectiveTasks: "{done}/{total} tareas",
+      nowTag: "Ahora",
+      waitsFor: "Espera a {area}: {task}",
+      areaStatus: { done: "Hecha", doing: "En curso", waiting: "Esperando", todo: "Por hacer", blocked: "Bloqueada" },
       objectiveMany: "{n} objetivos",
       today: "HOY",
       openingBand: "Apertura",
@@ -397,6 +413,14 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       openPanel: "Open panel",
       pickTask: "Click a task on the map to see it here.",
       areasHint: "Click an area to see it in detail",
+      areaNow: "{n} now",
+      areaWaiting: "{n} waiting",
+      areaDoing: "{n} in progress",
+      areaTodo: "{n} to do",
+      objectiveTasks: "{done}/{total} tasks",
+      nowTag: "Now",
+      waitsFor: "Waits for {area}: {task}",
+      areaStatus: { done: "Done", doing: "In progress", waiting: "Waiting", todo: "To do", blocked: "Blocked" },
       objectiveMany: "{n} goals",
       today: "TODAY",
       openingBand: "Opening",

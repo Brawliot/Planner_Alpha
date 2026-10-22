@@ -288,6 +288,12 @@
 @keyframes map-flow {
   to { stroke-dashoffset: -16; }
 }
+.map-fade-in {
+  animation: map-fade-in 0.45s ease both;
+}
+@keyframes map-fade-in {
+  from { opacity: 0; }
+}
 
 /* ========== Resumen ejecutivo ========== */
 .summary-panel {
@@ -366,6 +372,7 @@
   .analysis-spinner,
   .analysis-step,
   .summary-panel,
+  .map-fade-in,
   .map-pulse,
   .map-flow {
     animation: none;
