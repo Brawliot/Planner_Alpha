@@ -26,6 +26,9 @@ async function openPersonalizableTask(page: Page) {
     .evaluateAll((links) => [...new Set(links.map((a) => a.getAttribute("href") ?? ""))]);
   for (const href of hrefs) {
     await page.goto(href);
+    // count() no espera: antes hay que dejar que termine de cargar la tarea (Suspense).
+    await expect(page.getByText("Cargando...")).toHaveCount(0);
+    await page.waitForLoadState("networkidle");
     if ((await page.getByRole("button", { name: "Personalize with AI" }).count()) > 0) return;
   }
   throw new Error("Ninguna tarea del plan se puede personalizar");
@@ -140,8 +143,7 @@ test.describe("plan", () => {
     await expect(rail.locator("button[aria-pressed=true]")).not.toHaveText(first);
     await back.click();
     await expect(page.getByText("Click an area to see it in detail")).toBeVisible();
-    await page.getByRole("link", { name: /Open task/ }).click();
-    await expect(page).toHaveURL(/\/plan\/tarea\//);
+    // Ir a una tarea ya no se hace desde Áreas (el enlace "Open task" vive en el mapa de Fases).
   });
 
   test("el panel se pliega a un riel y se vuelve a abrir desde él", async ({ page }) => {
@@ -230,8 +232,10 @@ test.describe("plan", () => {
 
     // El paso hecho se puede reabrir en la página de su tarea.
     await page.goto(href);
-    const reopen = page.getByRole("button", { name: "Reopen" });
+    // "Reopen" está dentro del desplegable del paso: se cuenta aunque esté oculto y se abre para pulsarlo.
+    const reopen = page.getByRole("button", { name: "Reopen", includeHidden: true });
     await expect(reopen).toHaveCount(1);
+    await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
     await reopen.click();
     await page.waitForLoadState("networkidle");
     await expect(reopen).toHaveCount(0);
