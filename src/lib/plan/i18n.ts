@@ -77,6 +77,8 @@ export interface PlanTexts {
     tabTask: string;
     tabDecisions: string;
     inspectorLabel: string;
+    collapsePanel: string;
+    openPanel: string;
     pickTask: string;
     areasHint: string;
     objectiveMany: string;
@@ -242,6 +244,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       tabTask: "Tarea",
       tabDecisions: "Decisiones",
       inspectorLabel: "Panel del plan",
+      collapsePanel: "Plegar panel",
+      openPanel: "Abrir panel",
       pickTask: "Pulsa una tarea en el mapa para verla aquí.",
       areasHint: "Pulsa un área para verla en detalle",
       objectiveMany: "{n} objetivos",
@@ -389,6 +393,8 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       tabTask: "Task",
       tabDecisions: "Decisions",
       inspectorLabel: "Plan panel",
+      collapsePanel: "Collapse panel",
+      openPanel: "Open panel",
       pickTask: "Click a task on the map to see it here.",
       areasHint: "Click an area to see it in detail",
       objectiveMany: "{n} goals",

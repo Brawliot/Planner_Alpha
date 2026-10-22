@@ -25,6 +25,8 @@ export function PlanInspector({
   t,
   reportId,
   version,
+  collapsed = false,
+  onCollapse,
 }: {
   tab: InspectorTab;
   onTab: (tab: InspectorTab) => void;
@@ -35,6 +37,9 @@ export function PlanInspector({
   t: PlanTexts;
   reportId: string;
   version: number;
+  /** Plegado: solo el riel con un botón por pestaña (pulsar uno vuelve a abrir el panel en ella). */
+  collapsed?: boolean;
+  onCollapse?: () => void;
 }) {
   const tabs: { id: InspectorTab; label: string; count?: number }[] = [
     { id: "now", label: t.now, count: view.now.length },
@@ -43,8 +48,49 @@ export function PlanInspector({
     { id: "adjust", label: t.adjust },
   ];
 
+  if (collapsed) {
+    return (
+      <aside
+        aria-label={t.overview.inspectorLabel}
+        className="flex h-full flex-col items-center gap-2 border-l border-border bg-surface/80 py-4 backdrop-blur-xl"
+      >
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-label={item.label}
+            title={item.label}
+            onClick={() => onTab(item.id)}
+            className="relative flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <TabIcon id={item.id} />
+            {item.count ? (
+              <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
+                {item.count}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </aside>
+    );
+  }
+
   return (
-    <aside className="flex min-h-0 flex-col gap-4 rounded-[1.5rem] bg-surface p-4 shadow-soft">
+    <aside className="flex h-full min-h-0 flex-col gap-4 border-l border-border bg-surface/80 p-5 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-2">
+        <p className={cn(LABEL, "text-muted-foreground")}>{t.overview.inspectorLabel}</p>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label={t.overview.collapsePanel}
+            title={t.overview.collapsePanel}
+            className="flex size-9 items-center justify-center rounded-full border text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <span aria-hidden="true">»</span>
+          </button>
+        )}
+      </div>
       <div
         role="tablist"
         aria-label={t.overview.inspectorLabel}
@@ -198,5 +244,23 @@ function DecisionsTab({ view, t }: { view: PlanView; t: PlanTexts }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+
+/** Iconos del riel: Ahora (rayo), Tarea (casilla), Decisiones (bifurcación), Ajustar (control deslizante). */
+function TabIcon({ id }: { id: InspectorTab }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="size-5">
+      {id === "now" && <path d="M13 3L5 14h6l-1 7 8-11h-6z" />}
+      {id === "task" && (
+        <>
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M8.5 12l2.5 2.5 4.5-5" />
+        </>
+      )}
+      {id === "decisions" && <path d="M6 4v6a4 4 0 0 0 4 4h4M6 4v16M14 14l4-4M14 14l4 4" />}
+      {id === "adjust" && <path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" />}
+    </svg>
   );
 }
