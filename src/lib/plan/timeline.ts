@@ -163,3 +163,20 @@ export function deadlineStatus(timeline: Timeline, startDate: string, deadline: 
   if (timeline.end.min <= limit) return "at_risk";
   return "late";
 }
+
+
+/** Mes medio en días: el plazo del usuario viene en meses y el plan trabaja en días. */
+const DAYS_PER_MONTH = 30.4375;
+
+/** within: cuadra (no se avisa). late: ni en el mejor caso llegas. much_earlier: sales mucho antes de lo que dijiste. */
+export type TargetFit = "within" | "may_be_late" | "late" | "much_earlier";
+
+/** Apertura (días desde el inicio, mejor y peor caso) frente al plazo que dijo el usuario, en meses. */
+export function targetFit(opening: Range, months: Range): TargetFit {
+  const from = months.min * DAYS_PER_MONTH;
+  const to = months.max * DAYS_PER_MONTH;
+  if (opening.min > to) return "late";
+  if (opening.max > to) return "may_be_late";
+  if (months.min > 0 && opening.max < from) return "much_earlier";
+  return "within";
+}

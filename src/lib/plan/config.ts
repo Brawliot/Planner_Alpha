@@ -19,7 +19,8 @@ export const planConfigSchema = z
     weeklyHours: z.object({ min: z.number().positive(), max: z.number().positive() }),
     withPartners: z.boolean(),
     unavailable: z.array(z.object({ from: isoDate, to: isoDate })),
-    deadline: isoDate.optional(),
+    /** Fecha límite que el usuario pone a mano en Ajustar. Sin ella, ningún aviso de cumplimiento. */
+    targetDate: isoDate.optional(),
     done: z.array(z.enum(MILESTONES)),
     skills: z.array(z.enum(SKILLS)),
     /** null = no lo sé. */
@@ -36,6 +37,7 @@ export const planConfigSchema = z
     const issue = (message: string) => ctx.addIssue({ code: "custom", message });
     if (config.weeklyHours.min > config.weeklyHours.max) issue("weeklyHours min > max");
     for (const period of config.unavailable) if (period.from > period.to) issue("unavailable from > to");
+    if (config.targetDate !== undefined && config.targetDate < config.startDate) issue("targetDate < startDate");
   });
 
 export type PlanConfig = z.infer<typeof planConfigSchema>;

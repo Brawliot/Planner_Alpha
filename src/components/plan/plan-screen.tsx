@@ -7,7 +7,7 @@ import { PlanWorkspace } from "./plan-workspace";
 const LABEL = "font-mono text-[10px] uppercase tracking-[0.14em]";
 
 function formatDate(iso: string, language: PlanView["language"]) {
-  return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(
+  return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
     new Date(`${iso}T00:00:00Z`),
   );
 }
@@ -15,6 +15,7 @@ function formatDate(iso: string, language: PlanView["language"]) {
 // Tono de cada aviso: verde si va bien, ámbar si hay riesgo, rojo si no llega.
 const MONEY_TONE = { fits: "success", at_risk: "warning", over: "danger" } as const;
 const DEADLINE_TONE = { on_track: "success", at_risk: "warning", late: "danger" } as const;
+const TARGET_TONE = { may_be_late: "warning", late: "danger", much_earlier: "warning" } as const;
 const DOT = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
 
 export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: PlanTexts; reportId: string; version: number }) {
@@ -43,13 +44,14 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
               {t.weeks} {view.opening.weeks.from}–{view.opening.weeks.to}
             </span>
             <span className="text-sm text-muted-foreground">
-              {formatDate(view.opening.dates.from, language)} – {formatDate(view.opening.dates.to, language)}
+              {t.bestCase} {formatDate(view.opening.dates.from, language)} · {t.worstCase} {formatDate(view.opening.dates.to, language)}
             </span>
             <span className="rounded-full border border-dashed border-muted-foreground px-2 text-[11px] text-muted-foreground">{t.estimated}</span>
           </p>
         )}
         {view.money && <Status tone={MONEY_TONE[view.money]} text={t.money[view.money]} />}
         {view.deadline && <Status tone={DEADLINE_TONE[view.deadline]} text={t.deadline[view.deadline]} />}
+        {view.target && <Status tone={TARGET_TONE[view.target.fit]} text={targetMessage(view, t)} />}
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
             <span className="block h-full rounded-full bg-accent" style={{ width: `${all.length ? (doneCount / all.length) * 100 : 0}%` }} />
@@ -66,6 +68,21 @@ export function PlanScreen({ view, t, reportId, version }: { view: PlanView; t: 
       <PlanWorkspace view={view} tasks={tasks} today={today} t={t} reportId={reportId} version={version} status={status} />
     </div>
   );
+}
+
+function targetMessage(view: PlanView, t: PlanTexts) {
+  const { target, opening, language } = view;
+  if (!target || !opening) return "";
+  const goal =
+    target.months.min === 0
+      ? fillText(t.target.goalUnder, { max: target.months.max })
+      : fillText(t.target.goalRange, { min: target.months.min, max: target.months.max });
+  const text = fillText(t.target[target.fit], {
+    from: formatDate(opening.dates.from, language),
+    to: formatDate(opening.dates.to, language),
+    goal,
+  });
+  return target.fit === "much_earlier" ? text : `${text} ${t.target.cause[target.cause]}`;
 }
 
 function Status({ tone, text }: { tone: keyof typeof DOT; text: string }) {

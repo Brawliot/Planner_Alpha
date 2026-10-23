@@ -8,7 +8,8 @@ import { applyConcretions } from "./concretion.ts";
 import { mergeTasks } from "./merge.ts";
 import { moldGets, type Mold } from "./mold.ts";
 import { isTaskResolved, taskTotals, type Range, type Task } from "./task.ts";
-import { buildTimeline, deadlineStatus, type DeadlineStatus, type Timeline } from "./timeline.ts";
+import { launchTargetOf } from "./prefill.ts";
+import { buildTimeline, deadlineStatus, targetFit, type DeadlineStatus, type TargetFit, type Timeline } from "./timeline.ts";
 
 /**
  * Orquestador: recalcula el plan cada vez que algo cambia (informe, configuración o progreso).
@@ -40,8 +41,10 @@ export interface PlanState {
   timeline: Timeline;
   /** Días hasta abrir (rápido y lento): fin de la tarea de primeros clientes; null si ya no está pendiente. */
   opening: Range | null;
-  /** Se compara con el día que abres, no con el fin del plan. null si no hay fecha límite. */
+  /** Fecha límite puesta a mano (targetDate), comparada con el día que abres. null si no hay. */
   deadline: DeadlineStatus | null;
+  /** Plazo que dijo el usuario frente a la estimación. null si no dijo plazo o si cuadra. */
+  target: { fit: Exclude<TargetFit, "within">; months: Range; cause: "hours" | "waits" } | null;
   money: {
     /** Coste de ejecución del plan (profesionales, tasas…), siempre estimado. */
     cost: Range;
@@ -61,6 +64,12 @@ export interface PlanState {
 
 /** Terminada: todo resuelto y algo hecho. Solo saltada no cuenta. */
 const isFinished = (task: Task) => isTaskResolved(task) && task.steps.some((step) => step.status === "done");
+
+/** La tarea sin tus horas: deja solo las esperas a terceros (para saber qué pesa más). */
+const withoutEffort = (task: Task): Task => ({
+  ...task,
+  steps: task.steps.map((step) => ({ ...step, effort: { min: 0, max: 0 } })),
+});
 
 function moneyOf(input: Pick<PlanInput, "facts">, tasks: readonly Task[]): PlanState["money"] {
   const cost = tasks
@@ -124,7 +133,26 @@ export function rebuildPlan(input: {
 
   // Abrir = terminar la tarea que consigue los primeros clientes (lo que pasa a Operar va después).
   const openingIds = new Set(input.catalog.filter((mold) => moldGets(mold).includes("first_customers")).map((m) => m.id));
-  const opening = timeline.tasks.find((schedule) => openingIds.has(schedule.taskId))?.end ?? null;
+  const openingOf = (t: Timeline) => t.tasks.find((schedule) => openingIds.has(schedule.taskId))?.end ?? null;
+  const opening = openingOf(timeline);
+
+  // Tu plazo frente a la estimación: solo se avisa si no cuadra.
+  const months = launchTargetOf(report.facts);
+  const fit = months && opening ? targetFit(opening, months) : "within";
+  let target: PlanState["target"] = null;
+  if (months && opening && fit !== "within") {
+    // Sin tus horas (solo esperas): si ya son la mitad del peor caso, la causa son las esperas.
+    const waitsOnly = openingOf(
+      buildTimeline({
+        tasks: tasks.map(withoutEffort),
+        startDate: config.startDate,
+        today: input.today,
+        weeklyHours: config.weeklyHours,
+        unavailable: config.unavailable,
+      }),
+    );
+    target = { fit, months, cause: waitsOnly !== null && waitsOnly.max * 2 >= opening.max ? "waits" : "hours" };
+  }
 
   return {
     lines,
@@ -132,9 +160,10 @@ export function rebuildPlan(input: {
     decisions: skeleton.decisions,
     timeline,
     opening,
-    deadline: config.deadline
-      ? deadlineStatus({ ...timeline, end: opening ?? timeline.end }, config.startDate, config.deadline)
+    deadline: config.targetDate
+      ? deadlineStatus({ ...timeline, end: opening ?? timeline.end }, config.startDate, config.targetDate)
       : null,
+    target,
     money: moneyOf(report, tasks),
     reportChanged: input.stored !== null && input.stored.fingerprint !== report.fingerprint,
     fingerprint: report.fingerprint,

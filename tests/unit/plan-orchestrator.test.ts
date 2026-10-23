@@ -104,7 +104,32 @@ describe("rebuildPlan", () => {
     const plan = rebuild();
     assert.deepEqual(plan.opening, plan.timeline.tasks.find((t) => t.taskId === "sell")!.end);
     assert.equal(plan.deadline, null);
-    assert.equal(rebuild({ config: config({ deadline: "2027-12-31" }) }).deadline, "on_track");
+    assert.equal(rebuild({ config: config({ targetDate: "2027-12-31" }) }).deadline, "on_track");
+  });
+
+  it("plazo del informe: sin plazo no hay aviso", () => {
+    assert.equal(rebuild().target, null);
+  });
+
+  it("plazo del informe: si la estimación sale mucho antes, avisa", () => {
+    const plan = rebuild({ facts: [user("launch_timeline", "3-6 months")] });
+    assert.equal(plan.target?.fit, "much_earlier");
+    assert.deepEqual(plan.target?.months, { min: 3, max: 6 });
+    // El plazo es un dato del informe: no crea ninguna fecha límite.
+    assert.equal(plan.deadline, null);
+  });
+
+  it("plazo del informe: si cuadra, no avisa", () => {
+    assert.equal(rebuild({ facts: [user("launch_timeline", "Under 3 months")] }).target, null);
+  });
+
+  it("plazo del informe: con muy pocas horas llegas tarde y la causa son tus horas", () => {
+    const plan = rebuild({
+      facts: [user("launch_timeline", "Under 3 months")],
+      config: config({ weeklyHours: { min: 0.01, max: 0.01 } }),
+    });
+    assert.equal(plan.target?.fit, "late");
+    assert.equal(plan.target?.cause, "hours");
   });
 });
 

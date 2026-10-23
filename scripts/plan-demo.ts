@@ -68,7 +68,8 @@ if (plan.opening) {
     `Abres: semana ${range(weeks, "")}(${addDays(config.startDate, plan.opening.min)} – ${addDays(config.startDate, plan.opening.max)})`,
   );
 }
-if (config.deadline) console.log(`Fecha límite ${config.deadline} (comparada con la apertura): ${plan.deadline}`);
+if (config.targetDate) console.log(`Fecha límite ${config.targetDate} (comparada con la apertura): ${plan.deadline}`);
+if (plan.target) console.log(`Plazo del informe: ${plan.target.months.min}–${plan.target.months.max} meses · ${plan.target.fit} · causa: ${plan.target.cause}`);
 const money = plan.money;
 console.log(
   `Coste del plan: ${range(money.cost, "€")}` +

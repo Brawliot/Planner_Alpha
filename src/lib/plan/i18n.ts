@@ -18,6 +18,17 @@ export interface PlanTexts {
   provisional: string;
   money: Record<MoneyStatus, string>;
   deadline: Record<DeadlineStatus, string>;
+  target: {
+    may_be_late: string;
+    late: string;
+    much_earlier: string;
+    cause: Record<"hours" | "waits", string>;
+    goalRange: string;
+    goalUnder: string;
+  };
+  bestCase: string;
+  worstCase: string;
+  targetDate: string;
   phase: Record<(typeof PHASES)[number], string>;
   department: Record<Department, string>;
   actor: Record<Actor, string>;
@@ -150,6 +161,18 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       at_risk: "Puede que no llegues a tu fecha límite.",
       late: "No llegas a tu fecha límite.",
     },
+    target: {
+      may_be_late: "Con tu plan, lo realista es abrir entre {from} y {to}; tu objetivo era {goal}. Solo llegas en el mejor caso.",
+      late: "Con tu plan, lo realista es abrir entre {from} y {to}; tu objetivo era {goal}. Ni en el mejor caso llegas.",
+      much_earlier:
+        "Tu estimación ({from} – {to}) sale mucho antes que tu objetivo ({goal}). Puede que falten pasos, como el local o las licencias: revísala.",
+      cause: { hours: "Lo que más pesa: las horas que le dedicas.", waits: "Lo que más pesa: las esperas de terceros." },
+      goalRange: "{min}–{max} meses",
+      goalUnder: "menos de {max} meses",
+    },
+    bestCase: "mejor caso",
+    worstCase: "peor caso",
+    targetDate: "Fecha límite (opcional)",
     phase: { validate: "Validar", prepare: "Preparar", launch: "Lanzar", operate: "Operar" },
     department: {
       founder: "Tú",
@@ -312,6 +335,18 @@ export const PLAN_TEXTS: Record<Language, PlanTexts> = {
       at_risk: "You may miss your deadline.",
       late: "You miss your deadline.",
     },
+    target: {
+      may_be_late: "With your plan, opening between {from} and {to} is realistic; your goal was {goal}. You only make it in the best case.",
+      late: "With your plan, opening between {from} and {to} is realistic; your goal was {goal}. You miss it even in the best case.",
+      much_earlier:
+        "Your estimate ({from} – {to}) is much earlier than your goal ({goal}). Some steps may be missing, such as premises or licences: check it.",
+      cause: { hours: "What weighs most: the hours you put in.", waits: "What weighs most: waiting on third parties." },
+      goalRange: "{min}–{max} months",
+      goalUnder: "under {max} months",
+    },
+    bestCase: "best case",
+    worstCase: "worst case",
+    targetDate: "Deadline (optional)",
     phase: { validate: "Validate", prepare: "Prepare", launch: "Launch", operate: "Operate" },
     department: {
       founder: "You",

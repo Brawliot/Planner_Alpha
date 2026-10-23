@@ -19,7 +19,7 @@ function formatRange(r: Range, unit: string, language: Language) {
 }
 
 function formatDate(iso: string, language: Language) {
-  return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(
+  return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
     new Date(`${iso}T00:00:00Z`),
   );
 }

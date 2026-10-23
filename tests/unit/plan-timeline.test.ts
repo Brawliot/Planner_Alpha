@@ -7,6 +7,7 @@ import {
   buildTimeline,
   daysBetween,
   deadlineStatus,
+  targetFit,
   weeklyHoursOf,
   weeksOf,
 } from "../../src/lib/plan/timeline.ts";
@@ -155,5 +156,30 @@ describe("deadlineStatus", () => {
   it("terminar el mismo día límite es llegar", () => {
     // Fin a los 14 días = final del día 2026-11-16.
     assert.equal(deadlineStatus(t, "2026-11-03", "2026-11-16"), "on_track");
+  });
+});
+
+
+describe("targetFit", () => {
+  const months = { min: 3, max: 6 };
+
+  it("cuadra si cae dentro del plazo", () => {
+    assert.equal(targetFit({ min: 50, max: 150 }, months), "within");
+  });
+
+  it("solo en el mejor caso: puede llegar tarde", () => {
+    assert.equal(targetFit({ min: 100, max: 300 }, months), "may_be_late");
+  });
+
+  it("ni en el mejor caso: tarde", () => {
+    assert.equal(targetFit({ min: 200, max: 300 }, months), "late");
+  });
+
+  it("muy por debajo del plazo: estimación poco realista", () => {
+    assert.equal(targetFit({ min: 20, max: 50 }, months), "much_earlier");
+  });
+
+  it("con 'menos de 3 meses' ir antes nunca es sospechoso", () => {
+    assert.equal(targetFit({ min: 10, max: 20 }, { min: 0, max: 3 }), "within");
   });
 });

@@ -3,7 +3,7 @@ import type { Fact } from "../report/facts.ts";
 import { option } from "../report/verdict.ts";
 import { defaultConfig, type PlanConfig } from "./config.ts";
 import type { Skill } from "./step.ts";
-import type { Level } from "./task.ts";
+import type { Level, Range } from "./task.ts";
 import { addDays, weeklyHoursOf } from "./timeline.ts";
 
 /**
@@ -13,19 +13,26 @@ import { addDays, weeklyHoursOf } from "./timeline.ts";
  */
 
 export interface Prefilled {
-  field: "weeklyHours" | "deadline" | "skills" | "validationLevel";
+  field: "weeklyHours" | "skills" | "validationLevel";
   /** Clave del informe de la que sale. */
   from: string;
   certainty: "known" | "estimated";
 }
 
-/** Tope de cada tramo, en meses; "Over 18 months" no pone fecha límite. */
-const LAUNCH_MONTHS: Record<string, number> = {
-  [option("launch_timeline", "Under 3 months")]: 3,
-  [option("launch_timeline", "3-6 months")]: 6,
-  [option("launch_timeline", "6-12 months")]: 12,
-  [option("launch_timeline", "12-18 months")]: 18,
+/** Meses de cada tramo: es el plazo que dijo el usuario, nunca una fecha. "Over 18 months" no tiene tope. */
+const LAUNCH_MONTHS: Record<string, Range> = {
+  [option("launch_timeline", "Under 3 months")]: { min: 0, max: 3 },
+  [option("launch_timeline", "3-6 months")]: { min: 3, max: 6 },
+  [option("launch_timeline", "6-12 months")]: { min: 6, max: 12 },
+  [option("launch_timeline", "12-18 months")]: { min: 12, max: 18 },
 };
+
+/** Plazo que el informe dice (sabido o estimado), en meses; null si no lo dice. */
+export function launchTargetOf(facts: readonly Fact[]): Range | null {
+  const input = usable(facts, "launch_timeline");
+  const value = input ? String(input.value) : null;
+  return value !== null && Object.hasOwn(LAUNCH_MONTHS, value) ? { ...LAUNCH_MONTHS[value] } : null;
+}
 
 const PROFILE_SKILLS: Record<string, Skill[]> = {
   [option("founder_profile", "Technical")]: ["programming"],
@@ -74,12 +81,6 @@ export function prefillConfig(facts: readonly Fact[], today: string): { config: 
   if (time && hours) {
     config.weeklyHours = hours;
     time.mark();
-  }
-
-  const launch = read("launch_timeline", "deadline");
-  if (launch && Object.hasOwn(LAUNCH_MONTHS, launch.value)) {
-    config.deadline = addMonths(startDate, LAUNCH_MONTHS[launch.value]);
-    launch.mark();
   }
 
   const profile = read("founder_profile", "skills");

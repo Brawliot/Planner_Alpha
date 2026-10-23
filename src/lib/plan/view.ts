@@ -99,6 +99,8 @@ export interface PlanView {
   opening: { weeks: { from: number; to: number }; dates: { from: string; to: string } } | null;
   money: MoneyStatus | null;
   deadline: DeadlineStatus | null;
+  /** Tu plazo frente a la estimación; solo si no cuadra. */
+  target: PlanState["target"];
   decisions: { label: string; options: string[]; chosen: string }[];
   now: NowItem[];
   phases: { phase: Phase; tasks: PlanTaskView[]; done: DoneTaskView[] }[];
@@ -109,6 +111,8 @@ export interface PlanView {
     professionals: PlanConfig["professionals"];
     validationLevel: PlanConfig["validationLevel"];
     launchLevel: PlanConfig["launchLevel"];
+    /** "" si no hay fecha límite. */
+    targetDate: string;
   };
 }
 
@@ -225,6 +229,7 @@ export function planView(input: {
     opening,
     money: state.money.status,
     deadline: state.deadline,
+    target: state.target,
     decisions: state.decisions.map((d) => ({
       label: stateLabel(d.state, language),
       options: d.options.map(moldTitle),
@@ -246,6 +251,7 @@ export function planView(input: {
       professionals: config.professionals,
       validationLevel: config.validationLevel,
       launchLevel: config.launchLevel,
+      targetDate: config.targetDate ?? "",
     },
   };
 }

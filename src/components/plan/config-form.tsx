@@ -29,6 +29,7 @@ export function ConfigForm({
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="version" value={version} />
       <Field label={t.startDate} type="date" name="startDate" defaultValue={values.startDate} required />
+      <Field label={t.targetDate} type="date" name="targetDate" defaultValue={values.targetDate} />
 
       <label className="flex flex-col gap-1 text-sm font-medium">
         {t.hours}

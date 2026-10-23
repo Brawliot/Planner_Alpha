@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { planConfigSchema } from "../../src/lib/plan/config.ts";
-import { addMonths, nextMonday, prefillConfig } from "../../src/lib/plan/prefill.ts";
+import { addMonths, launchTargetOf, nextMonday, prefillConfig } from "../../src/lib/plan/prefill.ts";
 import { CALIBRATED_JEV_MODEL, NOT_SPECIFIED } from "../../src/lib/report/certainty.ts";
 import type { Fact } from "../../src/lib/report/facts.ts";
 
@@ -50,12 +50,11 @@ describe("prefillConfig", () => {
       TODAY,
     );
     assert.deepEqual(config.weeklyHours, { min: 20, max: 40 });
-    assert.equal(config.deadline, "2027-04-19");
+    assert.equal(config.targetDate, undefined);
     assert.deepEqual(config.skills, ["programming"]);
     assert.equal(config.validationLevel, 3);
     assert.deepEqual(prefilled, [
       { field: "weeklyHours", from: "time_commitment", certainty: "known" },
-      { field: "deadline", from: "launch_timeline", certainty: "known" },
       { field: "skills", from: "founder_profile", certainty: "estimated" },
       { field: "validationLevel", from: "validation_stage", certainty: "known" },
     ]);
@@ -73,7 +72,20 @@ describe("prefillConfig", () => {
     );
     assert.deepEqual(prefilled, []);
     assert.deepEqual(config.skills, []);
-    assert.equal(config.deadline, undefined);
+    assert.equal(config.targetDate, undefined);
     assert.equal(config.validationLevel, 2);
+  });
+});
+
+describe("launchTargetOf", () => {
+  it("el plazo del informe es un rango de meses, nunca una fecha", () => {
+    assert.deepEqual(launchTargetOf([known("launch_timeline", "3-6 months")]), { min: 3, max: 6 });
+    assert.deepEqual(launchTargetOf([known("launch_timeline", "Under 3 months")]), { min: 0, max: 3 });
+  });
+
+  it("sin plazo, sin dato o más allá de 18 meses: null", () => {
+    assert.equal(launchTargetOf([]), null);
+    assert.equal(launchTargetOf([known("launch_timeline", "Over 18 months")]), null);
+    assert.equal(launchTargetOf([known("launch_timeline", NOT_SPECIFIED)]), null);
   });
 });

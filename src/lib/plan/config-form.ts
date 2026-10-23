@@ -37,9 +37,12 @@ export function parseConfigForm(
   const delegation = getAll("delegation");
   if (delegation.length === 0) return { ok: false, error: "Marca al menos una forma de repartir el trabajo." };
 
+  const targetDate = get("targetDate");
   const candidate = {
     ...current,
     startDate: get("startDate"),
+    // Vacío = sin fecha límite (también borra la que hubiera).
+    targetDate: typeof targetDate === "string" && targetDate !== "" ? targetDate : undefined,
     weeklyHours: { ...HOURS_OPTIONS[hours as HoursOption] },
     delegation,
     professionals: getAll("professionals"),
