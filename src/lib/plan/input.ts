@@ -43,7 +43,7 @@ export function planInput(report: {
   return {
     reportId: report.id,
     idea: report.idea,
-    language: report.narrative?.language === "es" ? "es" : "en",
+    language: "es",
     facts: report.facts,
     verdicts,
     fingerprint: planFingerprint(report.facts, verdicts),

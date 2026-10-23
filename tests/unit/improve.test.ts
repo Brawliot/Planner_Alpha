@@ -89,8 +89,8 @@ describe("improvementsByArea", () => {
 
 describe("textos y opciones", () => {
   it("las 'ask' usan el prompt del catálogo y las 'infer' el suyo", () => {
-    assert.equal(improvePrompt("budget_band"), "How much can you invest to start?");
-    assert.equal(improvePrompt("competition"), "How much competition is there where you will operate?");
+    assert.equal(improvePrompt("budget_band"), "¿Cuánto puedes invertir para empezar?");
+    assert.equal(improvePrompt("competition"), "¿Cuánta competencia hay donde vas a operar?");
   });
 
   it('las opciones nunca incluyen "Not specified"', () => {

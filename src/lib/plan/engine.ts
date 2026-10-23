@@ -64,11 +64,14 @@ export function stateLabel(state: StateId, language: Language) {
 const goalText = (states: readonly StateId[], language: Language) =>
   states.map((state) => stateLabel(state, language)).join(", ");
 
-/** Líneas que salen del informe, en orden de prioridad: rojos, grises, por concretar, estimados. */
+/** Líneas que salen del informe, en orden de prioridad: rojos, amarillos, grises, por concretar, estimados. */
 function reportLineSources(facts: readonly Fact[], verdicts: readonly AreaVerdict[]) {
   const lines: { id: string; area: AreaKey; source: LineSource }[] = [];
   for (const v of verdicts) {
     if (v.verdict === "risk") lines.push({ id: `risk:${v.area}`, area: v.area, source: { kind: "risk", area: v.area, reason: v.reason } });
+  }
+  for (const v of verdicts) {
+    if (v.verdict === "doubt") lines.push({ id: `doubt:${v.area}`, area: v.area, source: { kind: "doubt", area: v.area, reason: v.reason } });
   }
   for (const v of verdicts) {
     if (v.verdict === "needs_info" && v.missing.length > 0) {

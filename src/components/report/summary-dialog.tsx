@@ -81,7 +81,8 @@ export function SummaryDialog({
   const count = (verdict: string) => view.areas.filter((a) => a.verdict === verdict).length;
   const strong = count("strong");
   const risk = count("risk");
-  const unknown = count("needs_info");
+    const unknown = count("needs_info");
+  const doubt = count("doubt");
   const part = parts[current];
 
   return (
@@ -109,10 +110,11 @@ export function SummaryDialog({
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <div aria-hidden="true" className="flex h-1.5 w-40 gap-0.5 overflow-hidden rounded-full">
               <span className="bg-success" style={{ flex: strong }} />
+              <span className="bg-warning" style={{ flex: doubt }} />
               <span className="bg-danger" style={{ flex: risk }} />
               <span className="bg-muted-foreground/40" style={{ flex: unknown }} />
             </div>
-            {t.summary.counts(strong, risk, unknown)}
+            {t.summary.counts(strong, risk, unknown, doubt)}
           </div>
         </div>
 
@@ -237,18 +239,15 @@ function SegmentsText({ segments, t }: { segments: Segment[]; t: ReportTexts }) 
     <>
       {segments.map((segment, index) =>
         segment.certainty ? (
-          <span key={index} className="whitespace-nowrap text-foreground">
-            {segment.text}{" "}
-            <span
-              className={cn(
-                "rounded-full px-1.5 align-middle text-[11px]",
-                segment.certainty === "estimated"
-                  ? "border border-dashed border-muted-foreground text-muted-foreground"
-                  : "bg-muted",
-              )}
-            >
-              {segment.certainty === "estimated" ? t.estimated : t.fromYou}
-            </span>
+          <span
+            key={index}
+            className={cn(
+              "whitespace-nowrap text-foreground",
+              segment.certainty === "estimated" && "underline decoration-dashed decoration-muted-foreground underline-offset-4",
+            )}
+          >
+            {segment.text}
+            <span className="sr-only"> ({segment.certainty === "estimated" ? t.estimated : t.fromYou})</span>
           </span>
         ) : (
           <Fragment key={index}>{segment.text}</Fragment>

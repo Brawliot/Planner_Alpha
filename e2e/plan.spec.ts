@@ -14,8 +14,8 @@ async function approvedReport(page: Page, idea = "Una app de facturación") {
   await page.getByLabel("Tu idea").fill(idea);
   await page.getByRole("button", { name: "Empezar" }).click();
   await page.waitForURL(/\/informe\//);
-  await page.getByRole("button", { name: "Continue anyway" }).click();
-  await expect(page.getByText("Approved · ready to plan")).toBeVisible();
+  await page.getByRole("button", { name: "Continuar igualmente" }).click();
+  await expect(page.getByText("Aprobado · listo para planificar")).toBeVisible();
   return page.url();
 }
 
@@ -29,7 +29,7 @@ async function openPersonalizableTask(page: Page) {
     // count() no espera: antes hay que dejar que termine de cargar la tarea (Suspense).
     await expect(page.getByText("Cargando...")).toHaveCount(0);
     await page.waitForLoadState("networkidle");
-    if ((await page.getByRole("button", { name: "Personalize with AI" }).count()) > 0) return;
+    if ((await page.getByRole("button", { name: "Personalizar con IA" }).count()) > 0) return;
   }
   throw new Error("Ninguna tarea del plan se puede personalizar");
 }
@@ -37,8 +37,8 @@ async function openPersonalizableTask(page: Page) {
 /** Abre "Adjust" cuando la página ya ha cargado del todo y comprueba que se ve el formulario. */
 async function openAdjust(page: Page) {
   await page.waitForLoadState("networkidle");
-  await page.getByRole("tab", { name: "Adjust" }).click();
-  await expect(page.getByLabel("Hours per week")).toBeVisible();
+  await page.getByRole("tab", { name: "Ajustar" }).click();
+  await expect(page.getByLabel("Horas por semana")).toBeVisible();
 }
 
 test.describe("plan", () => {
@@ -50,18 +50,18 @@ test.describe("plan", () => {
 
   test("desde el informe aprobado se crea el plan y se ve por fases", async ({ page }) => {
     const reportUrl = await approvedReport(page);
-    await page.getByRole("link", { name: "My plan" }).click();
+    await page.getByRole("link", { name: "Mi plan" }).click();
     await expect(page).toHaveURL(`${reportUrl}/plan`);
 
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
-    await expect(page.getByText("Validate", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
+    await expect(page.getByText("Validar", { exact: true })).toBeVisible();
     await expect(page.getByText(/You open: weeks \d+–\d+/)).toBeVisible();
 
     // El header muestra "Plan" en el plan y en sus tareas, y lleva de vuelta al plan.
     const headerPlan = page.getByRole("banner").getByRole("link", { name: "Plan", exact: true });
     await expect(headerPlan).toBeVisible();
-    await page.getByRole("region", { name: "Now" }).getByRole("link").first().click();
+    await page.getByRole("region", { name: "Ahora" }).getByRole("link").first().click();
     await expect(page).toHaveURL(/\/plan\/tarea\//);
     await headerPlan.click();
     await expect(page).toHaveURL(`${reportUrl}/plan`);
@@ -70,29 +70,29 @@ test.describe("plan", () => {
     test("cada tarea tiene su página: se ve el paso actual y al marcarlo se queda en ella", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
 
-    const firstTask = page.getByRole("region", { name: "Now" }).getByRole("link").first();
+    const firstTask = page.getByRole("region", { name: "Ahora" }).getByRole("link").first();
     const title = (await firstTask.textContent()) ?? "";
     await firstTask.click();
     await expect(page).toHaveURL(/\/plan\/tarea\//);
     await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-    await expect(page.getByText("Done when", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Está hecho cuando", { exact: true }).first()).toBeVisible();
 
     const url = page.url();
-    await page.getByRole("button", { name: "Skip" }).first().click();
+    await page.getByRole("button", { name: "Saltar" }).first().click();
     await expect(page).toHaveURL(url);
-    await expect(page.getByRole("progressbar", { name: "Steps" })).toHaveAttribute("aria-valuenow", "1");
+    await expect(page.getByRole("progressbar", { name: "Pasos" })).toHaveAttribute("aria-valuenow", "1");
   });
 
   test("el mapa de fases muestra la tarea de una estación y lleva a ella", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Task" }).click();
+    await page.getByRole("tab", { name: "Tarea" }).click();
     await page.getByRole("link", { name: /Open task/ }).click();
     await expect(page).toHaveURL(/\/plan\/tarea\//);
   });
@@ -100,16 +100,16 @@ test.describe("plan", () => {
     test("el cronograma se abre desde el selector y marca la apertura", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("button", { name: "Timeline" }).click();
-    await expect(page.getByRole("button", { name: "Timeline" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Cronograma" }).click();
+    await expect(page.getByRole("button", { name: "Cronograma" })).toHaveAttribute("aria-pressed", "true");
     // Se abre en las próximas 12 semanas; "Whole plan" muestra todo, con la apertura.
-    await expect(page.getByRole("button", { name: "Next 12 weeks" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("button", { name: "Whole plan" }).click();
-    await expect(page.getByRole("button", { name: "Whole plan" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Próximas 12 semanas" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Todo el plan" }).click();
+    await expect(page.getByRole("button", { name: "Todo el plan" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(/◆ Opening · weeks \d+–\d+/)).toBeVisible();
 
     // Un departamento se despliega en sus objetivos y tareas, y se pliega de nuevo.
@@ -124,12 +124,12 @@ test.describe("plan", () => {
   test("la vista de áreas muestra la constelación y lleva a las tareas", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("button", { name: "Areas" }).click();
-    await expect(page.getByRole("button", { name: "Areas" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Áreas" }).click();
+    await expect(page.getByRole("button", { name: "Áreas" })).toHaveAttribute("aria-pressed", "true");
 
     // Pulsar un área la enfoca y muestra el riel; desde el riel se salta a otra; "All areas" vuelve a la rueda.
     await page.locator("[data-area]").first().click();
@@ -142,38 +142,38 @@ test.describe("plan", () => {
     await expect(rail.locator("button[aria-pressed=true]")).toHaveCount(1);
     await expect(rail.locator("button[aria-pressed=true]")).not.toHaveText(first);
     await back.click();
-    await expect(page.getByText("Click an area to see it in detail")).toBeVisible();
+    await expect(page.getByText("Pulsa un área para verla en detalle")).toBeVisible();
     // Ir a una tarea ya no se hace desde Áreas (el enlace "Open task" vive en el mapa de Fases).
   });
 
   test("el panel se pliega a un riel y se vuelve a abrir desde él", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("region", { name: "Now" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("region", { name: "Ahora" })).toBeVisible();
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("button", { name: "Collapse panel" }).click();
-    await expect(page.getByRole("region", { name: "Now" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Plegar panel" }).click();
+    await expect(page.getByRole("region", { name: "Ahora" })).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Now" }).click();
-    await expect(page.getByRole("region", { name: "Now" })).toBeVisible();
+    await page.getByRole("button", { name: "Ahora" }).click();
+    await expect(page.getByRole("region", { name: "Ahora" })).toBeVisible();
   });
 
   test("ajustar las horas se guarda", async ({ page }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
 
     await openAdjust(page);
-    await page.getByLabel("Hours per week").selectOption("5-10");
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByLabel("Horas por semana").selectOption("5-10");
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
     await page.waitForLoadState("networkidle");
 
     await page.reload();
     await openAdjust(page);
-    await expect(page.getByLabel("Hours per week")).toHaveValue("5-10");
+    await expect(page.getByLabel("Horas por semana")).toHaveValue("5-10");
   });
 
   test("con el informe sin aprobar no se puede crear", async ({ page }) => {
@@ -181,59 +181,59 @@ test.describe("plan", () => {
     await page.getByRole("button", { name: "Empezar" }).click();
     await page.waitForURL(/\/informe\//);
     await page.goto(`${page.url()}/plan`);
-    await expect(page.getByText("Approve your report to create the plan.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Create my plan" })).toHaveCount(0);
+    await expect(page.getByText("Aprueba tu informe para crear el plan.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Crear mi plan" })).toHaveCount(0);
   });
 
   async function createPlanFor(page: Page, idea?: string) {
     const reportUrl = await approvedReport(page, idea);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
     await page.waitForLoadState("networkidle");
   }
 
   test("personalizar una tarea con IA la sustituye por la personalizada", async ({ page }) => {
     await createPlanFor(page);
     await openPersonalizableTask(page);
-    await page.getByRole("button", { name: "Personalize with AI" }).click();
+    await page.getByRole("button", { name: "Personalizar con IA" }).click();
     await expect(page.getByRole("heading", { name: /Personalized task/ }).first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText("Personalized", { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Generate again" }).first()).toBeVisible();
+    await expect(page.getByText("Personalizada", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Volver a generar" }).first()).toBeVisible();
   });
 
   test("si la IA pregunta antes, se responde en la tarea y se personaliza", async ({ page }) => {
     await createPlanFor(page, "Una app de facturación [gpt:ask]");
     await openPersonalizableTask(page);
-    await page.getByRole("button", { name: "Personalize with AI" }).click();
+    await page.getByRole("button", { name: "Personalizar con IA" }).click();
     await expect(page.getByText("Fake question?")).toBeVisible({ timeout: 20_000 });
     await page.getByRole("radio", { name: "Option A" }).check();
-    await page.getByRole("button", { name: "Answer and personalize" }).click();
+    await page.getByRole("button", { name: "Responder y personalizar" }).click();
     await expect(page.getByRole("heading", { name: /Personalized task/ }).first()).toBeVisible({ timeout: 20_000 });
   });
 
   test("si la IA cae, se avisa y la tarea se queda como estaba", async ({ page }) => {
     await createPlanFor(page, "Una app de facturación [gpt:down-plan]");
     await openPersonalizableTask(page);
-    await page.getByRole("button", { name: "Personalize with AI" }).click();
-    await expect(page.getByText("The AI is not available right now. Try again in a few minutes.")).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("button", { name: "Personalizar con IA" }).click();
+    await expect(page.getByText("La IA no está disponible ahora. Inténtalo en unos minutos.")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("heading", { name: /Personalized task/ })).toHaveCount(0);
   });
 
   test("'Ahora' muestra lo que se puede empezar; un paso se marca como hecho y se reabre", async ({ page }) => {
     await createPlanFor(page);
-    const now = page.getByRole("region", { name: "Now" });
+    const now = page.getByRole("region", { name: "Ahora" });
     await expect(now).toBeVisible();
     // La tarjeta de "Now" con un paso que se puede marcar como hecho.
-    const card = now.getByRole("listitem").filter({ has: page.getByRole("button", { name: "Done" }) }).first();
+    const card = now.getByRole("listitem").filter({ has: page.getByRole("button", { name: "Hecho" }) }).first();
     const href = (await card.getByRole("link").first().getAttribute("href")) ?? "";
-    await card.getByRole("button", { name: "Done" }).click();
+    await card.getByRole("button", { name: "Hecho" }).click();
     await page.waitForLoadState("networkidle");
 
     // El paso hecho se puede reabrir en la página de su tarea.
     await page.goto(href);
     // "Reopen" está dentro del desplegable del paso: se cuenta aunque esté oculto y se abre para pulsarlo.
-    const reopen = page.getByRole("button", { name: "Reopen", includeHidden: true });
+    const reopen = page.getByRole("button", { name: "Reabrir", includeHidden: true });
     await expect(reopen).toHaveCount(1);
     await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
     await reopen.click();
@@ -244,8 +244,8 @@ test.describe("plan", () => {
   test("otro usuario no puede ver el plan", async ({ page, browser, request }) => {
     const reportUrl = await approvedReport(page);
     await page.goto(`${reportUrl}/plan`);
-    await page.getByRole("button", { name: "Create my plan" }).click();
-    await expect(page.getByRole("heading", { name: "Your plan" })).toBeVisible();
+    await page.getByRole("button", { name: "Crear mi plan" }).click();
+    await expect(page.getByRole("heading", { name: "Tu plan" })).toBeVisible();
 
     const other = await browser.newContext();
     const otherPage = await other.newPage();
@@ -255,7 +255,7 @@ test.describe("plan", () => {
     await otherPage.goto(`${reportUrl}/plan`);
     // Con Suspense el estado HTTP ya salió como 200: se comprueba lo que se ve, como en el informe.
     await expect(otherPage.getByRole("heading", { name: "Página no encontrada" })).toBeVisible();
-    await expect(otherPage.getByRole("heading", { name: "Your plan" })).toHaveCount(0);
+    await expect(otherPage.getByRole("heading", { name: "Tu plan" })).toHaveCount(0);
     await other.close();
   });
 });

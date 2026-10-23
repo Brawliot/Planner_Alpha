@@ -17,7 +17,9 @@ const keys = z.array(z.string().min(1)).min(1);
 
 export const lineSourceSchema = z.discriminatedUnion("kind", [
   /** Un rojo del informe: hecho con efecto negativo, línea de trabajo. */
-  z.object({ kind: z.literal("risk"), area, reason: z.string().min(1) }),
+    z.object({ kind: z.literal("risk"), area, reason: z.string().min(1) }),
+  /** Un amarillo: lo sabemos pero con dudas. Provisional: mismo objetivo que el rojo del mismo motivo. */
+  z.object({ kind: z.literal("doubt"), area, reason: z.string().min(1) }),
   /** Un gris: falta lo imprescindible para dar color. */
   z.object({ kind: z.literal("needs_info"), area, keys }),
   /** Lo "por concretar" de un área. */

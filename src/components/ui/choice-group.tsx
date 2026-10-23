@@ -1,5 +1,6 @@
 import { NOT_DECIDED } from "@/lib/report/certainty";
 import { cn } from "@/lib/cn";
+import { valueLabel } from "@/lib/report/labels";
 
 type ChoiceGroupProps = {
   name: string;
@@ -69,7 +70,7 @@ function Choice({
         // Círculo propio; el foco se ve en toda la baldosa (has-focus-visible del label).
         className="size-4 shrink-0 appearance-none rounded-full border-2 border-input transition-colors checked:border-accent checked:bg-accent checked:shadow-[inset_0_0_0_3px_var(--color-background)] focus-visible:outline-none"
       />
-      {option}
+      {valueLabel(option)}
     </label>
   );
 }

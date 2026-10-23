@@ -23,16 +23,15 @@ function verdictOf(area: string, facts: Fact[]) {
   return found;
 }
 
-describe("ninguna regla da watch", () => {
-  it("con datos variados, solo verde, rojo o gris", () => {
+describe("los cuatro estados", () => {
+  it("solo salen estados que existen", () => {
     const facts = [
       known("offering_type", "Physical venue"), known("revenue_model", "Subscription"),
-      known("customer_segment", "Mixed segments"), known("acquisition_channel", "Paid advertising"),
-      known("founder_experience", "2-5 years"), known("time_commitment", "Full time"),
-      known("validation_stage", "Prototype"), estimated("competition", "Few competitors"),
-      known("regulatory_load", "Moderate (licenses, data protection)"), estimated("rent_level", "Average"),
+      known("customer_segment", "Mixed segments"), known("founder_experience", "2-5 years"),
+      known("time_commitment", "Full time"), known("validation_stage", "Prototype"),
+      estimated("competition", "Few competitors"), estimated("rent_level", "Average"),
     ];
-    for (const v of areaVerdicts(facts)) assert.notEqual(v.verdict, "watch", v.area);
+    for (const v of areaVerdicts(facts)) assert.ok(["strong", "risk", "doubt", "needs_info"].includes(v.verdict), v.area);
   });
 });
 
@@ -43,10 +42,34 @@ describe("Money", () => {
     assert.deepEqual(v.missing, ["budget_band", "startup_cost_eur"]);
   });
 
-  it("no llega o va justo: rojo", () => {
-    assert.equal(verdictOf("money", [budget(30000), range("startup_cost_eur", 45000, 60000)]).reason, "money.short");
-    const tight = verdictOf("money", [budget(50000), range("startup_cost_eur", 45000, 60000)]);
-    assert.deepEqual([tight.verdict, tight.reason], ["risk", "money.tight"]);
+  it("no llega ni en el mejor caso: rojo; dentro del rango: amarillo; por encima del máximo: verde", () => {
+    const cost = range("startup_cost_eur", 10000, 30000);
+    const at = (amount: number) => verdictOf("money", [budget(amount), cost]);
+    assert.deepEqual([at(8000).verdict, at(8000).reason], ["risk", "money.short"]);
+    assert.deepEqual([at(12000).verdict, at(12000).reason], ["doubt", "money.tight"]);
+    assert.equal(at(10000).verdict, "doubt", "justo el mínimo: aún depende del coste real");
+    assert.equal(at(30000).verdict, "strong", "justo el máximo: llega");
+    assert.equal(at(35000).verdict, "strong");
+  });
+
+  it("el tramo de presupuesto se evalúa como rango", () => {
+    const band = known("budget_band", "€20k-€50k");
+    assert.equal(verdictOf("money", [band, range("startup_cost_eur", 45000, 60000)]).verdict, "doubt");
+    assert.equal(verdictOf("money", [band, range("startup_cost_eur", 60000, 80000)]).verdict, "risk");
+    assert.equal(verdictOf("money", [known("budget_band", "Over €500k"), range("startup_cost_eur", 40000, 60000)]).verdict, "strong");
+  });
+
+  it("aguantar hasta el primer ingreso: sí / depende / ni en el mejor caso", () => {
+    const run = (amount: number, revenue: string) =>
+      verdictOf("money", [
+        budget(amount),
+        range("startup_cost_eur", 10000, 20000),
+        range("monthly_fixed_costs_eur", 2000, 3000),
+        known("time_to_revenue", revenue),
+      ]);
+    assert.equal(run(100000, "3-12 months").verdict, "strong");
+    assert.deepEqual([run(40000, "3-12 months").verdict, run(40000, "3-12 months").reason], ["doubt", "money.no_runway"]);
+    assert.deepEqual([run(22000, "More than 12 months").verdict, run(22000, "More than 12 months").reason], ["risk", "money.no_runway"]);
   });
 
   it("cubre y aguanta hasta el primer ingreso: verde", () => {

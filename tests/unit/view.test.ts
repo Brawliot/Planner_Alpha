@@ -34,11 +34,11 @@ describe("reportView", () => {
     estimated("monthly_fixed_costs_eur", { min: 3000, max: 5000 }, ["Reforma media", "Dos empleados", "Alquiler céntrico"]),
   ];
 
-  it("sin narrativa usa plantillas en inglés", () => {
+  it("sin narrativa usa plantillas en español", () => {
     const view = reportView("idea", facts, null);
-    assert.equal(view.language, "en");
+    assert.equal(view.language, "es");
     const money = view.areas.find((a) => a.area === "money");
-    assert.equal(money?.sentence, "Your budget doesn't cover the minimum estimated cost to open.");
+    assert.equal(money?.sentence, "Tu presupuesto no cubre el coste mínimo estimado para abrir.");
   });
 
   it("los supuestos del área estimada, sin repetidos y como mucho 3", () => {
@@ -94,7 +94,7 @@ describe("por concretar", () => {
     const view = reportView("Una app", [jev("offering_type", "Software"), jev("revenue_model", "Subscription")], null);
     const concept = view.areas.find((a) => a.area === "concept");
     assert.equal(concept?.verdict, "strong");
-    assert.deepEqual(concept?.pending.map((p) => p.label), ["Sector", "What sets you apart"]);
+    assert.deepEqual(concept?.pending.map((p) => p.label), ["Sector", "Qué te diferencia"]);
   });
 
   it("un área en gris lista primero lo imprescindible que falta", () => {

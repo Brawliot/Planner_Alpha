@@ -67,10 +67,10 @@ describe("currentStep", () => {
     const step = currentStep(classified(["time_commitment", "budget_band"]));
     assert.deepEqual(step, {
       topic: "founder",
-      title: "You",
+      title: "Tú",
       topics: [
-        { topic: "founder", title: "You", state: "current" },
-        { topic: "resources", title: "Resources and timing", state: "todo" },
+        { topic: "founder", title: "Tú", state: "current" },
+        { topic: "resources", title: "Recursos y plazos", state: "todo" },
       ],
       keys: ["time_commitment"],
       from: 1,

@@ -35,11 +35,11 @@ describe("planFingerprint", () => {
 });
 
 describe("planInput", () => {
-  it("lee el informe en directo: veredictos calculados, idioma de la narrativa o inglés", () => {
+  it("lee el informe en directo: veredictos calculados, idioma siempre español", () => {
     const base = { id: "r1", idea: "Cafetería", facts: FACTS, narrative: null };
     const input = planInput(base);
     assert.equal(input.reportId, "r1");
-    assert.equal(input.language, "en");
+    assert.equal(input.language, "es");
     assert.deepEqual(input.verdicts, areaVerdicts(FACTS));
     assert.equal(input.fingerprint, fp(FACTS));
 

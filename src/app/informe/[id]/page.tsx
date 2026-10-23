@@ -71,7 +71,7 @@ function IdeaStrip({ idea }: { idea: string }) {
         <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />
       </svg>
       <p className="min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
-        <span className="text-muted-foreground">Your idea · </span>
+        <span className="text-muted-foreground">Tu idea · </span>
         <span>{idea}</span>
       </p>
     </div>
@@ -86,7 +86,7 @@ function ReportStep({ report }: { report: Report }) {
     case "new":
       return (
         <>
-          <h1 className="sr-only">Your idea</h1>
+          <h1 className="sr-only">Tu idea</h1>
           <p className="text-sm">No hemos podido analizar tu idea.</p>
           <RetryForm action={retryClassification.bind(null, report.id)} />
         </>
@@ -113,7 +113,7 @@ function ReportStep({ report }: { report: Report }) {
     case "analysis":
       return (
         <>
-          <h1 className="sr-only">Your idea</h1>
+          <h1 className="sr-only">Tu idea</h1>
           <p className="text-sm">No hemos podido completar el análisis de tu idea.</p>
           <RetryForm action={retryAnalysis.bind(null, report.id)} />
         </>

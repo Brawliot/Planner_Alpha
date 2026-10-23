@@ -45,15 +45,15 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
 
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium text-muted-foreground">
-          {from === to ? `Question ${from} of ${totalQuestions}` : `Questions ${from}–${to} of ${totalQuestions}`}
+          {from === to ? `Pregunta ${from} de ${totalQuestions}` : `Preguntas ${from}–${to} de ${totalQuestions}`}
         </p>
         <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-bold tracking-tighter outline-none">
           {title}
         </h1>
         {canSkip && (
           <p className="text-muted-foreground">
-            If you don&apos;t know, say so: we&apos;ll mark it as{" "}
-            <span className="rounded-full border border-dashed border-muted-foreground px-2 text-xs">to be confirmed</span>.
+            Si no lo sabes, dilo: lo marcaremos como{" "}
+            <span className="rounded-full border border-dashed border-muted-foreground px-2 text-xs">por confirmar</span>.
           </p>
         )}
       </div>
@@ -71,10 +71,10 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
       <div className="flex flex-col items-end gap-2">
         <Button type="submit" variant="accent" disabled={pending} className="min-h-11 gap-2 px-6">
           {pending ? (
-            "Saving…"
+            "Guardando…"
           ) : (
             <>
-              Continue <span aria-hidden="true">→</span>
+              Continuar <span aria-hidden="true">→</span>
             </>
           )}
         </Button>
@@ -90,7 +90,7 @@ export function QuestionsForm({ action, topic, title, from, to, totalQuestions, 
 /** Una barra por tema: hechos en lima, el actual en lima tenue, los pendientes en gris. */
 function TopicProgress({ topics }: { topics: QuestionStep["topics"] }) {
   return (
-    <nav aria-label="Progress">
+    <nav aria-label="Progreso">
       <ol className="grid gap-2" style={{ gridTemplateColumns: `repeat(${topics.length}, minmax(0, 1fr))` }}>
         {topics.map(({ topic, title, state }) => (
           <li
@@ -108,7 +108,7 @@ function TopicProgress({ topics }: { topics: QuestionStep["topics"] }) {
             <span className={state === "current" ? "text-foreground" : "text-muted-foreground"}>
               {state === "done" && <span aria-hidden="true">✓ </span>}
               {title}
-              {state === "done" && <span className="sr-only"> (done)</span>}
+              {state === "done" && <span className="sr-only"> (hecho)</span>}
             </span>
           </li>
         ))}

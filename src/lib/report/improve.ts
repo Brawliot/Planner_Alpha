@@ -31,15 +31,15 @@ export interface AreaImprovement {
  * Las "ask" usan el prompt del catálogo.
  */
 const IMPROVE_PROMPTS: Record<string, string> = {
-  acquisition_channel: "How will you get your customers?",
-  competition: "How much competition is there where you will operate?",
-  capital_intensity: "How much capital does your business need?",
-  team_requirement: "What team will you need?",
-  time_to_revenue: "When do you expect your first revenue?",
-  regulatory_load: "How regulated is your business?",
-  third_party_dependency: "How much will you depend on other companies?",
-  money_handling: "Will you handle your customers' money?",
-  rent_level: "How expensive is rent where your premises will be?",
+  acquisition_channel: "¿Cómo conseguirás tus clientes?",
+  competition: "¿Cuánta competencia hay donde vas a operar?",
+  capital_intensity: "¿Cuánto capital necesita tu negocio?",
+  team_requirement: "¿Qué equipo necesitarás?",
+  time_to_revenue: "¿Cuándo esperas tus primeros ingresos?",
+  regulatory_load: "¿Cuánto está regulado tu negocio?",
+  third_party_dependency: "¿Cuánto dependerás de otras empresas?",
+  money_handling: "¿Manejarás el dinero de tus clientes?",
+  rent_level: "¿Qué tan caro es el alquiler donde estará tu local?",
 };
 
 const RENT_LEVEL_KEY = "rent_level";

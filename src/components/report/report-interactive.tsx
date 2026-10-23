@@ -134,7 +134,8 @@ function ReportHeader({
   const count = (verdict: AreaCard["verdict"]) => view.areas.filter((a) => a.verdict === verdict).length;
   const strong = count("strong");
   const risk = count("risk");
-  const unknown = count("needs_info");
+    const unknown = count("needs_info");
+  const doubt = count("doubt");
 
   return (
     <header className="flex flex-col gap-5">
@@ -168,10 +169,11 @@ function ReportHeader({
       <div className="flex flex-col gap-3 rounded-[1.25rem] bg-surface p-5 shadow-soft">
         <div aria-hidden="true" className="flex h-2.5 gap-1 overflow-hidden rounded-full">
           <span className="bg-success" style={{ flex: strong }} />
-          <span className="bg-danger" style={{ flex: risk }} />
+          <span className="bg-warning" style={{ flex: doubt }} />
+              <span className="bg-danger" style={{ flex: risk }} />
           <span className="bg-muted-foreground/40" style={{ flex: unknown }} />
         </div>
-        <p className="text-sm text-muted-foreground">{t.summary.counts(strong, risk, unknown)}</p>
+        <p className="text-sm text-muted-foreground">{t.summary.counts(strong, risk, unknown, doubt)}</p>
       </div>
 
       {view.contradictions.length > 0 && (

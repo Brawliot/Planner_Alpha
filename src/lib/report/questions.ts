@@ -12,11 +12,11 @@ const NOT_SPECIFIED_OPTION = { "Not specified": "user_text does not say" };
 export type Topic = "business" | "market" | "founder" | "resources" | "risk";
 
 export const TOPIC_TITLES: Record<Topic, string> = {
-  business: "Your business",
-  market: "Your market",
-  founder: "You",
-  resources: "Resources and timing",
-  risk: "Risks",
+  business: "Tu negocio",
+  market: "Tu mercado",
+  founder: "Tú",
+  resources: "Recursos y plazos",
+  risk: "Riesgos",
 };
 
 interface CatalogEntry {
@@ -38,7 +38,7 @@ export const CATALOG = {
   sector: {
     topic: "business",
     mode: "ask",
-    prompt: "What sector is your business in?",
+    prompt: "¿En qué sector está tu negocio?",
     likely: true,
     jev: {
       type: "choice",
@@ -66,7 +66,7 @@ export const CATALOG = {
   offering_type: {
     topic: "business",
     mode: "ask",
-    prompt: "What do you offer?",
+    prompt: "¿Qué ofreces?",
     likely: true,
     jev: {
       type: "choice",
@@ -86,7 +86,7 @@ export const CATALOG = {
   revenue_model: {
     topic: "business",
     mode: "ask",
-    prompt: "How will you make money?",
+    prompt: "¿Cómo ganarás dinero?",
     likely: true,
     jev: {
       type: "choice",
@@ -108,7 +108,7 @@ export const CATALOG = {
   customer_segment: {
     topic: "market",
     mode: "ask",
-    prompt: "Who are your customers?",
+    prompt: "¿Quiénes son tus clientes?",
     likely: true,
     jev: {
       type: "choice",
@@ -129,7 +129,7 @@ export const CATALOG = {
   geographic_scope: {
     topic: "market",
     mode: "ask",
-    prompt: "Where will your business operate?",
+    prompt: "¿Dónde operará tu negocio?",
     likely: true,
     jev: {
       type: "choice",
@@ -148,7 +148,7 @@ export const CATALOG = {
   differentiator: {
     topic: "market",
     mode: "ask",
-    prompt: "What sets you apart?",
+    prompt: "¿Qué te diferencia?",
     likely: false,
     jev: {
       type: "choice",
@@ -169,7 +169,7 @@ export const CATALOG = {
   founder_experience: {
     topic: "founder",
     mode: "ask",
-    prompt: "How much experience do you have in this sector?",
+    prompt: "¿Cuánta experiencia tienes en este sector?",
     likely: false,
     jev: {
       type: "choice",
@@ -186,7 +186,7 @@ export const CATALOG = {
   founder_profile: {
     topic: "founder",
     mode: "ask",
-    prompt: "What are your main skills?",
+    prompt: "¿Cuáles son tus principales habilidades?",
     likely: false,
     jev: {
       type: "choice",
@@ -205,7 +205,7 @@ export const CATALOG = {
   time_commitment: {
     topic: "founder",
     mode: "ask",
-    prompt: "How much time can you dedicate?",
+    prompt: "¿Cuánto tiempo puedes dedicarle?",
     likely: false,
     jev: {
       type: "choice",
@@ -222,7 +222,7 @@ export const CATALOG = {
   budget_band: {
     topic: "resources",
     mode: "ask",
-    prompt: "How much can you invest to start?",
+    prompt: "¿Cuánto puedes invertir para empezar?",
     likely: false,
     jev: {
       type: "choice",
@@ -241,7 +241,7 @@ export const CATALOG = {
   validation_stage: {
     topic: "resources",
     mode: "ask",
-    prompt: "How far along is your idea?",
+    prompt: "¿Hasta dónde ha llegado tu idea?",
     likely: true,
     jev: {
       type: "choice",
@@ -260,7 +260,7 @@ export const CATALOG = {
   launch_timeline: {
     topic: "resources",
     mode: "ask",
-    prompt: "When do you want to launch?",
+    prompt: "¿Cuándo quieres lanzar?",
     likely: false,
     jev: {
       type: "choice",
@@ -556,7 +556,7 @@ export function parseAnswers(keys: readonly QuestionKey[], get: (name: string) =
   for (const key of keys) {
     const value = get(key);
     if (typeof value !== "string" || !answerOptions(key).includes(value)) {
-      return { ok: false, error: "Answer all the questions." };
+      return { ok: false, error: "Responde todas las preguntas." };
     }
     // En una respuesta cerrada, la cita es la opción que eligió el usuario.
     facts.push({ key, value, source: { origin: "user", quote: value } });

@@ -100,10 +100,10 @@ describe("buildNarrative", () => {
     assert.equal(narrative.areas.competition?.text, "Aún no hay información suficiente para valorarlo.");
   });
 
-  it("si GPT falla, todo con plantillas en inglés", () => {
+  it("si GPT falla, todo con plantillas en español", () => {
     const narrative = buildNarrative(null, IDEA, FACTS, verdicts);
-    assert.equal(narrative.language, "en");
-    assert.equal(narrative.areas.money?.text, "Your budget doesn't cover the minimum estimated cost to open.");
+    assert.equal(narrative.language, "es");
+    assert.equal(narrative.areas.money?.text, "Tu presupuesto no cubre el coste mínimo estimado para abrir.");
     assert.ok(Object.values(narrative.areas).every((s) => s?.source === "template"));
   });
 

@@ -8,10 +8,10 @@ import { cn } from "@/lib/cn";
  * Describen lo que de verdad ocurre en él, pero su momento es aproximado (avanzan por reloj).
  */
 const STEPS = [
-  { at: 0, label: "Answers saved" },
-  { at: 2, label: "Checking what we know and what we don't" },
-  { at: 7, label: "Calculating figures and dates" },
-  { at: 13, label: "Writing your report" },
+  { at: 0, label: "Respuestas guardadas" },
+  { at: 2, label: "Comprobando lo que sabemos y lo que no" },
+  { at: 7, label: "Calculando cifras y fechas" },
+  { at: 13, label: "Redactando tu informe" },
 ] as const;
 
 /** Barra que se frena: nunca pasa del 92 % por sí sola; la completa la llegada del informe. */
@@ -55,15 +55,15 @@ export function AnalysisWait() {
           tabIndex={-1}
           className="text-3xl font-bold tracking-tighter outline-none sm:text-4xl"
         >
-          Analysing your idea
+          Analizando tu idea
         </h1>
-        <p className="text-muted-foreground">This usually takes about 20 seconds. Don&apos;t close the page.</p>
+        <p className="text-muted-foreground">Suele tardar unos 20 segundos. No cierres la página.</p>
       </div>
 
       {/* Sin aria-valuenow: no conocemos el progreso real (indeterminado para el lector). */}
       <div
         role="progressbar"
-        aria-label="Analysis in progress"
+        aria-label="Análisis en curso"
         aria-busy="true"
         className="relative h-2 w-full max-w-md overflow-hidden rounded-full bg-muted"
       >

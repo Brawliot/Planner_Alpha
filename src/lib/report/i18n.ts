@@ -44,7 +44,7 @@ export interface ReportTexts {
     partsLabel: string;
     tab: Record<"strengths" | "work" | "unknown" | "next", string>;
     heading: Record<"strengths" | "work" | "unknown" | "next", string>;
-    counts: (strong: number, risk: number, unknown: number) => string;
+   counts: (strong: number, risk: number, unknown: number, doubt: number) => string;
     previous: string;
     next: string;
     toReport: string;
@@ -72,7 +72,7 @@ const ES: ReportTexts = {
   title: "Informe de tu idea",
   yourIdea: "Tu idea",
   verdicts: "Veredictos",
-  verdict: { strong: "A favor", risk: "A trabajar", needs_info: "Falta información" },
+  verdict: { strong: "A favor", risk: "A trabajar", doubt: "Con dudas", needs_info: "Falta información" },
   assessmentByArea: "Evaluación por área",
   area: {
     concept: "Concepto",
@@ -139,13 +139,13 @@ const ES: ReportTexts = {
       unknown: "Lo que aún no sabemos",
       next: "Siguiente paso",
     },
-    counts: (strong, risk, unknown) => `${strong} a favor · ${risk} a trabajar · ${unknown} sin datos`,
+    counts: (strong, risk, unknown, doubt) => `${strong} a favor · ${doubt} con dudas · ${risk} a trabajar · ${unknown} sin datos`,
     previous: "Anterior",
     next: "Siguiente",
     toReport: "Ver el informe",
     close: "Cerrar",
     footnote:
-      "Texto redactado por IA a partir de tu informe. Las cifras las calcula el código. Orientativo: no es asesoramiento financiero ni legal.",
+      "Texto redactado por IA a partir de tu informe. Las cifras las calcula el código; las que llevan subrayado discontinuo son estimadas. Orientativo: no es asesoramiento financiero ni legal.",
     unavailable: "No hemos podido redactar el resumen.",
     retry: "Reintentar",
     writing: "Redactando tu resumen…",
@@ -211,7 +211,7 @@ const EN: ReportTexts = {
   title: "Your idea report",
   yourIdea: "Your idea",
   verdicts: "Verdicts",
-  verdict: { strong: "In your favour", risk: "Needs work", needs_info: "Needs info" },  assessmentByArea: "Assessment by area",
+  verdict: { strong: "In your favour", risk: "Needs work", doubt: "Some doubts", needs_info: "Needs info" },  assessmentByArea: "Assessment by area",
   area: {
     concept: "Concept",
     validation: "Validation",
@@ -277,12 +277,12 @@ const EN: ReportTexts = {
       unknown: "What we don't know yet",
       next: "Next step",
     },
-    counts: (strong, risk, unknown) => `${strong} in your favour · ${risk} need work · ${unknown} without data`,
+    counts: (strong, risk, unknown, doubt) => `${strong} in your favour · ${doubt} some doubts · ${risk} need work · ${unknown} without data`,
     previous: "Previous",
     next: "Next",
     toReport: "View the report",
     close: "Close",
-    footnote: "Written by AI from your report. Figures are calculated by code. Indicative: not financial or legal advice.",
+    footnote: "Written by AI from your report. Figures are calculated by code; those with a dashed underline are estimates. Indicative: not financial or legal advice.",
     unavailable: "We couldn't write your summary.",
     retry: "Try again",
     writing: "Writing your summary…",

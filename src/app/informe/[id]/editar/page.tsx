@@ -33,7 +33,7 @@ async function EditContent({ id }: { id: string }) {
   return (
     <EditForm
       reportId={report.id}
-      language={report.narrative?.language ?? "en"}
+      language="es"
       fields={editFields(report.facts)}
       budget={currentBudget(report.facts)}
     />

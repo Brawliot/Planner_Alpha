@@ -5,14 +5,20 @@ import { RENT_LEVELS } from "./figures.ts";
 import { CATALOG, type QuestionKey } from "./questions.ts";
 
 /**
- * Veredicto por área, decidido siempre en código a partir de lo que SE SABE (sabido o estimado):
- * - strong (verde): el hecho tiene efecto positivo o neutro;
- * - risk (rojo): el hecho tiene efecto negativo; no es "mala idea", es una línea de trabajo del plan;
+ * Veredicto por área, decidido siempre en código. Depende de cuánto sabemos y de si es favorable:
+ * - strong (verde): lo sabemos, sin dudas, y es favorable o neutro. NO significa "fácil";
+ * - risk (rojo): lo sabemos, sin dudas, y no es favorable; no es "mala idea", es una línea de trabajo del plan;
+ * - doubt (amarillo): lo sabemos pero con dudas; el resultado cambia según el valor real. Es un estado de
+ *   CERTEZA, no de gravedad;
  * - needs_info (gris): falta lo imprescindible para dar color.
+ *
+ * "doubt" revierte a propósito el commit 5a29ec3 ("sin Watch"). Aquel estado intermedio era de gravedad
+ * ("vigilar"), ambiguo y no calculable; este habla de certeza y se calcula: con un dato en rango, si todo
+ * el rango da el mismo resultado hay color; si cambia según el valor real, hay duda. No lo quites por confusión.
  * No saber algo nunca cuenta como negativo: va a gaps ("por concretar") y será una tarea del plan.
  */
 
-export type Verdict = "strong" | "risk" | "needs_info";
+export type Verdict = "strong" | "risk" | "doubt" | "needs_info";
 
 export interface AreaVerdict {
   area: AreaKey;
@@ -91,6 +97,7 @@ export function founderRiskCauses(facts: readonly Fact[]): FounderCause[] {
 const needsInfo = (missing: string[]): Decision => ({ verdict: "needs_info", reason: "needs_info", missing });
 const green = (reason: string): Decision => ({ verdict: "strong", reason });
 const red = (reason: string): Decision => ({ verdict: "risk", reason });
+const doubt = (reason: string): Decision => ({ verdict: "doubt", reason });
 
 function valueOf(facts: readonly Fact[], key: string) {
   const input = usable(facts, key);
@@ -135,10 +142,14 @@ const RULES: Record<AreaKey, (facts: readonly Fact[]) => Decision> = {
       ...(check.startupCost ? [] : [FIGURE_KEYS.startupCost]),
     ];
     if (missing.length > 0) return needsInfo(missing);
-    if (check.coverage === "short") return red("money.short");
-    if (check.coverage === "tight") return red("money.tight");
-    if (check.survivesUntilRevenue === false) return red("money.no_runway");
-    if (check.survivesUntilRevenue === true) return green("money.covers_runway");
+    // Se evalúa con todo el rango (presupuesto, coste, gastos fijos y plazo): si todo da lo mismo, hay
+    // color; si cambia según el valor real, hay duda. Provisional: "money.tight" y "money.no_runway"
+    // sirven a rojo y amarillo; en la Fase 2 cada color tendrá su motivo y su plantilla.
+    if (check.openingOutcome === "short") return red("money.short");
+    if (check.openingOutcome === "uncertain") return doubt("money.tight");
+    if (check.runwayOutcome === "no") return red("money.no_runway");
+    if (check.runwayOutcome === "maybe") return doubt("money.no_runway");
+    if (check.runwayOutcome === "yes") return green("money.covers_runway");
     // Cubre el arranque; los gastos fijos o el plazo de ingresos que faltan quedan por concretar.
     return green("money.runway_unknown");
   },

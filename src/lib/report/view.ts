@@ -7,6 +7,7 @@ import { improvementsByArea } from "./improve.ts";
 import { findContradictions, type Contradiction } from "./contradictions.ts";
 import { usable } from "./areas.ts";
 import { reportTexts } from "./i18n.ts";
+import { valueLabel } from "./labels.ts";
 import type { Summary } from "./summary.ts";
 
 /**
@@ -62,7 +63,7 @@ function formatValue(key: string, value: unknown, language: Language) {
     const { min, max } = value as { min: number; max: number };
     return `${eur.format(min)}–${eur.format(max)}${suffix}`;
   }
-  return String(value);
+  return valueLabel(String(value));
 }
 
 /** Solo lo utilizable (sabido o estimado): lo no sabido ya lo dicen el veredicto y "Mejorar". */
@@ -129,7 +130,7 @@ export function reportView(
       : footer === "risks"
         ? verdicts.find((v) => v.verdict === "risk")
         : undefined;
-  const language: Language = narrative?.language ?? "en";
+  const language: Language = "es";
   // Si una frase falta (informe antiguo o área nueva), la plantilla de su motivo.
   const sentenceOf = (v: AreaVerdict) => narrative?.areas[v.area]?.text ?? templateFor(v.reason, language);
   return {

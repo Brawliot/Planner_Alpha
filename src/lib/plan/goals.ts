@@ -47,7 +47,8 @@ const FOUNDER_GOALS: Record<FounderCause, BusinessState> = {
  */
 export function lineGoal(source: LineSource, facts: readonly Fact[]): StateId[] | null {
   switch (source.kind) {
-    case "risk": {
+        case "risk":
+    case "doubt": {
       if (source.reason === FOUNDER_REASON) return founderRiskCauses(facts).map((cause) => FOUNDER_GOALS[cause]);
       const goal = Object.hasOwn(RISK_GOALS, source.reason) ? RISK_GOALS[source.reason] : null;
       return goal ? [...goal] : null;
